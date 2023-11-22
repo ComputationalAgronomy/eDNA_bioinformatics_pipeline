@@ -52,10 +52,11 @@ class OtuAnalysis(ABC):
 
     def _read_blast(self, blast_path):
         with open(blast_path, 'r') as file:
-            species2otu, genus2otu, family2otu, order2otu = {}, {}, {}, {}
+            species2otu, genus2otu, family2otu, order2otu, class2otu, phylum2otu, kingdom2otu = {}, {}, {}, {}, {}, {}, {}
+            family2otu['no_family_level'] = []
             for line in file.readlines():
                 blast_list = line.split(',')
-                haploid, species, genus, family, order = blast_list[0], blast_list[2], blast_list[3], blast_list[4], blast_list[5]
+                haploid, species, genus, family, order, class_, phylum, kingdom = blast_list[0], blast_list[2], blast_list[3], blast_list[4], blast_list[5], blast_list[6], blast_list[7], blast_list[8]
                 if species not in species2otu:
                     species2otu[species] = []
                 species2otu[species].append(haploid)
@@ -64,24 +65,30 @@ class OtuAnalysis(ABC):
                     genus2otu[genus] = []
                 genus2otu[genus].append(haploid)
 
-                if family not in family2otu:
-                    family2otu[family] = []
-                family2otu[family].append(haploid)
+                if family=='':
+                    family2otu['no_family_level'].append(haploid)
+                else:
+                    if family not in family2otu:
+                        family2otu[family] = []
+                    family2otu[family].append(haploid)
 
                 if order not in order2otu:
                     order2otu[order] = []
                 order2otu[order].append(haploid)
-        return species2otu, genus2otu, family2otu, order2otu
-                # if order not in self.taxonomy:
-                #     self.taxonomy[order] = {}
-                # if family not in self.taxonomy[order]:
-                #     self.taxonomy[order][family] = {}
-                # if genus not in self.taxonomy[order][family]:
-                #     self.taxonomy[order][family][genus] = {}
-                # if species not in self.taxonomy[order][family][genus]:
-                #     self.taxonomy[order][family][genus][species] = []
-                # self.taxonomy[order][family][genus][species].append(haploid)
-                # test = [val for family in a.taxonomy.values() for genus in family.values() for species in genus.values() for key, val in species.items() if key==species_name]
+
+                if class_ not in class2otu:
+                    class2otu[class_] = []
+                class2otu[class_].append(haploid)
+
+                if phylum not in phylum2otu:
+                    phylum2otu[phylum] = []
+                phylum2otu[phylum].append(haploid)
+
+                if kingdom not in kingdom2otu:
+                    kingdom2otu[kingdom] = []
+                kingdom2otu[kingdom].append(haploid)
+
+        return species2otu, genus2otu, family2otu, order2otu, class2otu, phylum2otu, kingdom2otu
 
     # import derep.fasta, otu.fasta, otu_size.txt to get relationship between OTUs and unique sequences. 
     def import_data(self, read_dir):
@@ -96,8 +103,8 @@ class OtuAnalysis(ABC):
             otu2unique, uniq_size, uniq_type, uniq_dqt = self._read_otu_report(otu_report_path)
             self.sample[num]={'uniq_seq':uniq_seq, 'otu_seq':otu_seq, 'otu2unique':otu2unique, 'uniq_size':uniq_size, 'uniq_type':uniq_type, 'uniq_dqt':uniq_dqt}
             self.sample[num]['otu_size'] = self._get_otu_size(num)
-            species2otu, genus2otu, family2otu, order2otu = self._read_blast(blast_path)
-            tax_dict = {'species2otu':species2otu, 'genus2otu':genus2otu, 'family2otu':family2otu, 'order2otu':order2otu}
+            species2otu, genus2otu, family2otu, order2otu, class2otu, phylum2otu, kingdom2otu= self._read_blast(blast_path)
+            tax_dict = {'species2otu':species2otu, 'genus2otu':genus2otu, 'family2otu':family2otu, 'order2otu':order2otu, 'class2otu':class2otu, 'phylum2otu':phylum2otu, 'kingdom2otu':kingdom2otu}
             self.sample[num].update(tax_dict)
     
     # Split the sequences to conform to the fasta format.
@@ -151,7 +158,7 @@ class OtuAnalysis(ABC):
     
         seq = ''
         for otu in otu_list:
-            subseq = self.sample[num]['otu_seq'][otu.replace('Zotu','')]
+            subseq = self.sample[sample_num]['otu_seq'][otu.replace('Zotu','')]
             subseq = self._split_lines(subseq)
             seq = seq + f'>{otu}\n{subseq}\n'
         with open('./tmp/seq.fa', 'w') as f:
@@ -320,5 +327,5 @@ if __name__ == '__main__':
     # a.within_otu_align(1, 'Zotu5', save=False)
     # a.analysis_species(sample_num=1, species_name='Sardinella_fijiensis')
     # a.usum_sample()
-    # a.barplot_sample(sample_num=1, level='order', save=False)
-    # a.barplot_all('order')
+    # a.barplot_sample(sample_num=1, level='family', save=False)
+    # a.barplot_all('family', save=True)
