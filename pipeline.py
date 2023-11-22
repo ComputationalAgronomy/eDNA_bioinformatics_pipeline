@@ -2,6 +2,9 @@ import os
 import pandas as pd
 import re
 import duckdb
+import csv
+import numpy as np
+
 
 def _get_prefix_with_suffix(in_dir, suffix):
     files = os.listdir(in_dir)
@@ -56,7 +59,7 @@ def cluster_zotu(in_dir, out_dir, minsize=8, cpu=2):
                 >{out_dir}{num}_report.txt 2>&1'
         os.system(cmd)
 
-def blast_otu(in_dir, out_dir, db_path, otu_type='otu', cpu=0, maxhitnum=5, specifiers='qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore'):
+def blast_otu(in_dir, out_dir, db_path, lineage_path, otu_type='otu', cpu=0, maxhitnum=5, specifiers='qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore'):
     if otu_type in ['otu', 'zotu']:
         pass
     else:
@@ -70,32 +73,40 @@ def blast_otu(in_dir, out_dir, db_path, otu_type='otu', cpu=0, maxhitnum=5, spec
                 -out {out_dir}{num}_{otu_type}.csv'
         cmd = cmd + f' -num_threads {cpu}' if cpu!=0 else cmd
         os.system(cmd)
+    
+    genus2taxonomy = {}
+    with open(lineage_path+'lineage.csv') as in_handle:
+        csvReader = csv.DictReader(in_handle)
+        for row in csvReader:
+            genus2taxonomy[row['genus_name']] = [row['kingdom_name'], row['phylum_name'], row['class_name'], \
+                row['order_name'], row['family_name']]
+    for num in prefix:
+        filename = f'{out_dir}{num}_{otu_type}'
+        add_taxonomy(filename=filename, genus2taxonomy=genus2taxonom)
 
-    # for num in prefix:
-    #     otu_hit = pd.read_csv(f'{out_dir}{num}_{otu_type}.csv', header=None)
-    #     sacc, species, genus, family, order = [], [], [], [], []
-    #     for stitle in otu_hit[1]:
-    #         stitle_list = stitle.split('|')
-    #         sacc.append(stitle_list[1])
-    #         tax_list = re.findall(r'[^\(\[\"\;\]\)\s]+', stitle_list[2])
-    #         if len(tax_list)==3:
-    #             species.append(tax_list[0])
-    #             genus.append(tax_list[0].split('_')[0])
-    #             family.append(tax_list[2])
-    #             order.append(tax_list[1])
-    #         elif len(tax_list)==2:
-    #             species.append(tax_list[0])
-    #             genus.append(tax_list[0].split('_')[0])
-    #             family.append(tax_list[1])
-    #             order.append('no')
-    #         else:
-    #             print('taxa wrong')
-    #     otu_hit[1] = sacc
-    #     otu_hit.insert(2, '2', species)
-    #     otu_hit.insert(3, '3', genus)
-    #     otu_hit.insert(4, '4', family)
-    #     otu_hit.insert(5, '5', order)
-    #     otu_hit.to_csv(f'{out_dir}{num}_{otu_type}.csv', index=False, header=None)
+@staticmethod
+def add_taxonomy(filename, genus2taxonomy):
+    blast_result = pd.read_csv(f'{filename}.csv', header=None)
+    taxa_matrix = []
+    for sseqid in blast_result[1]:
+        _, sacc, species = sseqid.split('|')
+        species_firstname = species.split('_')[0]
+        if species_firstname in genus2taxonomy.keys():
+            genus = species_firstname
+        else:
+            genus = [k for k, v in genus2taxonomy.items() if species_firstname in v][0]
+        taxa_matrix.append([sacc, species, genus, genus2taxonomy[genus][4], genus2taxonomy[genus][3], genus2taxonomy[genus][2], genus2taxonomy[genus][1], genus2taxonomy[genus][0]])
+    taxa_matrix = np.array(taxa_matrix)
+    sacc_list, species_list, genus_list, family_list, order_list, class_list, phylum_list, kingdom_list = taxa_matrix[:, 0].tolist(), taxa_matrix[:, 1].tolist(), taxa_matrix[:, 2].tolist(), taxa_matrix[:, 3].tolist(), taxa_matrix[:, 4].tolist(), taxa_matrix[:, 5].tolist(), taxa_matrix[:, 6].tolist(), taxa_matrix[:, 7].tolist()
+    blast_result[1] = sacc_list
+    blast_result.insert(2, '2', species_list)
+    blast_result.insert(3, '3', genus_list)
+    blast_result.insert(4, '4', family_list)
+    blast_result.insert(5, '5', order_list)
+    blast_result.insert(6, '6', class_list)
+    blast_result.insert(7, '7', phylum_list)
+    blast_result.insert(8, '8', kingdom_list)
+    blast_result.to_csv(f'{filename}.csv', index=False, header=None)
 
 if __name__ == '__main__':
 
@@ -115,15 +126,17 @@ if __name__ == '__main__':
     # cluster_otu(in_dir=in_dir, out_dir=out_dir, minsize=8, cpu=16)
     # cluster_zotu(in_dir=in_dir, out_dir=out_dir, minsize=8, cpu=16)
     
-    # mifish_path = './database/mifishdb'
-    # blast_otu(in_dir=in_dir, out_dir=out_dir, db_path=mifish_path, maxhitnum=1, otu_type='zotu', cpu=16)
+    mifish_path = './database/mifishdb'
+    lineage_path = './database/'
+    blast_otu(in_dir=in_dir, out_dir=out_dir, db_path=mifish_path, lineage_path=lineage_path, maxhitnum=1, otu_type='zotu', cpu=16)
   
     # # ncbi_path = 'nt -remote'
     # blast_otu(in_dir=in_dir, out_dir=out_dir, db_path=ncbi_path, out_name='ncbi', otu_type='zotu')
     # read_blast_csv(in_dir=in_dir, out_dir=out_dir)
-    conn = duckdb.connect()
-    fishbase_file = './data/species.parquet'
-    stock_file = './data/stocks.parquet'
-    link_fishbase = conn.from_parquet(fishbase_file)
-    link_stock = conn.from_parquet(stock_file)
-    print(link_stock)
+    # conn = duckdb.connect()
+    # fishbase_file = './data/species.parquet'
+    # stock_file = './data/stocks.parquet'
+    # link_fishbase = conn.from_parquet(fishbase_file)
+    # link_stock = conn.from_parquet(stock_file)
+    # print(link_stock['Eggs'])
+
