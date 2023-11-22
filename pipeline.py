@@ -1,5 +1,7 @@
 import os
 import pandas as pd
+import re
+import duckdb
 
 def _get_prefix_with_suffix(in_dir, suffix):
     files = os.listdir(in_dir)
@@ -64,22 +66,42 @@ def blast_otu(in_dir, out_dir, db_path, otu_type='otu', cpu=0, maxhitnum=5, spec
     prefix = _get_prefix_with_suffix(in_dir, f'_{otu_type}.fasta')
     for num in prefix:
         cmd = f'blastn -db {db_path} -query {in_dir}{num}_{otu_type}.fasta -outfmt "10 {specifiers}" \
-                -max_target_seqs {maxhitnum} -evalue 0.00001 -qcov_hsp_perc 90 \
+                -max_target_seqs {maxhitnum} -evalue 0.00001 -qcov_hsp_perc 90 -perc_identity 90 \
                 -out {out_dir}{num}_{otu_type}.csv'
         cmd = cmd + f' -num_threads {cpu}' if cpu!=0 else cmd
         os.system(cmd)
 
-    for num in prefix:
-        otu_hit = pd.read_csv(f'{out_dir}{num}_{otu_type}.csv', header=None)
-        species_name = [x[2] for x in otu_hit[1].str.split('|')]
-        otu_hit[1] = [x[1] for x in otu_hit[1].str.split('|')]
-        otu_hit.insert(2, '2', species_name)
-        otu_hit.to_csv(f'{out_dir}{num}_{otu_type}.csv', index=False, header=None)
+    # for num in prefix:
+    #     otu_hit = pd.read_csv(f'{out_dir}{num}_{otu_type}.csv', header=None)
+    #     sacc, species, genus, family, order = [], [], [], [], []
+    #     for stitle in otu_hit[1]:
+    #         stitle_list = stitle.split('|')
+    #         sacc.append(stitle_list[1])
+    #         tax_list = re.findall(r'[^\(\[\"\;\]\)\s]+', stitle_list[2])
+    #         if len(tax_list)==3:
+    #             species.append(tax_list[0])
+    #             genus.append(tax_list[0].split('_')[0])
+    #             family.append(tax_list[2])
+    #             order.append(tax_list[1])
+    #         elif len(tax_list)==2:
+    #             species.append(tax_list[0])
+    #             genus.append(tax_list[0].split('_')[0])
+    #             family.append(tax_list[1])
+    #             order.append('no')
+    #         else:
+    #             print('taxa wrong')
+    #     otu_hit[1] = sacc
+    #     otu_hit.insert(2, '2', species)
+    #     otu_hit.insert(3, '3', genus)
+    #     otu_hit.insert(4, '4', family)
+    #     otu_hit.insert(5, '5', order)
+    #     otu_hit.to_csv(f'{out_dir}{num}_{otu_type}.csv', index=False, header=None)
 
 if __name__ == '__main__':
 
-    in_dir = './cleandata/5_haploid/otu/'
+    in_dir = './cleandata/5_haploid/zotu/'
     out_dir = './cleandata/6_blastn/mifish_db/'
+
 
     # merge_fq(in_dir=in_dir, out_dir=out_dir, cpu=6)
 
@@ -88,14 +110,20 @@ if __name__ == '__main__':
     # bbmap_dir = './bbmap/'
     # fq_to_fa(bbmap_dir=bbmap_dir, in_dir=in_dir, out_dir=out_dir)
 
-    # dereplicate(in_dir=in_dir, out_dir=out_dir, cpu=6)
+    # dereplicate(in_dir=in_dir, out_dir=out_dir, cpu=16)
 
     # cluster_otu(in_dir=in_dir, out_dir=out_dir, minsize=8, cpu=16)
     # cluster_zotu(in_dir=in_dir, out_dir=out_dir, minsize=8, cpu=16)
     
     # mifish_path = './database/mifishdb'
-    # blast_otu(in_dir=in_dir, out_dir=out_dir, db_path=mifish_path, maxhitnum=1, otu_type='otu', cpu=16)
-    
+    # blast_otu(in_dir=in_dir, out_dir=out_dir, db_path=mifish_path, maxhitnum=1, otu_type='zotu', cpu=16)
+  
     # # ncbi_path = 'nt -remote'
     # blast_otu(in_dir=in_dir, out_dir=out_dir, db_path=ncbi_path, out_name='ncbi', otu_type='zotu')
     # read_blast_csv(in_dir=in_dir, out_dir=out_dir)
+    conn = duckdb.connect()
+    fishbase_file = './data/species.parquet'
+    stock_file = './data/stocks.parquet'
+    link_fishbase = conn.from_parquet(fishbase_file)
+    link_stock = conn.from_parquet(stock_file)
+    print(link_stock)
