@@ -104,8 +104,8 @@ class OtuAnalysis(ABC):
             self.sample[num]={'uniq_seq':uniq_seq, 'otu_seq':otu_seq, 'otu2unique':otu2unique, 'uniq_size':uniq_size, 'uniq_type':uniq_type, 'uniq_dqt':uniq_dqt}
             self.sample[num]['otu_size'] = self._get_otu_size(num)
             species2otu, genus2otu, family2otu, order2otu, class2otu, phylum2otu, kingdom2otu= self._read_blast(blast_path)
-            tax_dict = {'species2otu':species2otu, 'genus2otu':genus2otu, 'family2otu':family2otu, 'order2otu':order2otu, 'class2otu':class2otu, 'phylum2otu':phylum2otu, 'kingdom2otu':kingdom2otu}
-            self.sample[num].update(tax_dict)
+            level_dict = {'species2otu':species2otu, 'genus2otu':genus2otu, 'family2otu':family2otu, 'order2otu':order2otu, 'class2otu':class2otu, 'phylum2otu':phylum2otu, 'kingdom2otu':kingdom2otu}
+            self.sample[num].update(level_dict)
     
     # Split the sequences to conform to the fasta format.
     @staticmethod
@@ -196,20 +196,24 @@ class OtuAnalysis(ABC):
         os.system(cmd)
         shutil.rmtree('./tmp/')
 
-    def barplot_sample(self, sample_num, level, save=True):
-        tax_dict = self.sample[sample_num][f'{level}2otu']
-        tax_size = {}
-        for key, otu_list in tax_dict.items():
+    def _get_level_size(self, sample_num, level_dict):
+        level_size = {}
+        for key, otu_list in level_dict.items():
             size = 0
             for otu in otu_list:
                 x = int(re.findall(r'\d+', otu)[0])-1
                 size = size + self.sample[sample_num]['otu_size'][x]
-            tax_size[key] = size
-        total_size = sum(tax_size.values())
-        for key in tax_size.keys():
-            tax_size[key] = tax_size[key]/total_size
+            level_size[key] = size
+        total_size = sum(level_size.values())
+        for key in level_size.keys():
+            level_size[key] = level_size[key]/total_size * 100
+        return level_size
 
-        plotdata = pd.DataFrame(tax_size, index=[f'sample{sample_num}'])
+    def barplot_sample(self, sample_num, level, save=True):
+        level_dict = self.sample[sample_num][f'{level}2otu']
+        level_size = self._get_level_size(sample_num, level_dict)
+
+        plotdata = pd.DataFrame(level_size, index=[f'sample{sample_num}'])
         fig = px.bar(plotdata, barmode='stack', labels={'value': 'Percentage (%)'},color_discrete_sequence=px.colors.qualitative.Pastel)
         fig.update_layout(xaxis_title="Sample No.", yaxis_title="Percentage (%)", legend=dict(x=1.05, y=1, traceorder='normal', orientation='h'))
         fig.show()
@@ -219,18 +223,9 @@ class OtuAnalysis(ABC):
     def barplot_all(self, level, save=True):
         sample_dict = {}
         for num in range(1, 19):
-            tax_dict = self.sample[num][f'{level}2otu']
-            tax_size = {}
-            for key, otu_list in tax_dict.items():
-                size = 0
-                for otu in otu_list:
-                    x = int(re.findall(r'\d+', otu)[0])-1
-                    size = size + self.sample[num]['otu_size'][x]
-                tax_size[key] = size
-            total_size = sum(tax_size.values())
-            for key in tax_size.keys():
-                tax_size[key] = tax_size[key]/total_size
-            sample_dict[f'sample{num}'] = tax_size
+            level_dict = self.sample[num][f'{level}2otu']
+            level_size = self._get_level_size(sample_num=num, level_dict=level_dict)
+            sample_dict[f'sample{num}'] = level_size
         
         sample_list = [sample_dict[f'sample{num}'] for num in range(1,19)]
         all_key = list(set().union(*sample_list))
@@ -327,5 +322,5 @@ if __name__ == '__main__':
     # a.within_otu_align(1, 'Zotu5', save=False)
     # a.analysis_species(sample_num=1, species_name='Sardinella_fijiensis')
     # a.usum_sample()
-    # a.barplot_sample(sample_num=1, level='family', save=False)
+    # a.barplot_sample(sample_num=2, level='family', save=False)
     # a.barplot_all('family', save=True)
