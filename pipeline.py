@@ -82,10 +82,10 @@ def blast_otu(in_dir, out_dir, db_path, lineage_path, otu_type='otu', cpu=0, max
                 row['order_name'], row['family_name']]
     for num in prefix:
         filename = f'{out_dir}{num}_{otu_type}'
-        add_taxonomy(filename=filename, genus2taxonomy=genus2taxonom)
+        _add_taxonomy(filename=filename, genus2taxonomy=genus2taxonomy)
 
 @staticmethod
-def add_taxonomy(filename, genus2taxonomy):
+def _add_taxonomy(filename, genus2taxonomy):
     blast_result = pd.read_csv(f'{filename}.csv', header=None)
     taxa_matrix = []
     for sseqid in blast_result[1]:
@@ -94,7 +94,7 @@ def add_taxonomy(filename, genus2taxonomy):
         if species_firstname in genus2taxonomy.keys():
             genus = species_firstname
         else:
-            genus = [k for k, v in genus2taxonomy.items() if species_firstname in v][0]
+            genus = [genus_level for genus_level, other_levals in genus2taxonomy.items() if species_firstname in other_levals][0]
         taxa_matrix.append([sacc, species, genus, genus2taxonomy[genus][4], genus2taxonomy[genus][3], genus2taxonomy[genus][2], genus2taxonomy[genus][1], genus2taxonomy[genus][0]])
     taxa_matrix = np.array(taxa_matrix)
     sacc_list, species_list, genus_list, family_list, order_list, class_list, phylum_list, kingdom_list = taxa_matrix[:, 0].tolist(), taxa_matrix[:, 1].tolist(), taxa_matrix[:, 2].tolist(), taxa_matrix[:, 3].tolist(), taxa_matrix[:, 4].tolist(), taxa_matrix[:, 5].tolist(), taxa_matrix[:, 6].tolist(), taxa_matrix[:, 7].tolist()
@@ -126,17 +126,10 @@ if __name__ == '__main__':
     # cluster_otu(in_dir=in_dir, out_dir=out_dir, minsize=8, cpu=16)
     # cluster_zotu(in_dir=in_dir, out_dir=out_dir, minsize=8, cpu=16)
     
-    mifish_path = './database/mifishdb'
-    lineage_path = './database/'
-    blast_otu(in_dir=in_dir, out_dir=out_dir, db_path=mifish_path, lineage_path=lineage_path, maxhitnum=1, otu_type='zotu', cpu=16)
+    # mifish_path = './database/mifishdb'
+    # lineage_path = './database/'
+    # blast_otu(in_dir=in_dir, out_dir=out_dir, db_path=mifish_path, lineage_path=lineage_path, maxhitnum=1, otu_type='zotu', cpu=16)
   
     # # ncbi_path = 'nt -remote'
     # blast_otu(in_dir=in_dir, out_dir=out_dir, db_path=ncbi_path, out_name='ncbi', otu_type='zotu')
     # read_blast_csv(in_dir=in_dir, out_dir=out_dir)
-    # conn = duckdb.connect()
-    # fishbase_file = './data/species.parquet'
-    # stock_file = './data/stocks.parquet'
-    # link_fishbase = conn.from_parquet(fishbase_file)
-    # link_stock = conn.from_parquet(stock_file)
-    # print(link_stock['Eggs'])
-
