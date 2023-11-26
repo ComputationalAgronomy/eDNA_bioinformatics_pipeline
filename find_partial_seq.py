@@ -6,26 +6,22 @@ fasta_sequences = SeqIO.parse(open('./database/mifish_complete_partial.fasta'),'
 for fasta in fasta_sequences:
     name, seq = fasta.description, str(fasta.seq)
     complete_partial[name] = seq
- 
+print(len(complete_partial))
+partial = complete_partial.copy()
+
 fasta_sequences = SeqIO.parse(open('./database/mifish_complete.fasta'),'fasta')
 for fasta in fasta_sequences:
     name, seq = fasta.description, str(fasta.seq)
     complete[name] = seq
+print(len(complete))
 
-partial = set(complete_partial) - set(complete)
+for name, seq in complete_partial.items():
+    if seq in complete.values():
+        partial.pop(name)
+print(len(partial))
 
-print("found difference.")
+partial_list = [f'>{name}\n{seq}' for name, seq in partial.items()]
+text = ''.join(f"{row}\n" for row in partial_list)
 
-partial_list = [f'>{k}\n{complete_partial[k]}' for k in partial]
-
-
-text = f'\n'.join(partial_list)
-print('made text.')
-# text = ""
-# for k in partial:
-#     print(k)
-#     # text += f'>{k}\n{complete_partial[k]}\n'
-
-print("start writing.")
 with open('./database/mifish_partial.fasta', 'w') as file:
     file.write(text)
