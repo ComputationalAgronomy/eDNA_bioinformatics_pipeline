@@ -29,10 +29,10 @@ class OtuAnalysis(ABC):
     def _read_seq(self, seq_path, prefix = '>'):
         with open(seq_path,'r') as file:
             seq={}
+            key_pattern = re.compile(f'^{prefix}[a-zA-Z]+\d+')
             for line in file.readlines():
-                if prefix in line:
-                    key_num = re.search(f'^{prefix}[a-zA-Z]+\d+', line).group(0)
-                    key_num = re.sub(f'^{prefix}[a-zA-Z]+', '', key_num)
+                if key_pattern.match(line):
+                    key_num = key_pattern.match(line).group()
                     seq[key_num]=""
                 else:
                     seq[key_num] = seq[key_num] + line.strip()
@@ -322,5 +322,15 @@ if __name__ == '__main__':
     # a.within_otu_align(1, 'Zotu5', save=False)
     # a.analysis_species(sample_num=1, species_name='Sardinella_fijiensis')
     # a.usum_sample()
-    # a.barplot_sample(sample_num=2, level='family', save=False)
+    a.barplot_sample(sample_num=2, level='family', save=False)
     # a.barplot_all('family', save=True)
+    # spc_4_dict = a.barplot_sample(num=4, level='species')
+    # spc_5_dict = a.barplot_sample(num=5, level='species')
+    # all_dict = [spc_3_dict, spc_4_dict, spc_5_dict]
+    # all_key = set().union(*all_dict)
+    # with open('./cleandata/test/NC_024836.1.fasta', 'r')as file:
+    #     lines = file.readlines()
+    #     text = lines[0]+lines[4][68:].strip()+lines[5].strip()+lines[6].strip()+lines[7][:24]
+    #     print(text)
+    # with open('./cleandata/test/NC_024836.1.12s.fasta', 'w')as file:
+    #     file.write(text)
