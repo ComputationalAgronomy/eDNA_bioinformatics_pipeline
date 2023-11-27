@@ -29,13 +29,14 @@ class OtuAnalysis(ABC):
     def _read_seq(self, seq_path, prefix = '>'):
         with open(seq_path,'r') as file:
             seq={}
-            key_pattern = re.compile(f'^{prefix}[a-zA-Z]+\d+')
+            haploid_pattern = re.compile(f'{prefix}[a-zA-Z]+\d+')
             for line in file.readlines():
-                if key_pattern.match(line):
-                    key_num = key_pattern.match(line).group()
-                    seq[key_num]=""
+                match = haploid_pattern.match(line)
+                if match:
+                    haploid = match.group().replace(prefix,'')
+                    seq[haploid] = ''
                 else:
-                    seq[key_num] = seq[key_num] + line.strip()
+                    seq[haploid] = seq[haploid] + line.strip()
             return seq
 
     @staticmethod
@@ -116,7 +117,7 @@ class OtuAnalysis(ABC):
     #plot MSA between unique sequences in one OTU.
     def within_otu_align(self, sample_num, otu_name, save=False):
         uniq_list = self.sample[sample_num]['otu2unique'][otu_name]
-        seq = [self.sample[sample_num]['uniq_seq'][uniq] for uniq in uniq_list]
+        seq = [self.sample[sample_num]['uniq_seq'][f'Uniq{uniq}'] for uniq in uniq_list]
         text = ""
         for i, subseq in enumerate(seq):
             subseq = self._split_lines(subseq)
@@ -145,7 +146,7 @@ class OtuAnalysis(ABC):
             seq = ''
             otu2unique = self.sample[sample_num]['otu2unique'][otu_name]
             for uniq in otu2unique:
-                subseq = self.sample[sample_num]['uniq_seq'][uniq]
+                subseq = self.sample[sample_num]['uniq_seq'][f'Uniq{uniq}']
                 subseq = self._split_lines(subseq)
                 seq = seq + f'>Uniq{uniq}\n{subseq}\n'
             with open(f'./tmp/{otu_name}.fasta', 'w') as f:
@@ -158,7 +159,7 @@ class OtuAnalysis(ABC):
     
         seq = ''
         for otu in otu_list:
-            subseq = self.sample[sample_num]['otu_seq'][otu.replace('Zotu','')]
+            subseq = self.sample[sample_num]['otu_seq'][otu]
             subseq = self._split_lines(subseq)
             seq = seq + f'>{otu}\n{subseq}\n'
         with open('./tmp/seq.fa', 'w') as f:
@@ -183,7 +184,7 @@ class OtuAnalysis(ABC):
             seq = ''
             otu_list = self.species2otu[spc_name]
             for otu in otu_list:
-                subseq = self.sample[sample_num]['otu_seq'][otu.replace('Zotu','')]
+                subseq = self.sample[sample_num]['otu_seq'][otu]
                 subseq = self._split_lines(subseq)
                 seq = seq + f'>{otu}\n{subseq}\n'
             with open(f'./tmp/{spc_name}.fasta', 'w') as f:
@@ -320,17 +321,7 @@ if __name__ == '__main__':
     a = Zotu()
     a.import_data(read_dir='./cleandata')
     # a.within_otu_align(1, 'Zotu5', save=False)
-    # a.analysis_species(sample_num=1, species_name='Sardinella_fijiensis')
+    a.analysis_species(sample_num=1, species_name='Sardinella_fijiensis')
     # a.usum_sample()
-    a.barplot_sample(sample_num=2, level='family', save=False)
+    # a.barplot_sample(sample_num=2, level='family', save=False)
     # a.barplot_all('family', save=True)
-    # spc_4_dict = a.barplot_sample(num=4, level='species')
-    # spc_5_dict = a.barplot_sample(num=5, level='species')
-    # all_dict = [spc_3_dict, spc_4_dict, spc_5_dict]
-    # all_key = set().union(*all_dict)
-    # with open('./cleandata/test/NC_024836.1.fasta', 'r')as file:
-    #     lines = file.readlines()
-    #     text = lines[0]+lines[4][68:].strip()+lines[5].strip()+lines[6].strip()+lines[7][:24]
-    #     print(text)
-    # with open('./cleandata/test/NC_024836.1.12s.fasta', 'w')as file:
-    #     file.write(text)
