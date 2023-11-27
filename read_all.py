@@ -11,20 +11,24 @@ import plotly.express as px
 
 class OtuAnalysis(ABC):
 
-    def __init__(self):
-        self.sample = {}
-        # self.otu2unique = {}
-        # self.taxonomy = {}
-        # self.species2otu = {}
-        # self.genus2otu = {}
-        # self.family2otu = {}
-        # self.order2otu = {}
-        # self.uniq_seq = {}
-        # self.uniq_size = []
-        # self.uniq_type = []
-        # self.uniq_dqt = []
-        # self.otu_seq = {}
-        # self.otu_size = []
+    def __init__(self, read_dir, sample_num):
+        self.uniq_seq = {}
+        self.uniq_size = {}
+        self.otu_seq = {}
+        self.otu_size = {}
+        self.otu2unique = {}
+        self.taxonomy2otu = {'kingdom':{}, 'phylum':{}, 'class':{}, 'order':{}, 'family':{}, 'genus':{}, 'species':{}}
+
+        uniq_path = f'{read_dir}/4_derep/{sample_num}_derep.fasta'
+        otu_path = f'{read_dir}/5_haploid/zotu/{sample_num}_zotu.fasta'
+        otu_report_path = f'{read_dir}/5_haploid/zotu/{sample_num}_zotu_size.txt'
+        blast_path = f'{read_dir}/6_blastn/mifish_db/{sample_num}_zotu.csv'
+        
+        self.uniq_seq = self._read_seq(uniq_path)
+        self.otu_seq = self._read_seq(otu_path)
+        self._read_otu_report(otu_report_path)
+        self._get_otu_size()
+        self._read_blast(blast_path)
 
     def _read_seq(self, seq_path, prefix = '>'):
         with open(seq_path,'r') as file:
@@ -39,116 +43,100 @@ class OtuAnalysis(ABC):
                     seq[haploid] = seq[haploid] + line.strip()
             return seq
 
-    @staticmethod
     @abstractmethod
     def _read_otu_report(report_path):
         raise NotImplementedError
 
-    def _get_otu_size(self, num):
-        otu_size = []
-        for uniq_group in self.sample[num]['otu2unique'].values():
-            size = sum(int(self.sample[num]['uniq_size'][int(uniq)-1]) for uniq in uniq_group)
-            otu_size.append(size)
-        return otu_size
+    def _get_otu_size(self):
+        for otu, uniq_group in self.otu2unique.items():
+            size = sum(int(self.uniq_size[uniq]) for uniq in uniq_group)
+            self.otu_size[otu] = size
 
     def _read_blast(self, blast_path):
         with open(blast_path, 'r') as file:
-            species2otu, genus2otu, family2otu, order2otu, class2otu, phylum2otu, kingdom2otu = {}, {}, {}, {}, {}, {}, {}
-            family2otu['no_family_level'] = []
+            self.taxonomy2otu['family']['no_family_level'] = []
+
             for line in file.readlines():
                 blast_list = line.split(',')
                 haploid, species, genus, family, order, class_, phylum, kingdom = blast_list[0], blast_list[2], blast_list[3], blast_list[4], blast_list[5], blast_list[6], blast_list[7], blast_list[8]
-                if species not in species2otu:
-                    species2otu[species] = []
-                species2otu[species].append(haploid)
 
-                if genus not in genus2otu:
-                    genus2otu[genus] = []
-                genus2otu[genus].append(haploid)
+                if species not in self.taxonomy2otu['species']:
+                    self.taxonomy2otu['species'][species] = []
+                self.taxonomy2otu['species'][species].append(haploid)
+
+                if genus not in self.taxonomy2otu['genus']:
+                    self.taxonomy2otu['genus'][genus] = []
+                self.taxonomy2otu['genus'][genus].append(haploid)
 
                 if family=='':
-                    family2otu['no_family_level'].append(haploid)
+                    self.taxonomy2otu['family']['no_family_level'].append(haploid)
                 else:
-                    if family not in family2otu:
-                        family2otu[family] = []
-                    family2otu[family].append(haploid)
+                    if family not in self.taxonomy2otu['family']:
+                        self.taxonomy2otu['family'][family] = []
+                    self.taxonomy2otu['family'][family].append(haploid)
 
-                if order not in order2otu:
-                    order2otu[order] = []
-                order2otu[order].append(haploid)
+                if order not in self.taxonomy2otu['order']:
+                    self.taxonomy2otu['order'][order] = []
+                self.taxonomy2otu['order'][order].append(haploid)
 
-                if class_ not in class2otu:
-                    class2otu[class_] = []
-                class2otu[class_].append(haploid)
+                if class_ not in self.taxonomy2otu['class']:
+                    self.taxonomy2otu['class'][class_] = []
+                self.taxonomy2otu['class'][class_].append(haploid)
 
-                if phylum not in phylum2otu:
-                    phylum2otu[phylum] = []
-                phylum2otu[phylum].append(haploid)
+                if phylum not in self.taxonomy2otu['phylum']:
+                    self.taxonomy2otu['phylum'][phylum] = []
+                self.taxonomy2otu['phylum'][phylum].append(haploid)
 
-                if kingdom not in kingdom2otu:
-                    kingdom2otu[kingdom] = []
-                kingdom2otu[kingdom].append(haploid)
+                if kingdom not in self.taxonomy2otu['kingdom']:
+                    self.taxonomy2otu['kingdom'][kingdom] = []
+                self.taxonomy2otu['kingdom'][kingdom].append(haploid)
 
-        return species2otu, genus2otu, family2otu, order2otu, class2otu, phylum2otu, kingdom2otu
-
-    # import derep.fasta, otu.fasta, otu_size.txt to get relationship between OTUs and unique sequences. 
-    def import_data(self, read_dir):
-        for num in range(1, 19):
-            uniq_path = f'{read_dir}/4_derep/{num}_derep.fasta'
-            otu_path = f'{read_dir}/5_haploid/zotu/{num}_zotu.fasta'
-            otu_report_path = f'{read_dir}/5_haploid/zotu/{num}_zotu_size.txt'
-            blast_path = f'{read_dir}/6_blastn/mifish_db/{num}_zotu.csv'
-
-            uniq_seq = self._read_seq(uniq_path)
-            otu_seq = self._read_seq(otu_path)
-            otu2unique, uniq_size, uniq_type, uniq_dqt = self._read_otu_report(otu_report_path)
-            self.sample[num]={'uniq_seq':uniq_seq, 'otu_seq':otu_seq, 'otu2unique':otu2unique, 'uniq_size':uniq_size, 'uniq_type':uniq_type, 'uniq_dqt':uniq_dqt}
-            self.sample[num]['otu_size'] = self._get_otu_size(num)
-            species2otu, genus2otu, family2otu, order2otu, class2otu, phylum2otu, kingdom2otu= self._read_blast(blast_path)
-            level_dict = {'species2otu':species2otu, 'genus2otu':genus2otu, 'family2otu':family2otu, 'order2otu':order2otu, 'class2otu':class2otu, 'phylum2otu':phylum2otu, 'kingdom2otu':kingdom2otu}
-            self.sample[num].update(level_dict)
-    
     # Split the sequences to conform to the fasta format.
     @staticmethod
     def _split_lines(seq):
         lines = [seq[i:i+59] for i in range(0, len(seq), 60)]
         return '\n'.join(lines)
     
+    @staticmethod
+    def make_tmp_dir():
+        if not os.path.isdir('./tmp/'):
+            os.makedirs('./tmp/')
+
     #plot MSA between unique sequences in one OTU.
-    def within_otu_align(self, sample_num, otu_name, save=False):
-        uniq_list = self.sample[sample_num]['otu2unique'][otu_name]
-        seq = [self.sample[sample_num]['uniq_seq'][f'Uniq{uniq}'] for uniq in uniq_list]
+    def within_otu_align(self, otu_name, save=False):
+        self.make_tmp_dir()
+
+        uniq_list = self.otu2unique[otu_name]
         text = ""
-        for i, subseq in enumerate(seq):
-            subseq = self._split_lines(subseq)
-            text = f"{text}>Uniq{uniq_list[i]}\n{subseq}\n"
-        with open('seq.fa', 'w') as f:
+        for uniq in uniq_list:
+            text = text + f'>{uniq}\n{self.uniq_seq[uniq]}\n'
+        with open('./tmp/seq.fa', 'w') as f:
             f.write(text)
         
-        cmd = 'clustalo -i seq.fa -o seq.aln'
+        cmd = 'clustalo -i ./tmp/seq.fa -o ./tmp/seq.aln'
         os.system(cmd)
-        os.remove('seq.fa')
-        if os.path.exists('seq.aln'):
-            mv = MsaViz('seq.aln', wrap_length=60, show_count=True, show_grid=False, show_consensus=True)
+
+        if os.path.exists('./tmp/seq.aln'):
+            mv = MsaViz('./tmp/seq.aln', wrap_length=60, show_count=True, show_grid=False, show_consensus=True)
             mv.plotfig()
             if save==True:
                 mv.savefig(f'{otu_name}.png')
-            os.remove('seq.aln')
         else:
             print(f'{otu_name} contains 1 sequence, nothing to align')
+        
+        shutil.rmtree('./tmp/')
 
     # plot UMAP and alignment between OTUs in one species.
-    def analysis_species(self, sample_num, species_name):
-        if not os.path.isdir('./tmp/'):
-            os.makedirs('./tmp/')
-        otu_list = self.sample[sample_num]['species2otu'][species_name]
+    def analysis_species(self, species_name):
+        self.make_tmp_dir()
+
+        otu_list = self.taxonomy2otu['species'][species_name]
         for otu_name in otu_list:
             seq = ''
-            otu2unique = self.sample[sample_num]['otu2unique'][otu_name]
-            for uniq in otu2unique:
-                subseq = self.sample[sample_num]['uniq_seq'][f'Uniq{uniq}']
+            for uniq in self.otu2unique[otu_name]:
+                subseq = self.uniq_seq[uniq]
                 subseq = self._split_lines(subseq)
-                seq = seq + f'>Uniq{uniq}\n{subseq}\n'
+                seq = seq + f'>{uniq}\n{subseq}\n'
             with open(f'./tmp/{otu_name}.fasta', 'w') as f:
                 f.write(seq)
         file_list = ['./tmp/' + otu + '.fasta' for otu in otu_list]
@@ -159,7 +147,7 @@ class OtuAnalysis(ABC):
     
         seq = ''
         for otu in otu_list:
-            subseq = self.sample[sample_num]['otu_seq'][otu]
+            subseq = self.otu_seq[otu]
             subseq = self._split_lines(subseq)
             seq = seq + f'>{otu}\n{subseq}\n'
         with open('./tmp/seq.fa', 'w') as f:
@@ -170,30 +158,30 @@ class OtuAnalysis(ABC):
         mv.plotfig()
         mv.savefig(f'./{species_name}/alignment.png')
         
-        cmd = f'iqtree2 -m GTR+F+I+G4 -s ./tmp/seq.aln -b 1000 --prefix {species_name}'
+        cmd = f'iqtree2 -m GTR+F+I+G4 -s ./tmp/seq.aln -b 10 --prefix {species_name}'
         os.system(cmd)
         cmd = f'move {species_name}.* {species_name}'
         os.system(cmd)
 
         shutil.rmtree('./tmp/')
 
-    def usum_sample(self, sample_num):
-        if not os.path.isdir('./tmp/'):
-            os.makedirs('./tmp/')
-        for spc_name in self.sample[sample_num]['species2otu']:
+    def usum_sample(self):
+        self.make_tmp_dir()
+
+        for species in self.taxonomy2otu['species']:
             seq = ''
-            otu_list = self.species2otu[spc_name]
+            otu_list = self.taxonomy2otu['species'][species]
             for otu in otu_list:
-                subseq = self.sample[sample_num]['otu_seq'][otu]
+                subseq = self.otu_seq[otu]
                 subseq = self._split_lines(subseq)
                 seq = seq + f'>{otu}\n{subseq}\n'
-            with open(f'./tmp/{spc_name}.fasta', 'w') as f:
-                f.write(seq)
+            with open(f'./tmp/{species}.fasta', 'w') as file:
+                file.write(seq)
 
-        file_list = ['./tmp/' + spc + '.fasta' for spc in self.sample[sample_num]['species2otu']]
+        file_list = ['./tmp/' + species + '.fasta' for species in self.taxonomy2otu['species']]
         file_string = ' '.join(file_list)
-        spc_string = ' '.join(self.sample[sample_num]['species2otu'].keys())
-        cmd = f'usum {file_string} --labels {spc_string} --maxdist 1.0 --termdist 1.0 --output sample{sample_num} -f'
+        species_string = ' '.join(self.taxonomy2otu['species'].keys())
+        cmd = f'usum {file_string} --labels {species_string} --maxdist 1.0 --termdist 1.0 --output sample -f'
         os.system(cmd)
         shutil.rmtree('./tmp/')
 
@@ -245,83 +233,59 @@ class OtuAnalysis(ABC):
 class Otu(OtuAnalysis):
     def _read_otu_report(self, otu_report_path):
         with open(otu_report_path, 'r') as file:
-            otu2unique, uniq_size, uniq_type, uniq_dqt = {}, [], [], []
             for line in file.readlines():
-                line = line.split(';')
-                u_size = line[1].replace('size=','')
-                if 'otu' in line[2]:
-                    u_type = 'otu'
-                    dqt = 0
-                    u_top = re.search(r'otu\d+', line[2]).group(0).replace('o','O')
-                if 'perfect\s' in line[2]:
-                    u_type = 'perfect'
-                    dqt = 0
-                    u_top = re.search(r'top=[a-zA-Z]+\d+', line[2]).group(0).replace('top=','')
-                if 'match' in line[2] or 'noisy' in line[2] or 'perfect_chimera' in line[2]:
-                    u_type = 'match' if 'match' in line[2] else u_type
-                    u_type = 'noisy_chimera' if 'noisy' in line[2] else u_type
-                    u_type = 'perfect_chimera' if 'perfect_chimera' in line[2] else u_type
-                    dqt = re.search(r'dqt=\d+', line[2]).group(0).replace('dqt=','')
-                    top = re.search(r'top=[a-zA-Z]+\d+', line[3])
-                    u_top = top.group(0).replace('top=','') if top is not None else -99
-                if u_top not in otu2unique:
-                    otu2unique[u_top] = []
-                otu2unique[u_top].append(line[0].replace('Uniq',''))
-                uniq_size.append(u_size)
-                uniq_type.append(u_type)
-                uniq_dqt.append(dqt)
-        return otu2unique, uniq_size, uniq_type, uniq_dqt
+                line_list = line.split(';')
+                haploid, uniq_size = line_list[0], line_list[1].replace('size=','')
+                if 'otu' in line_list[2]:
+                    uniq_top = re.search(r'otu\d+', line[2]).group(0).replace('o','O')
+                elif 'perfect\s' in line[2] or 'match' in line[2] or 'noisy' in line[2] or 'perfect_chimera' in line[2] :
+                    uniq_top = re.search(r'top=[a-zA-Z]+\d+', line).group(0).replace('top=','')
+                
+                if uniq_top not in self.otu2unique:
+                    self.otu2unique[uniq_top] = []
+                self.otu2unique[uniq_top].append(line[0].replace('Uniq',''))
+                self.uniq_size[haploid] = uniq_size
 
 class Zotu(OtuAnalysis):
-    @staticmethod
-    def _read_otu_report(otu_report_path):
+    def _read_otu_report(self, otu_report_path):
         with open(otu_report_path, 'r') as file:
-            otu2unique, uniq_size, uniq_type, uniq_dqt = {}, [], [], []
             zotu_num = 1
             chi_num = 1
             for line in file.readlines():
-                line = line.split(';')
-                u_size = line[1].replace('size=','')
-                if 'amp' in line[2]:
-                    u_type = ''
-                    dqt = 0
-                    u_top = line[0]
-                if 'shifted' in line[2]:
-                    u_type = 'shifted'
-                    dqt = 0
-                    u_top = re.search(r'top=Uniq\d+', line[3]).group(0).replace('top=','')
-                if 'bad' in line[2]:
-                    u_type = 'bad'
-                    dqt = re.search(r'dqt=\d+', line[2]).group(0).replace('dqt=','')
-                    u_top = re.search(r'top=Uniq\d+', line[3]).group(0).replace('top=','')
-                if 'chfilter' not in line[2]:
-                    if u_top not in otu2unique:
-                        otu2unique[u_top] = []
-                    otu2unique[u_top].append(line[0].replace('Uniq',''))
-                    uniq_size.append(u_size)
-                    uniq_type.append(u_type)
-                    uniq_dqt.append(dqt)
-                else:
-                    uniq_num = int(line[0].replace('Uniq',''))-1
-                    if 'zotu' in line[2]:
+                line_list = line.split(';')
+                haploid= line_list[0] 
+                if 'denoise' in line_list[2]:
+                    if 'amp' in line_list[2]:
+                        uniq_top = haploid
+                    elif 'shifted' in line_list[2] or 'bad' in line_list[2]:
+                        uniq_top = re.search(r'top=Uniq\d+', line_list[3]).group(0).replace('top=','')
+
+                    if uniq_top not in self.otu2unique:
+                        self.otu2unique[uniq_top] = []
+                    self.otu2unique[uniq_top].append(haploid)
+                    self.uniq_size[haploid] = line_list[1].replace('size=','')
+
+                elif 'chfilter' in line_list[2]:
+                    if 'zotu' in line_list[2]:
                         k_new = f'Zotu{zotu_num}'
-                        otu2unique[k_new] = otu2unique.pop(line[0])
-                        uniq_type[uniq_num] = 'zotu'
+                        self.otu2unique[k_new] = self.otu2unique.pop(haploid)
                         zotu_num += 1
-                    if 'chimera' in line[2]:
+                    elif 'chimera' in line_list[2]:
                         k_new = f'Chimera{chi_num}'
-                        otu2unique[k_new] = otu2unique.pop(line[0])
-                        uniq_type[uniq_num] = 'chimera'
-                        uniq_dqt[uniq_num] = line[3].replace('dpt=','')
+                        self.otu2unique[k_new] = self.otu2unique.pop(haploid)
                         chi_num += 1
-        return otu2unique, uniq_size, uniq_type, uniq_dqt
+
+class SumAllSample:
+    def __init__(self):
+        self.sample_list = []
+
+    def add_sample(self, num_list):
+        pass
 
 if __name__ == '__main__':
-    
-    a = Zotu()
-    a.import_data(read_dir='./cleandata')
-    # a.within_otu_align(1, 'Zotu5', save=False)
-    a.analysis_species(sample_num=1, species_name='Sardinella_fijiensis')
-    # a.usum_sample()
+    sample1 = Zotu(read_dir='./cleandata', sample_num=1)
+    # a.within_otu_align('Zotu5', save=False)
+    # a.analysis_species(species_name='Sardinella_fijiensis')
+    # sample1.usum_sample()
     # a.barplot_sample(sample_num=2, level='family', save=False)
     # a.barplot_all('family', save=True)
