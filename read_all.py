@@ -55,6 +55,7 @@ class OtuAnalysis(ABC):
     def _read_blast(self, blast_path):
         with open(blast_path, 'r') as file:
             self.taxonomy2otu['family']['no_family_level'] = []
+            self.taxonomy2otu['order']['no_order_level'] = []
 
             for line in file.readlines():
                 blast_list = line.split(',')
@@ -75,9 +76,12 @@ class OtuAnalysis(ABC):
                         self.taxonomy2otu['family'][family] = []
                     self.taxonomy2otu['family'][family].append(haploid)
 
-                if order not in self.taxonomy2otu['order']:
-                    self.taxonomy2otu['order'][order] = []
-                self.taxonomy2otu['order'][order].append(haploid)
+                if order == '':
+                    self.taxonomy2otu['order']['no_order_level'].append(haploid)
+                else:
+                    if order not in self.taxonomy2otu['order']:
+                        self.taxonomy2otu['order'][order] = []
+                    self.taxonomy2otu['order'][order].append(haploid)
 
                 if class_ not in self.taxonomy2otu['class']:
                     self.taxonomy2otu['class'][class_] = []
@@ -211,27 +215,6 @@ class OtuAnalysis(ABC):
         if save==True:
             fig.write_html(f'sample_{level}_bar_chart.html')
 
-    def barplot_all(self, level, save=True):
-        sample_dict = {}
-        for num in range(1, 19):
-            level_dict = self.sample[num][f'{level}2otu']
-            level_size = self._get_level_size(sample_num=num, level_dict=level_dict)
-            sample_dict[f'sample{num}'] = level_size
-        
-        sample_list = [sample_dict[f'sample{num}'] for num in range(1,19)]
-        all_key = list(set().union(*sample_list))
-        all_key.sort()
-
-        for num in range(1, 19):
-            sample_dict[f'sample{num}'] = [sample_dict[f'sample{num}'].get(key, 0) for key in all_key]
-
-        plotdata = pd.DataFrame(sample_dict, index=all_key)
-        fig = px.bar(plotdata.transpose(), barmode='stack', labels={'value': 'Percentage (%)'},color_discrete_sequence=px.colors.qualitative.Pastel)
-        fig.update_layout(xaxis_title="Sample No.", yaxis_title="Percentage (%)", legend=dict(x=1.05, y=1, traceorder='normal', orientation='h'))
-        fig.show()
-        if save==True:
-            fig.write_html(f'{level}_bar_chart.html')
-
 class Otu(OtuAnalysis):
     def _read_otu_report(self, otu_report_path):
         with open(otu_report_path, 'r') as file:
@@ -279,15 +262,49 @@ class Zotu(OtuAnalysis):
 
 class SumAllSample:
     def __init__(self):
-        self.sample_list = []
+        self.sample_dict = {}
 
-    def add_sample(self, num_list):
-        pass
+    def add_sample(self, read_dir, samplenum_list):
+        for sample_num in samplenum_list:
+            self.sample_dict[sample_num] = Zotu(read_dir='./cleandata', sample_num=sample_num)
+
+    def barplot_all(self, level, samplenum_list, save=True):
+        sample_size = {}
+        level2otu = {}
+        for sample_num in samplenum_list:
+            sample_size[sample_num] = {}
+            level2otu[sample_num] = self.sample_dict[sample_num].taxonomy2otu[level]
+            for key, otu_list in level2otu[sample_num].items():
+                size = 0
+                for otu in otu_list:
+                    size = size + self.sample_dict[sample_num].otu_size[otu]
+                sample_size[sample_num][key] = size
+            total_size = sum(sample_size[sample_num].values())
+            for key in sample_size[sample_num].keys():
+                sample_size[sample_num][key] = sample_size[sample_num][key]/total_size * 100
+
+        samplesize_list = [sample_size[sample_num] for sample_num in samplenum_list]
+        all_keys = list(set().union(*samplesize_list))
+        all_keys.sort()
+
+        for sample_num in samplenum_list:
+            sample_size[sample_num] = [sample_size[sample_num].get(key, 0) for key in all_keys]
+
+        plotdata = pd.DataFrame(sample_size, index=all_keys)
+        fig = px.bar(plotdata.transpose(), barmode='stack', labels={'value': 'Percentage (%)'},color_discrete_sequence=px.colors.qualitative.Pastel)
+        fig.update_xaxes(tickmode='linear')
+        fig.update_layout(xaxis_title="Sample No.", yaxis_title="Percentage (%)", legend=dict(x=1.05, y=1, traceorder='normal', orientation='h'))
+        fig.show()
+        if save==True:
+            fig.write_html(f'{level}_bar_chart.html')
 
 if __name__ == '__main__':
-    sample1 = Zotu(read_dir='./cleandata', sample_num=1)
+    # sample1 = Zotu(read_dir='./cleandata', sample_num=1)
     # sample1.within_otu_align('Zotu5', save=False)
     # sample1.analysis_species(species_name='Sardinella_fijiensis')
     # sample1.usum_sample()
     # sample1.barplot_sample(level='family', save=False)
     # sample1.barplot_all('family', save=True)
+    a = SumAllSample()
+    a.add_sample(read_dir='./cleandata', samplenum_list=range(1,19))
+    a.barplot_all(level='species', samplenum_list=range(1, 19), save=False)
