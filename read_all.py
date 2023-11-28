@@ -144,7 +144,7 @@ class OtuAnalysis(ABC):
         otu_string = ' '.join(otu_list)
         cmd = f'usum {file_string} --labels {otu_string} --maxdist 1.0 --termdist 1.0 --output {species_name} -f'
         os.system(cmd)
-    
+
         seq = ''
         for otu in otu_list:
             subseq = self.otu_seq[otu]
@@ -185,30 +185,32 @@ class OtuAnalysis(ABC):
         os.system(cmd)
         shutil.rmtree('./tmp/')
 
-    def _get_level_size(self, sample_num, level_dict):
+    def _get_level_size(self, level_dict):
         level_size = {}
+
         for key, otu_list in level_dict.items():
             size = 0
             for otu in otu_list:
-                x = int(re.findall(r'\d+', otu)[0])-1
-                size = size + self.sample[sample_num]['otu_size'][x]
+                size = size + int(self.otu_size[otu])
             level_size[key] = size
+
         total_size = sum(level_size.values())
         for key in level_size.keys():
             level_size[key] = level_size[key]/total_size * 100
+
         return level_size
 
-    def barplot_sample(self, sample_num, level, save=True):
-        level_dict = self.sample[sample_num][f'{level}2otu']
-        level_size = self._get_level_size(sample_num, level_dict)
+    def barplot_sample(self, level, save=True):
+        level_dict = self.taxonomy2otu[level]
+        level_size = self._get_level_size(level_dict)
 
-        plotdata = pd.DataFrame(level_size, index=[f'sample{sample_num}'])
+        plotdata = pd.DataFrame(level_size, index=[f'sample'])
         fig = px.bar(plotdata, barmode='stack', labels={'value': 'Percentage (%)'},color_discrete_sequence=px.colors.qualitative.Pastel)
         fig.update_layout(xaxis_title="Sample No.", yaxis_title="Percentage (%)", legend=dict(x=1.05, y=1, traceorder='normal', orientation='h'))
         fig.show()
         if save==True:
-            fig.write_html(f'{level}_sample{sample_num}_bar_chart.html')
-        
+            fig.write_html(f'sample_{level}_bar_chart.html')
+
     def barplot_all(self, level, save=True):
         sample_dict = {}
         for num in range(1, 19):
@@ -284,8 +286,8 @@ class SumAllSample:
 
 if __name__ == '__main__':
     sample1 = Zotu(read_dir='./cleandata', sample_num=1)
-    # a.within_otu_align('Zotu5', save=False)
-    # a.analysis_species(species_name='Sardinella_fijiensis')
+    # sample1.within_otu_align('Zotu5', save=False)
+    # sample1.analysis_species(species_name='Sardinella_fijiensis')
     # sample1.usum_sample()
-    # a.barplot_sample(sample_num=2, level='family', save=False)
-    # a.barplot_all('family', save=True)
+    # sample1.barplot_sample(level='family', save=False)
+    # sample1.barplot_all('family', save=True)
