@@ -1,27 +1,52 @@
 from Bio import SeqIO
+import copy
 
-complete_partial = {}
+all = {}
 complete = {}
-fasta_sequences = SeqIO.parse(open('./database/mifish_complete_partial.fasta'),'fasta')
+
+fasta_sequences = SeqIO.parse(open('./mifish_all.fasta'),'fasta')
 for fasta in fasta_sequences:
     name, seq = fasta.description, str(fasta.seq)
-    complete_partial[name] = seq
-print(len(complete_partial))
-partial = complete_partial.copy()
+    all[name] = seq
+print(len(all))
+partial = copy.deepcopy(all)
 
-fasta_sequences = SeqIO.parse(open('./database/mifish_complete.fasta'),'fasta')
+fasta_sequences = SeqIO.parse(open('./mifish_complete.fasta'),'fasta')
 for fasta in fasta_sequences:
     name, seq = fasta.description, str(fasta.seq)
     complete[name] = seq
 print(len(complete))
+rest = copy.deepcopy(complete)
 
-for name, seq in complete_partial.items():
-    if seq in complete.values():
-        partial.pop(name)
-print(len(partial))
+for name, seq in all.items():
+    repl = []
+    for key, value in complete.items():
+        if value == seq:
+            repl.append(key)
+    if len(repl)>1:
+        print(repl)            
+    
 
-partial_list = [f'>{name}\n{seq}' for name, seq in partial.items()]
-text = ''.join(f"{row}\n" for row in partial_list)
+# print(rest)
+# partial_list = [f'>{name}\n{seq}\n' for name, seq in partial.items()]
+# text = ''.join(partial_list)
 
-with open('./database/mifish_partial.fasta', 'w') as file:
-    file.write(text)
+# with open('./mifish_partial.fasta', 'w') as file:
+#     file.write(text)
+
+
+# fasta_new = open('./database/mifish_complete_.fasta', 'w')
+# fasta_sequences = SeqIO.parse(open('./database/mifish_complete.fasta'),'fasta')
+# for fasta in fasta_sequences:
+#     name, seq = fasta.description, str(fasta.seq)
+#     name = name.replace(' ', '_')
+#     fasta_new.write(f'>{name}\n{seq}\n')
+# fasta_new.close()
+
+# fasta_new = open('./mifish_complete_.fasta', 'w')
+# fasta_sequences = SeqIO.parse(open('./mifish_complete.fasta'),'fasta')
+# for fasta in fasta_sequences:
+#     name, seq = fasta.description, str(fasta.seq)
+#     name = name.replace(' ', '_')
+#     fasta_new.write(f'>{name}\n{seq}\n')
+# fasta_new.close()
