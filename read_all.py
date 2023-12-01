@@ -104,13 +104,30 @@ class OtuAnalysis(ABC):
         return '\n'.join(lines)
     
     @staticmethod
-    def make_tmp_dir():
+    def _make_tmp_dir():
         if not os.path.isdir('./tmp/'):
             os.makedirs('./tmp/')
 
+    @staticmethod
+    def _make_umap(file_string, save_folder_name):
+        cmd = f'usum {file_string} --maxdist 1.0 --termdist 1.0 --output {save_folder_name} -f'
+        subprocess.run(cmd, shell=True)
+
+    @staticmethod
+    def _make_align_file(seq_file, aln_file):
+        cmd = f'clustalo -i {seq_file} -o {aln_file}'
+        subprocess.run(cmd, shell=True)
+
+    @staticmethod
+    def _show_alignment(aln_seq_path, save_path, save_png=True):
+        mv = MsaViz(aln_seq_path, wrap_length=60, show_count=True, show_grid=False, show_consensus=True)
+        mv.plotfig()
+        if save_png==True:
+            mv.savefig(save_path)
+
     #plot MSA between unique sequences in one OTU.
-    def within_otu_align(self, otu_name, save=False):
-        self.make_tmp_dir()
+    def within_otu_align(self, otu_name, save_align_png=False, save_dir='.'):
+        self._make_tmp_dir()
 
         uniq_list = self.otu2unique[otu_name]
         text = ""
@@ -119,22 +136,18 @@ class OtuAnalysis(ABC):
         with open('./tmp/seq.fa', 'w') as f:
             f.write(text)
         
-        cmd = 'clustalo -i ./tmp/seq.fa -o ./tmp/seq.aln'
-        subprocess.Popen(cmd, shell=True)
+        self._make_align_file(seq_file='./tmp/seq.fa', aln_file='./tmp/seq.aln')
 
         if os.path.exists('./tmp/seq.aln'):
-            mv = MsaViz('./tmp/seq.aln', wrap_length=60, show_count=True, show_grid=False, show_consensus=True)
-            mv.plotfig()
-            if save==True:
-                mv.savefig(f'{otu_name}.png')
+            self._show_alignment(aln_seq_path='./tmp/seq.aln', save_path=f'{save_dir}/{otu_name}.png', save_png=save_align_png)
         else:
             print(f'{otu_name} contains 1 sequence, nothing to align')
         
         shutil.rmtree('./tmp/')
 
     # plot UMAP and alignment between OTUs in one species.
-    def analysis_species(self, species_name, make_phylogenetic_tree=False, bootstrap_times=100):
-        self.make_tmp_dir()
+    def analysis_species(self, species_name, save_dir='.', save_align_png=True, make_phylogenetic_tree=False, bootstrap_times=100):
+        self._make_tmp_dir()
 
         otu_list = self.taxonomy2otu['species'][species_name]
         for otu_name in otu_list:
@@ -147,9 +160,7 @@ class OtuAnalysis(ABC):
                 f.write(seq)
         file_list = ['./tmp/' + otu + '.fasta' for otu in otu_list]
         file_string = ' '.join(file_list)
-        otu_string = ' '.join(otu_list)
-        cmd = f'usum {file_string} --labels {otu_string} --maxdist 1.0 --termdist 1.0 --output {species_name} -f'
-        subprocess.Popen(cmd, shell=True)
+        self._make_umap(file_string=file_string, save_folder_name=f'{save_dir}/{species_name}')
 
         seq = ''
         for otu in otu_list:
@@ -158,23 +169,24 @@ class OtuAnalysis(ABC):
             seq = seq + f'>{otu}\n{subseq}\n'
         with open('./tmp/seq.fa', 'w') as f:
             f.write(seq)
-        cmd = 'clustalo -i ./tmp/seq.fa -o ./tmp/seq.aln'
-        subprocess.Popen(cmd, shell=True)
-
-        mv = MsaViz('./tmp/seq.aln', wrap_length=60, show_count=True, show_grid=False, show_consensus=True)
-        mv.plotfig()
-        mv.savefig(f'./{species_name}/alignment.png')
         
+        self._make_align_file(seq_file='./tmp/seq.fa', aln_file='./tmp/seq.aln')
+        
+        if os.path.exists('./tmp/seq.aln'):
+            self._show_alignment(aln_seq_path='./tmp/seq.aln', save_path=f'{save_dir}/{species_name}/alignment.png', save_png=save_align_png)
+        else:
+            print(f'{species_name} contains 1 sequence, nothing to align')
+
         if make_phylogenetic_tree==True:
             cmd = f'iqtree2 -m GTR+F+I+G4 -s ./tmp/seq.aln -b {bootstrap_times} --prefix {species_name}'
-            subprocess.Popen(cmd, shell=True)
-            cmd = f'move {species_name}.* {species_name}'
-            subprocess.Popen(cmd, shell=True)
+            subprocess.run(cmd, shell=True)
+            cmd = f'move {species_name}.* {save_dir}/{species_name}'
+            subprocess.run(cmd, shell=True)
 
-        # shutil.rmtree('./tmp/')
+        shutil.rmtree('./tmp/')
 
-    def analysis_species_subspecies(self, species_name, make_phylogenetic_tree=False, bootstrap_times=100):
-        self.make_tmp_dir()
+    def analysis_species_subspecies(self, species_name, save_dir='.', save_align_png=True, make_phylogenetic_tree=False, bootstrap_times=100):
+        self._make_tmp_dir()
         
         species_list = [species for species in self.taxonomy2otu['species'].keys() if species_name in species]
         
@@ -192,8 +204,7 @@ class OtuAnalysis(ABC):
         file_list = os.listdir('./tmp')
         file_list = [f'./tmp/{file}' for file in file_list]
         file_string = ' '.join(file_list)
-        cmd = f'usum {file_string} --maxdist 1.0 --termdist 1.0 --output {species_name} -f'
-        subprocess.Popen(cmd, shell=True)
+        self._make_umap(file_string=file_string, save_folder_name=f'{save_dir}/{species_name}')
 
         seq = ''
         for species in species_list:
@@ -204,24 +215,26 @@ class OtuAnalysis(ABC):
                 seq = seq + f'>{otu}\n{subseq}\n'
         with open('./tmp/seq.fa', 'w') as f:
             f.write(seq)
-        cmd = 'clustalo -i ./tmp/seq.fa -o ./tmp/seq.aln'
-        subprocess.Popen(cmd, shell=True)
-        mv = MsaViz('./tmp/seq.aln', wrap_length=60, show_count=True, show_grid=False, show_consensus=True)
-        mv.plotfig()
-        mv.savefig(f'./{species_name}/alignment.png')
         
+        self._make_align_file(seq_file='./tmp/seq.fa', aln_file='./tmp/seq.aln')
+        
+        if os.path.exists('./tmp/seq.aln'):
+            self._show_alignment(aln_seq_path='./tmp/seq.aln', save_path=f'{save_dir}/{species_name}/alignment.png', save_png=save_align_png)
+        else:
+            print(f'{species_name} contains 1 sequence, nothing to align')
+
         if make_phylogenetic_tree==True:
             cmd = f'iqtree2 -m GTR+F+I+G4 -s ./tmp/seq.aln -b {bootstrap_times} --prefix {species_name}'
-            subprocess.Popen(cmd, shell=True)
-            cmd = f'move {species_name}.* {species_name}'
-            subprocess.Popen(cmd, shell=True)
+            subprocess.run(cmd, shell=True)
+            cmd = f'move {species_name}.* {save_dir}/{species_name}'
+            subprocess.run(cmd, shell=True)
 
         shutil.rmtree('./tmp/')
 
-    def usum_sample(self):
-        self.make_tmp_dir()
+    def usum_sample(self, save_dir='.'):
+        self._make_tmp_dir()
 
-        for species in self.taxonomy2otu['species']:
+        for species in self.taxonomy2otu['species'].keys():
             seq = ''
             otu_list = self.taxonomy2otu['species'][species]
             for otu in otu_list:
@@ -233,9 +246,8 @@ class OtuAnalysis(ABC):
 
         file_list = ['./tmp/' + species + '.fasta' for species in self.taxonomy2otu['species']]
         file_string = ' '.join(file_list)
-        species_string = ' '.join(self.taxonomy2otu['species'].keys())
-        cmd = f'usum {file_string} --labels {species_string} --maxdist 1.0 --termdist 1.0 --output sample -f'
-        subprocess.Popen(cmd, shell=True)
+        self._make_umap(file_string=file_string, save_folder_name=f'{save_dir}/sample')
+
         shutil.rmtree('./tmp/')
 
     def _get_level_size(self, level_dict):
@@ -253,7 +265,7 @@ class OtuAnalysis(ABC):
 
         return level_size
 
-    def barplot_sample(self, level, save=True):
+    def barplot_sample(self, level, save_dir=None):
         level_dict = self.taxonomy2otu[level]
         level_size = self._get_level_size(level_dict)
 
@@ -261,8 +273,8 @@ class OtuAnalysis(ABC):
         fig = px.bar(plotdata, barmode='stack', labels={'value': 'Percentage (%)'},color_discrete_sequence=px.colors.qualitative.Pastel)
         fig.update_layout(xaxis_title="Sample No.", yaxis_title="Percentage (%)", legend=dict(x=1.05, y=1, traceorder='normal', orientation='h'))
         fig.show()
-        if save==True:
-            fig.write_html(f'sample_{level}_bar_chart.html')
+        if type(save_dir)=='str':
+            fig.write_html(f'{save_dir}/sample_{level}_bar_chart.html')
 
 class Otu(OtuAnalysis):
     def _read_otu_report(self, otu_report_path):
@@ -315,7 +327,7 @@ class SumAllSample:
 
     def add_sample(self, read_dir, samplenum_list):
         for sample_num in samplenum_list:
-            self.sample_dict[sample_num] = Zotu(read_dir='./cleandata', sample_num=sample_num)
+            self.sample_dict[sample_num] = Zotu(read_dir=read_dir, sample_num=sample_num)
 
     def barplot_all(self, level, samplenum_list, save=True):
         sample_size = {}
@@ -350,8 +362,8 @@ class SumAllSample:
 if __name__ == '__main__':
     sample16 = Zotu(read_dir='./cleandata', sample_num=16)
     # sample1.within_otu_align('Zotu5', save=False)
-    sample16.analysis_species_subspecies(species_name='Carassius_auratus')
-    # sample1.usum_sample()
+    sample16.analysis_species(species_name='Carassius_auratus')
+    # sample16.usum_sample()
     # sample1.barplot_sample(level='family', save=False)
     # sample1.barplot_all('family', save=True)
     # a = SumAllSample()
