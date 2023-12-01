@@ -1,9 +1,9 @@
 import os
 import pandas as pd
-import re
-import duckdb
 import csv
 import numpy as np
+import subprocess
+# import duckdb
 
 
 def _get_prefix_with_suffix(in_dir, suffix):
@@ -19,21 +19,22 @@ def merge_fq(in_dir, out_dir, maxdiff=5, pctid=90, cpu=2):
     for num in prefix:
         cmd = f'usearch -fastq_mergepairs {in_dir}{num}_R1.fastq -fastqout {out_dir}{num}_merge.fastq -threads {cpu} \
                 -fastq_maxdiffs {maxdiff} -fastq_pctid {pctid} -report {out_dir}{num}_report.txt'
-        os.system(cmd)
+        subprocess.Popen(cmd, shell=True)
 
 def cut_adapt(in_dir, out_dir, rm_p_5='GTCGGTAAAACTCGTGCCAGC', rm_p_3='CAAACTGGGATTAGATACCCCACTATG', min_read_len=204, max_read_len=254, cpu=2):
     prefix = _get_prefix_with_suffix(in_dir, '_merge.fastq')
     for num in prefix:
-        os.system(f'cutadapt -g "{rm_p_5};max_error_rate=0.15...{rm_p_3};max_error_rate=0.15" -j {cpu} \
-                    {in_dir}{num}_merge.fastq --discard-untrimmed \
-                    -m {min_read_len-len(rm_p_5)-len(rm_p_3)} -M {max_read_len-len(rm_p_5)-len(rm_p_3)} \
-                    >{out_dir}{num}_cut.fastq 2>{out_dir}{num}_report.txt')
+        cmd = (f'cutadapt -g "{rm_p_5};max_error_rate=0.15...{rm_p_3};max_error_rate=0.15" -j {cpu} \
+                {in_dir}{num}_merge.fastq --discard-untrimmed \
+                -m {min_read_len-len(rm_p_5)-len(rm_p_3)} -M {max_read_len-len(rm_p_5)-len(rm_p_3)} \
+                >{out_dir}{num}_cut.fastq 2>{out_dir}{num}_report.txt')
+        subprocess.Popen(cmd, shell=True)
     
 def fq_to_fa(in_dir, out_dir, bbmap_dir):
     prefix = _get_prefix_with_suffix(in_dir, '_cut.fastq')
     for num in prefix:
         cmd = f'bash {bbmap_dir}reformat.sh in={in_dir}{num}_cut.fastq out={out_dir}{num}_processed.fasta'
-        os.system(cmd)
+        subprocess.Popen(cmd, shell=True)
 
 def dereplicate(in_dir, out_dir, cpu=2):
     prefix = _get_prefix_with_suffix(in_dir, '_processed.fasta')
@@ -41,7 +42,7 @@ def dereplicate(in_dir, out_dir, cpu=2):
         cmd = f'usearch -fastx_uniques {in_dir}{num}_processed.fasta -threads {cpu} \
                 -sizeout -relabel Uniq -fastaout {out_dir}{num}_derep.fasta \
                 >{out_dir}{num}_report.txt 2>&1' 
-        os.system(cmd)
+        subprocess.Popen(cmd, shell=True)
 
 def cluster_otu(in_dir, out_dir, minsize=2, cpu=2):
     prefix = _get_prefix_with_suffix(in_dir, '_derep.fasta')
@@ -49,7 +50,7 @@ def cluster_otu(in_dir, out_dir, minsize=2, cpu=2):
         cmd = f'usearch -cluster_otus {in_dir}{num}_derep.fasta -minsize {minsize} -threads {cpu} \
                 -otus {out_dir}{num}_otu.fasta -uparseout {out_dir}{num}_otu_report.txt -relabel Otu \
                 >{out_dir}{num}_report.txt 2>&1' 
-        os.system(cmd)
+        subprocess.Popen(cmd, shell=True)
 
 def cluster_zotu(in_dir, out_dir, minsize=8, cpu=2):
     prefix = _get_prefix_with_suffix(in_dir, '_derep.fasta')
@@ -57,12 +58,10 @@ def cluster_zotu(in_dir, out_dir, minsize=8, cpu=2):
         cmd = f'usearch -unoise3 {in_dir}{num}_derep.fasta -minsize {minsize} -threads {cpu} \
                 -zotus {out_dir}{num}_zotu.fasta -tabbedout {out_dir}{num}_zotu_report.txt \
                 >{out_dir}{num}_report.txt 2>&1'
-        os.system(cmd)
+        subprocess.Popen(cmd, shell=True)
 
 def blast_otu(in_dir, out_dir, db_path, lineage_path, otu_type='otu', cpu=0, maxhitnum=5, specifiers='qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore'):
-    if otu_type in ['otu', 'zotu']:
-        pass
-    else:
+    if otu_type not in ['otu', 'zotu']:
         print("Error: 'otu_type' must be 'otu' or 'zotu'.")
         return
 
@@ -72,7 +71,7 @@ def blast_otu(in_dir, out_dir, db_path, lineage_path, otu_type='otu', cpu=0, max
                 -max_target_seqs {maxhitnum} -evalue 0.00001 -qcov_hsp_perc 90 -perc_identity 90 \
                 -out {out_dir}{num}_{otu_type}.csv'
         cmd = cmd + f' -num_threads {cpu}' if cpu!=0 else cmd
-        os.system(cmd)
+        subprocess.Popen(cmd, shell=True)
     
     genus2taxonomy = {}
     with open(lineage_path+'lineage.csv') as in_handle:
@@ -89,7 +88,7 @@ def _add_taxonomy(filename, genus2taxonomy):
     blast_result = pd.read_csv(f'{filename}.csv', header=None)
     taxa_matrix = []
     for sseqid in blast_result[1]:
-        _, sacc, species = sseqid.split('|')
+        sacc, species = sseqid.split('|')[1], sseqid.split('|')[-1]
         species_firstname = species.split('_')[0]
         if species_firstname in genus2taxonomy.keys():
             genus = species_firstname
@@ -110,8 +109,8 @@ def _add_taxonomy(filename, genus2taxonomy):
 
 if __name__ == '__main__':
 
-    in_dir = './cleandata/5_haploid/zotu/'
-    out_dir = './cleandata/6_blastn/mifish_db/'
+    # in_dir = './cleandata/5_haploid/zotu/'
+    # out_dir = './cleandata/test/mifish_partial/'
 
 
     # merge_fq(in_dir=in_dir, out_dir=out_dir, cpu=6)
@@ -126,10 +125,17 @@ if __name__ == '__main__':
     # cluster_otu(in_dir=in_dir, out_dir=out_dir, minsize=8, cpu=16)
     # cluster_zotu(in_dir=in_dir, out_dir=out_dir, minsize=8, cpu=16)
     
-    # mifish_path = './database/mifishdb'
+    # mifish_path = './database/mifish_partial/mifish'
     # lineage_path = './database/'
     # blast_otu(in_dir=in_dir, out_dir=out_dir, db_path=mifish_path, lineage_path=lineage_path, maxhitnum=1, otu_type='zotu', cpu=16)
   
     # # ncbi_path = 'nt -remote'
     # blast_otu(in_dir=in_dir, out_dir=out_dir, db_path=ncbi_path, out_name='ncbi', otu_type='zotu')
     # read_blast_csv(in_dir=in_dir, out_dir=out_dir)
+
+    # for expanding species related information in future
+    # conn = duckdb.connect()
+    # fishbase_file = './data/species.parquet'
+    # stock_file = './data/stocks.parquet'
+    # link_fishbase = conn.from_parquet(fishbase_file)
+    # link_stock = conn.from_parquet(stock_file)
