@@ -22,9 +22,9 @@ class OtuAnalysis(ABC):
         self.taxonomy2otu = {'kingdom':{}, 'phylum':{}, 'class':{}, 'order':{}, 'family':{}, 'genus':{}, 'species':{}}
 
         uniq_path = f'{read_dir}/4_derep/{sample_num}_derep.fasta'
-        otu_path = f'{read_dir}/5_haploid/zotu/{sample_num}_zotu.fasta'
-        otu_report_path = f'{read_dir}/5_haploid/zotu/{sample_num}_zotu_size.txt'
-        blast_path = f'{read_dir}/6_blastn/mifish_db/{sample_num}_zotu.csv'
+        otu_path = f'{read_dir}/5_haploid/{sample_num}_zotu.fasta'
+        otu_report_path = f'{read_dir}/5_haploid/{sample_num}_zotu_report.txt'
+        blast_path = f'{read_dir}/6_blast/{sample_num}_zotu.csv'
         
         self.uniq_seq = self._read_seq(uniq_path)
         self.otu_seq = self._read_seq(otu_path)
@@ -56,7 +56,6 @@ class OtuAnalysis(ABC):
 
     def _read_blast(self, blast_path):
         with open(blast_path, 'r') as file:
-            self.taxonomy2otu['family']['no_family_level'] = []
             self.taxonomy2otu['order']['no_order_level'] = []
 
             for line in file.readlines():
@@ -71,12 +70,9 @@ class OtuAnalysis(ABC):
                     self.taxonomy2otu['genus'][genus] = []
                 self.taxonomy2otu['genus'][genus].append(haploid)
 
-                if family=='':
-                    self.taxonomy2otu['family']['no_family_level'].append(haploid)
-                else:
-                    if family not in self.taxonomy2otu['family']:
-                        self.taxonomy2otu['family'][family] = []
-                    self.taxonomy2otu['family'][family].append(haploid)
+                if family not in self.taxonomy2otu['family']:
+                    self.taxonomy2otu['family'][family] = []
+                self.taxonomy2otu['family'][family].append(haploid)
 
                 if order == '':
                     self.taxonomy2otu['order']['no_order_level'].append(haploid)
@@ -126,7 +122,7 @@ class OtuAnalysis(ABC):
             mv.savefig(save_path)
 
     #plot MSA between unique sequences in one OTU.
-    def within_otu_align(self, otu_name, save_align_png=False, save_dir='.'):
+    def within_otu_align(self, otu_name, save_dir='.', save_align_png=True):
         self._make_tmp_dir()
 
         uniq_list = self.otu2unique[otu_name]
@@ -321,18 +317,24 @@ class Zotu(OtuAnalysis):
                         self.otu2unique[k_new] = self.otu2unique.pop(haploid)
                         chi_num += 1
 
-class SumAllSample:
-    def __init__(self):
-        self.sample_dict = {}
+class SumAllSample(OtuAnalysis):
 
-    def add_sample(self, read_dir, samplenum_list):
-        for sample_num in samplenum_list:
+    def __init__(self, read_dir):
+        self.sample_dict = {}
+        self.read_dir = read_dir
+
+        filename_list = os.listdir(f'{read_dir}/4_derep')
+        self.samplenum_list = [filename.replace('_derep.fasta','') for filename in filename_list if filename.endswith('_derep.fasta')]
+        for sample_num in self.samplenum_list:
             self.sample_dict[sample_num] = Zotu(read_dir=read_dir, sample_num=sample_num)
 
-    def barplot_all(self, level, samplenum_list, save=True):
+    def _read_otu_report(report_path):
+        return super()._read_otu_report()
+
+    def barplot_all(self, level, save=True):
         sample_size = {}
         level2otu = {}
-        for sample_num in samplenum_list:
+        for sample_num in self.samplenum_list:
             sample_size[sample_num] = {}
             level2otu[sample_num] = self.sample_dict[sample_num].taxonomy2otu[level]
             for key, otu_list in level2otu[sample_num].items():
@@ -344,11 +346,11 @@ class SumAllSample:
             for key in sample_size[sample_num].keys():
                 sample_size[sample_num][key] = sample_size[sample_num][key]/total_size * 100
 
-        samplesize_list = [sample_size[sample_num] for sample_num in samplenum_list]
+        samplesize_list = [sample_size[sample_num] for sample_num in self.samplenum_list]
         all_keys = list(set().union(*samplesize_list))
         all_keys.sort()
 
-        for sample_num in samplenum_list:
+        for sample_num in self.samplenum_list:
             sample_size[sample_num] = [sample_size[sample_num].get(key, 0) for key in all_keys]
 
         plotdata = pd.DataFrame(sample_size, index=all_keys)
@@ -359,13 +361,48 @@ class SumAllSample:
         if save==True:
             fig.write_html(f'{level}_bar_chart.html')
 
+    def analysis_species(self, species_name, save_dir = '.', save_align_png=True):
+        self._make_tmp_dir()
+
+        align_seq = ''
+        file_string = ''
+        for sample_num in self.samplenum_list:
+            species2otu_list = self.sample_dict[sample_num].taxonomy2otu['species'].get(species_name)
+            if species2otu_list is not None:
+                for otu in species2otu_list:
+
+                    umap_seq = ''
+                    for uniq in self.sample_dict[sample_num].otu2unique[otu]:
+                        seq = self.sample_dict[sample_num].uniq_seq[uniq]
+                        seq = self._split_lines(seq)
+                        umap_seq = umap_seq + f'>{uniq}\n{seq}\n'
+                    with open(f'./tmp/{sample_num}_{otu}.fasta', 'w') as file:
+                        file.write(umap_seq)
+                    file_string = file_string + f'./tmp/{sample_num}_{otu}.fasta '
+
+                    name = f'>{sample_num}_{otu}'
+                    seq = self.sample_dict[sample_num].otu_seq[otu]
+                    align_seq = align_seq + f'{name}\n{seq}\n'
+
+        self._make_umap(file_string=file_string, save_folder_name=f'{save_dir}/{species_name}')
+        
+        with open('./tmp/seq.fa', 'w') as file:
+            file.write(align_seq)
+        self._make_align_file(seq_file='./tmp/seq.fa', aln_file='./tmp/seq.aln')
+        
+        if os.path.exists('./tmp/seq.aln'):
+            self._show_alignment(aln_seq_path='./tmp/seq.aln', save_path=f'{save_dir}/{species_name}/alignment.png', save_png=save_align_png)
+        else:
+            print(f'{species_name} contains 1 sequence, nothing to align')
+
+        shutil.rmtree('./tmp/')
+
 if __name__ == '__main__':
-    sample16 = Zotu(read_dir='./cleandata', sample_num=16)
+    # sample1 = Zotu(read_dir='./keelung/2303', sample_num='2303-H02')
     # sample1.within_otu_align('Zotu5', save=False)
-    sample16.analysis_species(species_name='Carassius_auratus')
+    # sample1.analysis_species_subspecies(species_name='Mugil_cephalus')
     # sample16.usum_sample()
-    # sample1.barplot_sample(level='family', save=False)
-    # sample1.barplot_all('family', save=True)
-    # a = SumAllSample()
-    # a.add_sample(read_dir='./cleandata', samplenum_list=range(1,19))
-    # a.barplot_all(level='species', samplenum_list=range(1, 19), save=False)
+    # sample1.barplot_sample(level='family', save_dir=None)
+    a = SumAllSample(read_dir='./keelung/2305')
+    # a.barplot_all(level='species', save=True)
+    a.analysis_species('Mugil_cephalus')
