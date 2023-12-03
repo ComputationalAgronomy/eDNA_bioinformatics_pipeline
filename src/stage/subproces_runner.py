@@ -16,30 +16,23 @@ class SubprocessRunner(Runner):
 
 
     def run(self):
-        """Execute the command using subprocess
 
-        `check_output and/or check_call` are for legacy use (python 2).
-        Refactor it out to python 3 later.
+        if self.verbose:
+            print(self.message)
 
-        Return
-        ------
-        True or False:
-
-        TODO(SW): Add features to fetch detail output.
-        """
         if self.shell:
             args = self.command
         else:
             args = shlex.split(self.command)
-        if self.verbose:
-            print(self.message)
+
         if not self.dry:
             self.logger.write(self.message)
             try:
-                # self.out = subprocess.check_output(args)
-                self.comp_process = subprocess.run(args, capture_output=True,
+                self.comp_process = subprocess.run(args,
+                                                   capture_output=True,
                                                    shell=self.shell,
-                                                   check=True, text=True)
+                                                   check=True,
+                                                   text=True)
                 self.logger.write(f"{Runner.MSG_LOG} COMPLETE: {self.prog_name}.\n")
                 return True
             except subprocess.CalledProcessError as e:
@@ -57,6 +50,7 @@ class RedirectOutputRunner(Runner):
 
     def __init__(self, prog_name, runner, outfile, config):
         super().__init__(prog_name, config)
+
         if isinstance(runner, SubprocessRunner):
             self.runner = runner
             self.outfile = outfile
@@ -66,11 +60,12 @@ class RedirectOutputRunner(Runner):
             raise TypeError(f"Invalid instance type: {info}.")
 
     def run(self):
-        try:
-            with open(self.outfile, "w") as f:
-                output = self.runner.comp_process.stdout
-                f.write(output)
-                return True
-        except AttributeError as e:
-            self.logger.write(f"{Runner.MSG_LOG} FAIL: {self.prog_name}. Error: {e}.\n")
-        return False
+        if not self.dry:
+            try:
+                with open(self.outfile, "w") as f:
+                    output = self.runner.comp_process.stdout
+                    f.write(output)
+                    return True
+            except AttributeError as e:
+                self.logger.write(f"{Runner.MSG_LOG} FAIL: {self.prog_name}. Error: {e}.\n")
+            return False

@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 
-def _get_prefix_with_suffix(in_dir, suffix):
+def get_prefix_with_suffix(in_dir, suffix):
     files = os.listdir(in_dir)
     prefix = []
     for filename in files:
@@ -10,14 +10,14 @@ def _get_prefix_with_suffix(in_dir, suffix):
     return prefix
 
 def merge_fq(in_dir, out_dir, maxdiff=5, pctid=90, cpu=2):
-    prefix = _get_prefix_with_suffix(in_dir, '_R1.fastq')
+    prefix = get_prefix_with_suffix(in_dir, '_R1.fastq')
     for num in prefix:
         cmd = f'usearch -fastq_mergepairs {in_dir}{num}_R1.fastq -fastqout {out_dir}{num}_merge.fastq -threads {cpu} \
                 -fastq_maxdiffs {maxdiff} -fastq_pctid {pctid} -report {out_dir}{num}_report.txt'
         os.system(cmd)
 
 def cut_adapt(in_dir, out_dir, rm_p_5='GTCGGTAAAACTCGTGCCAGC', rm_p_3='CAAACTGGGATTAGATACCCCACTATG', min_read_len=204, max_read_len=254, cpu=2):
-    prefix = _get_prefix_with_suffix(in_dir, '_merge.fastq')
+    prefix = get_prefix_with_suffix(in_dir, '_merge.fastq')
     for num in prefix:
         os.system(f'cutadapt -g "{rm_p_5};max_error_rate=0.15...{rm_p_3};max_error_rate=0.15" -j {cpu} \
                     {in_dir}{num}_merge.fastq --discard-untrimmed \
@@ -25,13 +25,13 @@ def cut_adapt(in_dir, out_dir, rm_p_5='GTCGGTAAAACTCGTGCCAGC', rm_p_3='CAAACTGGG
                     >{out_dir}{num}_cut.fastq 2>{out_dir}{num}_report.txt')
 
 def fq_to_fa(in_dir, out_dir, bbmap_dir):
-    prefix = _get_prefix_with_suffix(in_dir, '_cut.fastq')
+    prefix = get_prefix_with_suffix(in_dir, '_cut.fastq')
     for num in prefix:
         cmd = f'bash {bbmap_dir}reformat.sh in={in_dir}{num}_cut.fastq out={out_dir}{num}_processed.fasta'
         os.system(cmd)
 
 def dereplicate(in_dir, out_dir, cpu=2):
-    prefix = _get_prefix_with_suffix(in_dir, '_processed.fasta')
+    prefix = get_prefix_with_suffix(in_dir, '_processed.fasta')
     for num in prefix:
         cmd = f'usearch -fastx_uniques {in_dir}{num}_processed.fasta -threads {cpu} \
                 -sizeout -relabel Uniq -fastaout {out_dir}{num}_derep.fasta \
@@ -39,7 +39,7 @@ def dereplicate(in_dir, out_dir, cpu=2):
         os.system(cmd)
 
 def cluster_otu(in_dir, out_dir, minsize=2, cpu=2):
-    prefix = _get_prefix_with_suffix(in_dir, '_derep.fasta')
+    prefix = get_prefix_with_suffix(in_dir, '_derep.fasta')
     for num in prefix:
         cmd = f'usearch -cluster_otus {in_dir}{num}_derep.fasta -minsize {minsize} -threads {cpu} \
                 -otus {out_dir}{num}_otu.fasta -uparseout {out_dir}{num}_otu_report.txt -relabel Otu \
@@ -47,7 +47,7 @@ def cluster_otu(in_dir, out_dir, minsize=2, cpu=2):
         os.system(cmd)
 
 def cluster_zotu(in_dir, out_dir, minsize=8, cpu=2):
-    prefix = _get_prefix_with_suffix(in_dir, '_derep.fasta')
+    prefix = get_prefix_with_suffix(in_dir, '_derep.fasta')
     for num in prefix:
         cmd = f'usearch -unoise3 {in_dir}{num}_derep.fasta -minsize {minsize} -threads {cpu} \
                 -zotus {out_dir}{num}_zotu.fasta -tabbedout {out_dir}{num}_zotu_report.txt \
@@ -61,7 +61,7 @@ def blast_otu(in_dir, out_dir, db_path, otu_type='otu', cpu=0, maxhitnum=5, spec
         print("Error: 'otu_type' must be 'otu' or 'zotu'.")
         return
 
-    prefix = _get_prefix_with_suffix(in_dir, f'_{otu_type}.fasta')
+    prefix = get_prefix_with_suffix(in_dir, f'_{otu_type}.fasta')
     for num in prefix:
         cmd = f'blastn -db {db_path} -query {in_dir}{num}_{otu_type}.fasta -outfmt "10 {specifiers}" \
                 -max_target_seqs {maxhitnum} -evalue 0.00001 -qcov_hsp_perc 90 \

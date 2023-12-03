@@ -3,13 +3,15 @@ from abc import ABC, abstractmethod
 import os
 import subprocess
 
+from stage.stage_config import StageConfig
+
 
 class Runner(ABC):
 
     MSG_LOG = "==LOG=="
     MSG_DEBUG = "===DEBUG==="
 
-    def __init__(self, prog_name, config):
+    def __init__(self, prog_name, config: StageConfig):
         self.prog_name = prog_name  # for debug/naming only
         self.message = f"{Runner.MSG_LOG} Program: {self.prog_name}."
         self.comp_process = None
