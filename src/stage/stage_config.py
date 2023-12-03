@@ -1,6 +1,10 @@
 import sys
 
+
 class StageConfig:
+    """
+    Configuration shared between all stages
+    """
     def __init__(self, verbose=False, dry=False,
                  logger=sys.stdout,
                  n_cpu=1, memory=8):
