@@ -8,7 +8,7 @@ def _get_prefix_with_suffix(in_dir, suffix):
         if filename.endswith(suffix):
             prefix.append(filename.replace(suffix, ''))
     return prefix
- 
+
 def merge_fq(in_dir, out_dir, maxdiff=5, pctid=90, cpu=2):
     prefix = _get_prefix_with_suffix(in_dir, '_R1.fastq')
     for num in prefix:
@@ -23,7 +23,7 @@ def cut_adapt(in_dir, out_dir, rm_p_5='GTCGGTAAAACTCGTGCCAGC', rm_p_3='CAAACTGGG
                     {in_dir}{num}_merge.fastq --discard-untrimmed \
                     -m {min_read_len-len(rm_p_5)-len(rm_p_3)} -M {max_read_len-len(rm_p_5)-len(rm_p_3)} \
                     >{out_dir}{num}_cut.fastq 2>{out_dir}{num}_report.txt')
-    
+
 def fq_to_fa(in_dir, out_dir, bbmap_dir):
     prefix = _get_prefix_with_suffix(in_dir, '_cut.fastq')
     for num in prefix:
@@ -35,7 +35,7 @@ def dereplicate(in_dir, out_dir, cpu=2):
     for num in prefix:
         cmd = f'usearch -fastx_uniques {in_dir}{num}_processed.fasta -threads {cpu} \
                 -sizeout -relabel Uniq -fastaout {out_dir}{num}_derep.fasta \
-                >{out_dir}{num}_report.txt 2>&1' 
+                >{out_dir}{num}_report.txt 2>&1'
         os.system(cmd)
 
 def cluster_otu(in_dir, out_dir, minsize=2, cpu=2):
@@ -43,7 +43,7 @@ def cluster_otu(in_dir, out_dir, minsize=2, cpu=2):
     for num in prefix:
         cmd = f'usearch -cluster_otus {in_dir}{num}_derep.fasta -minsize {minsize} -threads {cpu} \
                 -otus {out_dir}{num}_otu.fasta -uparseout {out_dir}{num}_otu_report.txt -relabel Otu \
-                >{out_dir}{num}_report.txt 2>&1' 
+                >{out_dir}{num}_report.txt 2>&1'
         os.system(cmd)
 
 def cluster_zotu(in_dir, out_dir, minsize=8, cpu=2):
@@ -92,10 +92,10 @@ if __name__ == '__main__':
 
     # cluster_otu(in_dir=in_dir, out_dir=out_dir, minsize=8, cpu=16)
     # cluster_zotu(in_dir=in_dir, out_dir=out_dir, minsize=8, cpu=16)
-    
+
     # mifish_path = './database/mifishdb'
     # blast_otu(in_dir=in_dir, out_dir=out_dir, db_path=mifish_path, maxhitnum=1, otu_type='otu', cpu=16)
-    
+
     # # ncbi_path = 'nt -remote'
     # blast_otu(in_dir=in_dir, out_dir=out_dir, db_path=ncbi_path, out_name='ncbi', otu_type='zotu')
     # read_blast_csv(in_dir=in_dir, out_dir=out_dir)
