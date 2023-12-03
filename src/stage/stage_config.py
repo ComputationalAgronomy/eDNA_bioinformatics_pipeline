@@ -1,6 +1,6 @@
 import sys
 
-class PipelineStageConfig:
+class StageConfig:
     def __init__(self, verbose=False, dry=False,
                  logger=sys.stdout,
                  n_cpu=1, memory=8):

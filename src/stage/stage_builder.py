@@ -1,20 +1,18 @@
-
 from abc import ABC, abstractmethod
 
-from stage.subproces_runner import RedirectOutputRunner, SubprocessRunner
 from stage.runner import Runner
-
-
+from stage.stage_config import StageConfig
+from stage.subproces_runner import RedirectOutputRunner, SubprocessRunner
 
 
 class StageBuilder(ABC):
     """
-    config : pipeline_stage_config
+    config : StageConfig
     runners : list of Runner
     output : list out stdout (or others) return from Runner
     """
 
-    def __init__(self, heading, config):
+    def __init__(self, heading, config: StageConfig):
         self.heading = heading
         self.config = config
         self.runners = []
@@ -42,7 +40,6 @@ class StageBuilder(ABC):
             self.output.append(out)
         self.config.logger.flush()
         return all(self.output)
-
 
     @abstractmethod
     def setup(self):
