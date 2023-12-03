@@ -4,16 +4,12 @@ import subprocess
 from stage.runner import Runner
 
 
-
-
 class SubprocessRunner(Runner):
     def __init__(self, prog_name, command, config, shell=False):
         super().__init__(prog_name, config)
 
         self.command = command
         self.shell = shell
-        self.comp_process = None
-
 
     def run(self):
 
@@ -28,7 +24,7 @@ class SubprocessRunner(Runner):
         if not self.dry:
             self.logger.write(self.message)
             try:
-                self.comp_process = subprocess.run(args,
+                self.capture_output = subprocess.run(args,
                                                    capture_output=True,
                                                    shell=self.shell,
                                                    check=True,
@@ -63,7 +59,7 @@ class RedirectOutputRunner(Runner):
         if not self.dry:
             try:
                 with open(self.outfile, "w") as f:
-                    output = self.runner.comp_process.stdout
+                    output = self.runner.capture_output.stdout
                     f.write(output)
                     return True
             except AttributeError as e:

@@ -1,7 +1,7 @@
 
-from abc import ABC, abstractmethod
 import os
 import subprocess
+from abc import ABC, abstractmethod
 
 from stage.stage_config import StageConfig
 
@@ -14,14 +14,13 @@ class Runner(ABC):
     def __init__(self, prog_name, config: StageConfig):
         self.prog_name = prog_name  # for debug/naming only
         self.message = f"{Runner.MSG_LOG} Program: {self.prog_name}."
-        self.comp_process = None
+        self.capture_output = None
         try:
             self.verbose = config.verbose
             self.dry = config.dry
             self.logger = config.logger
         except AttributeError as e:
             print(e)
-
 
 
     @abstractmethod
