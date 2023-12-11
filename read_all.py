@@ -22,9 +22,9 @@ class OtuAnalysis(ABC):
         self.taxonomy2otu = {'kingdom':{}, 'phylum':{}, 'class':{}, 'order':{}, 'family':{}, 'genus':{}, 'species':{}}
 
         uniq_path = f'{read_dir}/4_derep/{sample_num}_derep.fasta'
-        otu_path = f'{read_dir}/5_haploid/{sample_num}_zotu.fasta'
-        otu_report_path = f'{read_dir}/5_haploid/{sample_num}_zotu_report.txt'
-        blast_path = f'{read_dir}/6_blast/{sample_num}_zotu.csv'
+        otu_path = f'{read_dir}/5_haploid/zotu/{sample_num}_zotu.fasta'
+        otu_report_path = f'{read_dir}/5_haploid/zotu/{sample_num}_zotu_size.txt'
+        blast_path = f'{read_dir}/6_blast/mifish_db/{sample_num}_zotu.csv'
         
         self.uniq_seq = self._read_seq(uniq_path)
         self.otu_seq = self._read_seq(otu_path)
@@ -111,7 +111,7 @@ class OtuAnalysis(ABC):
 
     @staticmethod
     def _make_align_file(seq_file, aln_file):
-        cmd = f'clustalo -i {seq_file} -o {aln_file}'
+        cmd = f'clustalo -i {seq_file} -o {aln_file}.aln --distmat-out={aln_file}.mat --guidetree-out={aln_file}.dnd --full --force'
         subprocess.run(cmd, shell=True)
 
     @staticmethod
@@ -380,22 +380,81 @@ class SumAllSample(OtuAnalysis):
                         file.write(umap_seq)
                     file_string = file_string + f'./tmp/{sample_num}_{otu}.fasta '
 
-                    name = f'>{sample_num}_{otu}'
+                    title = f'>{sample_num}_{otu}'
                     seq = self.sample_dict[sample_num].otu_seq[otu]
-                    align_seq = align_seq + f'{name}\n{seq}\n'
-
-        self._make_umap(file_string=file_string, save_folder_name=f'{save_dir}/{species_name}')
+                    align_seq = align_seq + f'{title}\n{seq}\n'
         
         with open('./tmp/seq.fa', 'w') as file:
             file.write(align_seq)
-        self._make_align_file(seq_file='./tmp/seq.fa', aln_file='./tmp/seq.aln')
+
+        self._make_umap(file_string=file_string, save_folder_name=f'{save_dir}/{species_name}')
+
+        self._make_align_file(seq_file='./tmp/seq.fa', aln_file=f'{save_dir}/{species_name}/{species_name}')
         
-        if os.path.exists('./tmp/seq.aln'):
+        if os.path.exists(f'{save_dir}/{species_name}/{species_name}.aln'):
             self._show_alignment(aln_seq_path='./tmp/seq.aln', save_path=f'{save_dir}/{species_name}/alignment.png', save_png=save_align_png)
         else:
             print(f'{species_name} contains 1 sequence, nothing to align')
 
+        # shutil.rmtree('./tmp/')
+
+    def analysis_species_subspecies(self, species_name, save_dir='.', save_align_png=True, make_phylogenetic_tree=False, bootstrap_times=100):
+        self._make_tmp_dir()
+        
+        align_seq = ''
+        file_string = ''
+        
+        for sample_num in self.samplenum_list:
+            species_list = [species for species in self.sample_dict[sample_num].taxonomy2otu['species'].keys() if species_name in species]
+            for species in species_list:
+                umap_seq = ''
+                otu_list = self.sample_dict[sample_num].taxonomy2otu['species'][species]
+                for otu in otu_list:
+                    title = f'>{sample_num}_{species}_{otu}'
+                    seq  = self.sample_dict[sample_num].otu_seq[otu]
+                    umap_seq = umap_seq + f'{title}\n{seq}\n'
+                    align_seq = align_seq + f'{title}\n{seq}\n'
+
+                with open(f'./tmp/{sample_num}_{species}.fasta', 'w') as file:
+                    file.write(umap_seq)
+                file_string = file_string + f'./tmp/{sample_num}_{species}.fasta '
+        
+        with open(f'./tmp/seq.fa', 'w') as file:
+            file.write(align_seq)
+
+        self._make_umap(file_string=file_string, save_folder_name=f'{save_dir}/{species_name}')
+
+        self._make_align_file(seq_file='./tmp/seq.fa', aln_file=f'{save_dir}/{species_name}/{species_name}')
+        
+        if os.path.exists(f'{save_dir}/{species_name}/{species_name}.aln'):
+            self._show_alignment(aln_seq_path=f'{save_dir}/{species_name}/{species_name}.aln', save_path=f'{save_dir}/{species_name}/alignment.png', save_png=save_align_png)
+        else:
+            print(f'{species_name} contains 1 sequence, nothing to align')
+
         shutil.rmtree('./tmp/')
+    
+    def species_multiple_otu(self):
+        species2otu = {}
+        for sample_num in self.samplenum_list:
+            species2otu[sample_num] = self.sample_dict[sample_num].taxonomy2otu['species']
+        species2otu_list = [species2otu[sample_num] for sample_num in species2otu]
+        all_keys = list(set().union(*species2otu_list))
+        allsample_species = {}
+        for key in all_keys:
+            allsample_species[key] = []
+        for sample_num in self.samplenum_list:
+            for species, otu_list in species2otu[sample_num].items():
+                allsample_species[species].extend(otu_list)
+        
+        species_num = 0
+        species_list = []
+        for species, otu_list in allsample_species.items():
+            if len(otu_list)>1 and len(species.split('_'))==2:
+                species_num += 1
+                species_list.append(species)
+        print(species_num)
+        print(species_list)
+
 
 if __name__ == '__main__':
     # sample1 = Zotu(read_dir='./keelung/2303', sample_num='2303-H02')
@@ -403,6 +462,8 @@ if __name__ == '__main__':
     # sample1.analysis_species_subspecies(species_name='Mugil_cephalus')
     # sample16.usum_sample()
     # sample1.barplot_sample(level='family', save_dir=None)
-    a = SumAllSample(read_dir='./keelung/2305')
+    # a = SumAllSample(read_dir='./桃園eDNA pipeline')
     # a.barplot_all(level='species', save=True)
-    a.analysis_species('Mugil_cephalus')
+    # a.analysis_species('Mugil_cephalus')
+    # a.analysis_species_subspecies(species_name='Mugil_cephalus')
+    # a.species_multiple_otu()
