@@ -1,7 +1,8 @@
 from pandas import *
 import csv 
 import numpy as np
-import scipy.stats as st 
+import scipy.stats as st
+from contextlib import suppress 
 
 def mean_confidence_interval(data, confidence=0.95):
     a = 1.0 * np.array(data)
@@ -17,93 +18,95 @@ data = read_csv('./taoyuan/6_blast/mifish_web/taxonomy_JcaKJ9oCl80odquoyAWsCg.cs
 sample_name = data['Sample name'].to_list()
 species = data['Species'].to_list()
 
-for i, num in enumerate(sample_name):
-    if type(num)==str and '_' in num:
-        sample_name[i] = num.replace('_','')
-    elif type(num)==float:
+for i, haploid in enumerate(sample_name):
+    if type(haploid)==str and '_' in haploid:
+        sample_name[i] = haploid.replace('_','')
+    elif type(haploid)==float:
         sample_name[i] = sample_name[i-1]
+with suppress(ValueError):
+    sample_name.remove('Sample name')
 
-for _ in range(len(sample_name)):
-    if 'Sample name' in sample_name:
-        sample_name.remove('Sample name')
-
-
-
-for i, num in enumerate(species):
-    if type(num)==str and '_' in num:
-        species[i] = num.replace('_','')
-    elif type(num)==float:
+for i, haploid in enumerate(species):
+    if type(haploid)==str and '_' in haploid:
+        species[i] = haploid.replace('_','')
+    elif type(haploid)==float:
         species[i] = species[i-1]
-
-for _ in range(len(species)):
-    if 'Species' in species:
-        species.remove('Species')
+with suppress(ValueError):
+    species.remove('Species')
 
 out_species = ['Tadorna tadorna','Gallus gallus','Homo sapiens','Bos primigenius','Sus celebensis','Bos indicus','Mus musculus','Felis silvestris','Canis lupus','Pseudorca crassidens','Rattus tanezumi','Cichlidae sp.','Terapontidae sp.']
 accuracy_list = []
 false_positive_list = []
 false_negative_list = []
 
-common_num = 0
-false_positive = 0
-false_negative = 0
+all_correct = 0
+all_false_positive = 0
+all_false_negative = 0
 for i in range(1, 19):
-    list1 = []
+
+    answer = []
     for j in range(len(sample_name)):
         if sample_name[j]==str(i) and species[j] not in out_species:
-            list1.append(species[j].replace(' ', '_'))
-    list2 = []
-    dict2 = {}
-    file_path = f'./taoyuan/6_blast/mifish_db/{i}_zotu.csv'
+            answer.append(species[j].replace(' ', '_'))
+
+    hit_result_dict = {}
+    file_path = f'./taoyuan/6_blast/test/{i}_zotu.csv'
     with open(file_path, 'r', newline='', encoding='utf-8') as csvfile:
         highest_id = {}
         reader = csv.reader(csvfile)
         for row in reader:
-            num = row[0]
-            name = row[1].split('|')[-1]
-            id = row[2]
+            haploid = row[0]
+            hit = row[1].split('|')[-1]
+            identity = row[2]
 
-            if num not in dict2:
-                dict2[num] = []
-            if num not in highest_id or float(id) > float(highest_id[num]):
-                highest_id[num] = id
-                dict2[num] = [name]
-            elif float(id)==float(highest_id[num]):
-                dict2[num].append(name)   
+            if haploid not in hit_result_dict:
+                hit_result_dict[haploid] = []
+            if haploid not in highest_id or float(identity) > float(highest_id[haploid]):
+                highest_id[haploid] = identity
+                hit_result_dict[haploid] = [hit]
+            elif float(identity)==float(highest_id[haploid]):
+                hit_result_dict[haploid].append(hit)
             
-    list2 = [species_list for species_list in dict2.values()]
-    list1_copy = list1.copy()
-    list2_copy = list2.copy()
+    hit_result = [species_list for species_list in hit_result_dict.values()]
+    answer_copy = answer.copy()
+    hit_result_copy = hit_result.copy()
 
-    common_num_small = 0
-    for i, ref in enumerate(list1):
-        for j, quary in enumerate(list2):
+    correct = 0
+    for i, ref in enumerate(answer):
+        for j, quary in enumerate(hit_result):
             if ref in quary:
-                common_num += 1
-                common_num_small += 1
-                list1[i] = []
-                list2[j] = []
+                all_correct += 1
+                correct += 1
+                answer[i] = []
+                hit_result[j] = []
                 break
 
-    list1 = [e for e in list1 if e!=[]]
-    list2 = [e for e in list2 if e!=[]]
-    false_negative += len(list1)
-    false_positive += len(list2)
-    total = len(list1) + len(list2) + common_num_small
-    accuracy_list.append(common_num_small/total)
-    false_positive_list.append(len(list2)/total)
-    false_negative_list.append(len(list1)/total)
+    answer = [e for e in answer if e!=[]]
+    hit_result = [e for e in hit_result if e!=[]]
+    false_negative = len(answer)
+    false_positive = len(hit_result)
+    total = correct + false_positive + false_negative
 
-total = common_num+false_negative+false_positive
+    accuracy_list.append(correct/total)
+    false_positive_list.append(false_positive/total)
+    false_negative_list.append(false_negative/total)
+
+    all_false_negative += false_negative
+    all_false_positive += false_positive
+
+all = all_correct+all_false_negative+all_false_positive
 print('Total test: ', total)
-print('accuracy: ', round((common_num/total)*100,2), '%')
-print('false_positive: ', round((false_positive/total)*100, 2), '%')
-print('false_negative: ', round((false_negative/total)*100,2), '%')
+print('accuracy: ', round((all_correct/all)*100,2), '%')
+print('false_positive: ', round((all_false_positive/all)*100, 2), '%')
+print('false_negative: ', round((all_false_negative/all)*100,2), '%')
 
-print('\nIn 18 samples:')
+# print(accuracy_list)
+# print(false_positive_list)
+# print(false_negative_list)
 ci_acc = mean_confidence_interval(accuracy_list)
-print('accuracy: ', ci_acc)
 ci_fp = mean_confidence_interval(false_positive_list)
-print('false positive: ', ci_fp)
 ci_fn = mean_confidence_interval(false_negative_list)
+print('\nIn 18 samples:')
+print('false positive: ', ci_fp)
+print('accuracy: ', ci_acc)
 print('false negative: ', ci_fn)
