@@ -95,7 +95,7 @@ for i in range(1, 19):
     all_false_positive += false_positive
 
 all = all_correct+all_false_negative+all_false_positive
-print('Total test: ', total)
+print('Total test: ', all)
 print('accuracy: ', round((all_correct/all)*100,2), '%')
 print('false_positive: ', round((all_false_positive/all)*100, 2), '%')
 print('false_negative: ', round((all_false_negative/all)*100,2), '%')
