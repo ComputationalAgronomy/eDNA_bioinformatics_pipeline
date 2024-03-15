@@ -14,99 +14,128 @@ def mean_confidence_interval(data, confidence=0.95):
     upper_bound = round((m+h)*100, 2)
     return f'{mean}% ({lower_bound}%, {upper_bound}%)'
 
-data = read_csv('./taoyuan/6_blast/mifish_web/taxonomy_JcaKJ9oCl80odquoyAWsCg.csv')
-sample_name = data['Sample name'].to_list()
-species = data['Species'].to_list()
+def read_mifish_result(input_file):
+    data = read_csv(input_file)
+    sample_id_list = data['Sample name'].to_list()
+    species_list = data['Species'].to_list()
 
-for i, haploid in enumerate(sample_name):
-    if type(haploid)==str and '_' in haploid:
-        sample_name[i] = haploid.replace('_','')
-    elif type(haploid)==float:
-        sample_name[i] = sample_name[i-1]
-with suppress(ValueError):
-    sample_name.remove('Sample name')
+    for i, sample_name in enumerate(sample_id_list):
+        if type(sample_name)==float:
+            sample_id_list[i] = sample_id_list[i-1]
+    with suppress(ValueError):
+        sample_id_list.remove('Sample name')
 
-for i, haploid in enumerate(species):
-    if type(haploid)==str and '_' in haploid:
-        species[i] = haploid.replace('_','')
-    elif type(haploid)==float:
-        species[i] = species[i-1]
-with suppress(ValueError):
-    species.remove('Species')
+    for i, haploid in enumerate(species_list):
+        if type(haploid)==float:
+            species_list[i] = species_list[i-1]
+    with suppress(ValueError):
+        species_list.remove('Species')
 
-out_species = ['Tadorna tadorna','Gallus gallus','Homo sapiens','Bos primigenius','Sus celebensis','Bos indicus','Mus musculus','Felis silvestris','Canis lupus','Pseudorca crassidens','Rattus tanezumi','Cichlidae sp.','Terapontidae sp.']
-accuracy_list = []
-false_positive_list = []
-false_negative_list = []
+    return sample_id_list, species_list
 
-all_correct = 0
-all_false_positive = 0
-all_false_negative = 0
-for i in range(1, 19):
-
-    answer = []
-    for j in range(len(sample_name)):
-        if sample_name[j]==str(i) and species[j] not in out_species:
-            answer.append(species[j].replace(' ', '_'))
-
+def read_custom_result(input_file):
     hit_result_dict = {}
-    file_path = f'./taoyuan/6_blast/test/{i}_zotu.csv'
-    with open(file_path, 'r', newline='', encoding='utf-8') as csvfile:
+    with open(input_file, 'r', newline='', encoding='utf-8') as csvfile:
         highest_id = {}
+        highest_evalue = {}
         reader = csv.reader(csvfile)
         for row in reader:
             haploid = row[0]
             hit = row[1].split('|')[-1]
-            identity = row[2]
+            identity = float(row[2])
+            evalue = float(row[10])
 
             if haploid not in hit_result_dict:
                 hit_result_dict[haploid] = []
-            if haploid not in highest_id or float(identity) > float(highest_id[haploid]):
+            if haploid not in highest_id or (identity >= highest_id[haploid] and evalue < highest_evalue[haploid]) or (identity > highest_id[haploid] and evalue <= highest_evalue[haploid]):
                 highest_id[haploid] = identity
+                highest_evalue[haploid] = evalue
                 hit_result_dict[haploid] = [hit]
-            elif float(identity)==float(highest_id[haploid]):
+            elif identity==highest_id[haploid] and evalue==highest_evalue[haploid]:
                 hit_result_dict[haploid].append(hit)
             
     hit_result = [species_list for species_list in hit_result_dict.values()]
-    answer_copy = answer.copy()
-    hit_result_copy = hit_result.copy()
 
-    correct = 0
+    return hit_result
+
+def get_mifish_answer(sample_id_list, species_list, sample_name, out_species=['Tadorna tadorna','Gallus gallus','Homo sapiens','Bos primigenius','Sus celebensis','Bos indicus','Mus musculus','Felis silvestris','Canis lupus','Pseudorca crassidens','Rattus tanezumi','Cichlidae sp.','Terapontidae sp.']):
+    answer = []
+    for j in range(len(sample_id_list)):
+        if sample_id_list[j]==sample_name and species_list[j] not in out_species:
+            answer.append(species_list[j].replace(' ', '_'))
+
+    return answer
+    
+def compare_results(answer, hit_result):
+    c = 0
+
     for i, ref in enumerate(answer):
         for j, quary in enumerate(hit_result):
             if ref in quary:
-                all_correct += 1
-                correct += 1
+                c += 1
                 answer[i] = []
                 hit_result[j] = []
                 break
 
     answer = [e for e in answer if e!=[]]
     hit_result = [e for e in hit_result if e!=[]]
-    false_negative = len(answer)
-    false_positive = len(hit_result)
-    total = correct + false_positive + false_negative
 
-    accuracy_list.append(correct/total)
-    false_positive_list.append(false_positive/total)
-    false_negative_list.append(false_negative/total)
+    fn = len(answer)
+    fp = len(hit_result)
 
-    all_false_negative += false_negative
-    all_false_positive += false_positive
+    return c, fn, fp
 
-all = all_correct+all_false_negative+all_false_positive
-print('Total test: ', all)
-print('accuracy: ', round((all_correct/all)*100,2), '%')
-print('false_positive: ', round((all_false_positive/all)*100, 2), '%')
-print('false_negative: ', round((all_false_negative/all)*100,2), '%')
+if __name__ == '__main__':
+    cor_list = []
+    fal_neg_list = []
+    fal_pos_list = []
+    
+    # taoyuan 
+    sample_id_list, species_list = read_mifish_result(input_file=f'./validaton/mifish/taoyuan.csv')
+    
+    for i in range(1, 19):
+        sample_name = f'{i}_'
+        hit_result = read_custom_result(input_file=f'./validation/custom/{sample_name}zotu.csv')
+        answer = get_mifish_answer(sample_id_list=sample_id_list, species_list=species_list, sample_name=sample_name)
+        correct, fal_neg, fal_pos = compare_results(answer=answer, hit_result=hit_result)
+        total = correct + fal_neg + fal_pos
+        cor_list.append(correct/total)
+        fal_neg_list.append(fal_neg/total)
+        fal_pos_list.append(fal_pos/total)
 
-# print(accuracy_list)
-# print(false_positive_list)
-# print(false_negative_list)
-ci_acc = mean_confidence_interval(accuracy_list)
-ci_fp = mean_confidence_interval(false_positive_list)
-ci_fn = mean_confidence_interval(false_negative_list)
-print('\nIn 18 samples:')
-print('false positive: ', ci_fp)
-print('accuracy: ', ci_acc)
-print('false negative: ', ci_fn)
+    print("taoyuan result:")
+    print(cor_list)
+    print(fal_neg_list)
+    print(fal_pos_list)
+    ci_acc = mean_confidence_interval(cor_list)
+    ci_fn = mean_confidence_interval(fal_neg_list)
+    ci_fp = mean_confidence_interval(fal_pos_list)
+    print('false positive: ', ci_fp)
+    print('accuracy: ', ci_acc)
+    print('false negative: ', ci_fn)
+   
+   # keelung
+    for time in ['3_C', '3_D', '3_H', '5_C', '5_D', '5_H', '6_C', '6_D', '6_H']:
+        sample_id_list, species_list = read_mifish_result(input_file=f'./validaton/mifish/230{time}.csv')
+
+        
+        for i in range(1, 6):
+            sample_name = f'230{time}0{i}'
+            hit_result = read_custom_result(input_file=f'./validation/custom/{sample_name}.csv')
+            answer = get_mifish_answer(sample_id_list=sample_id_list, species_list=species_list, sample_name=sample_name)
+            correct, fal_neg, fal_pos = compare_results(answer=answer, hit_result=hit_result)
+            total = correct + fal_neg + fal_pos
+            cor_list.append(correct/total)
+            fal_neg_list.append(fal_neg/total)
+            fal_pos_list.append(fal_pos/total)
+
+    print("keelung result:")
+    print(cor_list)
+    print(fal_neg_list)
+    print(fal_pos_list)
+    ci_acc = mean_confidence_interval(cor_list)
+    ci_fn = mean_confidence_interval(fal_neg_list)
+    ci_fp = mean_confidence_interval(fal_pos_list)
+    print('false positive: ', ci_fp)
+    print('accuracy: ', ci_acc)
+    print('false negative: ', ci_fn)
