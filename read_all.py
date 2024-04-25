@@ -148,7 +148,7 @@ class OtuAnalysis(ABC):
 
     @staticmethod
     def _make_umap(file_string, save_folder_name, neighbors = 15, umap_min_dist = 0.1):
-        cmd = f'usum {file_string} --neighbors {neighbors} --umap-min-dist {umap_min_dist} --maxdist 1.0 --termdist 1.0 --output {save_folder_name} -f'
+        cmd = f'usum {file_string} --neighbors {neighbors} --umap-min-dist {umap_min_dist} --maxdist 1.0 --termdist 1.0 --output {save_folder_name} -f --seed 1'
         subprocess.run(cmd, shell=True)
 
     @staticmethod
@@ -167,10 +167,10 @@ class OtuAnalysis(ABC):
     def _make_ml_tree(seq_file, target, save_dir='./', bootstrap=100):
         if not os.path.isdir(f'{save_dir}/{target}'):
             os.makedirs(f'{save_dir}/{target}')
-        cmd = f'iqtree2 -m GTR+F+I+G4 -s {seq_file} -b {bootstrap} --prefix {target} -nt AUTO'
+        cmd = f'iqtree2 -m TEST -s {seq_file} -b {bootstrap} --prefix {save_dir}/{target}/{target} -nt AUTO'
         subprocess.run(cmd, shell=True)
-        cmd = f'move {target}.* {save_dir}/{target}'
-        subprocess.run(cmd, shell=True)
+        # cmd = f'move {target}.* {save_dir}/{target}'
+        # subprocess.run(cmd, shell=True)
 
     @staticmethod
     def _show_alignment(aln_seq_path, save_path, save_png=True):
@@ -494,6 +494,28 @@ class SumAllSample(OtuAnalysis):
 
             shutil.rmtree('./tmp/')
 
+    def species_multiple_otu(self):
+        species2otu = {}
+        for sample_num in self.samplenum_list:
+            species2otu[sample_num] = self.sample_dict[sample_num].taxonomy2otu['species']
+        species2otu_list = [species2otu[sample_num] for sample_num in species2otu]
+        all_keys = list(set().union(*species2otu_list))
+        allsample_species = {}
+        for key in all_keys:
+            allsample_species[key] = []
+        for sample_num in self.samplenum_list:
+            for species, otu_list in species2otu[sample_num].items():
+                allsample_species[species].extend(otu_list)
+        
+        species_num = 0
+        species_list = []
+        for species, otu_list in allsample_species.items():
+            if len(otu_list)>1 and len(species.split('_'))==2:
+                species_num += 1
+                species_list.append(species)
+        print(species_num)
+        print(species_list)
+
     def get_species_seq(self, species_target, sample_num):
         species_seq = "" 
 
@@ -503,6 +525,10 @@ class SumAllSample(OtuAnalysis):
                 title = f'>{species_target}_{sample_num}_{zotu}'
                 seq  = self.sample_dict[sample_num].otu_seq[zotu]
                 species_seq += f'{title}\n{seq}\n'
+                # for uniq in self.sample_dict[sample_num].otu2unique[zotu]:
+                #     title = f'>{species_target}_{sample_num}_{uniq}'
+                #     seq  = self.sample_dict[sample_num].uniq_seq[uniq]
+                #     species_seq += f'{title}\n{seq}\n'
         except KeyError:
             print(f'No {species_target} in {sample_num}.')
 
@@ -530,16 +556,13 @@ class SumAllSample(OtuAnalysis):
         species_seq = ""
         for sample_num in self.samplenum_list:
             species_seq += self.get_species_seq(species_target=species_target, sample_num=sample_num)
+            species_seq += self.get_species_seq(species_target='Mugil_cephalus_cephalus', sample_num=sample_num)
         with open(f'./tmp/{species_target}.fasta', 'a') as file:
             file.write(species_seq)
 
         # make haplotype & alignment files
         self._make_align_file(seq_file=f'./tmp/{species_target}.fasta', aln_file=f'{save_dir}/{species_target}/aln_seq.fasta')
-        self._make_uniq_file(seq_file=f'{save_dir}/{species_target}/aln_seq.fasta', relabel='Hap_', uniq_file=f'{save_dir}/{species_target}/aln_seq.fasta', report_file=f'{save_dir}/{species_target}/report.txt')
-        cmd = f'usearch -fastx_uniques  -threads 12 \
-                -relabel Hap_ -fastaout  \
-                > 2>&1'
-        subprocess.run(cmd, shell=True)
+        self._make_uniq_file(seq_file=f'{save_dir}/{species_target}/aln_seq.fasta', relabel='Hap_', uniq_file=f'{save_dir}/{species_target}/uniq_seq.fasta', report_file=f'{save_dir}/{species_target}/report.txt')
         self._make_align_file(seq_file=f'{save_dir}/{species_target}/uniq_seq.fasta', aln_file=f'{save_dir}/{species_target}/aln_uniq_seq.fasta')
 
         # calculate frequency
@@ -648,7 +671,7 @@ class SumAllSample(OtuAnalysis):
                                     if species_target not in species_seq:
                                         species_seq[species_target] = ""
                                     species_seq[species_target] += self.get_species_seq(species_target=species_target, sample_num=sample_num)
-        
+
         if dry == False:
             for species, seq in species_seq.items():
                 with open(f'./tmp/{species}.fasta', 'w') as file:
@@ -689,62 +712,38 @@ class SumAllSample(OtuAnalysis):
 
         shutil.rmtree('./tmp/')
 
-    def mltree_family(self, family_target, save_dir='.', bootstrap=100, dry=False):
+    def mltree_genus(self, genus_target, save_dir='.', bootstrap=100, dry=False):
         self._make_tmp_dir()
 
-        print(family_target)
+        print(genus_target)
         seq_target = ""
         for sample_num in self.samplenum_list:
-            for family, genus_list in self.sample_dict[sample_num].taxonomylevel['family'].items():
-                if family_target == family:
-                    #to genus level
-                    for genus_target in genus_list:
-                        for genus, species_list in self.sample_dict[sample_num].taxonomylevel['genus'].items():
-                            if genus_target == genus:
-                                #to species level
-                                for species_target in species_list:
-                                    # to zotu level
-                                   seq_target += self.get_species_seq(species_target=species_target, sample_num=sample_num)
+            for genus, species_list in self.sample_dict[sample_num].taxonomylevel['genus'].items():
+                if genus_target == genus:
+                    #to species level
+                    for species_target in species_list:
+                        # to zotu level
+                       seq_target += self.get_species_seq(species_target=species_target, sample_num=sample_num)
         if dry == False:
-            with open(f'./tmp/{family_target}.fasta', 'w') as file:
+            with open(f'./tmp/{genus_target}.fasta', 'w') as file:
                 file.write(seq_target)
 
-            self._make_align_file(seq_file=f'./tmp/{family_target}.fasta', aln_file=f'./tmp/{family_target}')
-            self._make_ml_tree(seq_file=f'./tmp/{family_target}.aln', target=family_target, save_dir=save_dir, bootstrap=bootstrap)
-
-        shutil.rmtree('./tmp/')
-
-    def species_multiple_otu(self):
-        species2otu = {}
-        for sample_num in self.samplenum_list:
-            species2otu[sample_num] = self.sample_dict[sample_num].taxonomy2otu['species']
-        species2otu_list = [species2otu[sample_num] for sample_num in species2otu]
-        all_keys = list(set().union(*species2otu_list))
-        allsample_species = {}
-        for key in all_keys:
-            allsample_species[key] = []
-        for sample_num in self.samplenum_list:
-            for species, otu_list in species2otu[sample_num].items():
-                allsample_species[species].extend(otu_list)
-        
-        species_num = 0
-        species_list = []
-        for species, otu_list in allsample_species.items():
-            if len(otu_list)>1 and len(species.split('_'))==2:
-                species_num += 1
-                species_list.append(species)
-        print(species_num)
-        print(species_list)
+            self._make_align_file(seq_file=f'./tmp/{genus_target}.fasta', aln_file=f'./tmp/{genus_target}.aln')
+            self._make_ml_tree(seq_file=f'./tmp/{genus_target}.aln', target=genus_target, save_dir=save_dir, bootstrap=bootstrap)
 
 
 if __name__ == '__main__':
     read_path = './data/all_site'
     a = SumAllSample(read_dir=read_path)
-    all_species_with_var = ['Abudefduf_vaigiensis', 'Enneapterygius_etheostomus', 'Entomacrodus_striatus', 'Istiblennius_edentulus', 'Mugil_cephalus', 'Oreochromis_niloticus']
-    all_genus = ['Abudefduf', 'Enneapterygius', 'Entomacrodus', 'Istiblennius', 'Mugil', 'Oreochromis']
-    all_family = ['Pomacentridae', 'Tripterygiidae', 'Blenniidae', 'Mugilidae', 'Cichlidae']
-    # a.umap_genus(genus_target=genus, save_dir='./result/all_site_result/umap/umap_genus', neighbors=14, dry=False)
-    # a.umap_family(family_target=family, save_dir='./result/all_site_result/umap/umap_family', neighbors=15, dry=False)
-    # a.umap_family_genus_level(family_target=family, save_dir='./result/all_site_result/umap/umap_family_genus_level', neighbors=15, dry=False)
-    # a.dereplicate_zotu(species_list=all_species, save_dir='./result/all_site_result/haplotype') 
-    # a.hap_net_species(species_target='Entomacrodus_striatus', save_dir='./result/all_site_result/hap_net', save_png=True)
+    # a.barplot_all(level='species', save=True)
+    # all_species_with_var = ['Abudefduf_vaigiensis', 'Enneapterygius_etheostomus', 'Mugil_cephalus']
+    # all_genus = ['Abudefduf', 'Enneapterygius', 'Mugil']
+    # all_family = ['Pomacentridae', 'Tripterygiidae', 'Blenniidae', 'Mugilidae', 'Labridae']
+    # for species in all_species_with_var: 
+        # a.umap_species(species_target=species, save_dir='./result/all_site_result/umap/species', neighbors=15, umap_min_dist=0.5, dry=False)
+    # for genus in all_genus:
+        # a.umap_genus(genus_target=genus, save_dir='./result/all_site_result/umap/genus', neighbors=20, umap_min_dist=0.8, dry=False)
+    # for family in all_family:
+        # a.umap_family(family_target=family, save_dir=f'./result/all_site_result/umap/family_noise', neighbors=15, umap_min_dist=0.5, dry=False)
+    # a.dereplicate_zotu(species_list=l, save_dir='./result/all_site_result/haplotype/Labridae')
+    # a.hap_net_species(species_target='Mugil_cephalus', save_dir='./result/all_site_result/hap_net', save_png=False)
