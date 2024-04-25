@@ -1,8 +1,10 @@
 from pandas import *
 import csv 
+
 import numpy as np
 import scipy.stats as st
-from contextlib import suppress 
+from contextlib import suppress
+
 
 def mean_confidence_interval(data, confidence=0.95):
     a = 1.0 * np.array(data)
@@ -85,57 +87,34 @@ def compare_results(answer, hit_result):
 
     return c, fn, fp
 
-if __name__ == '__main__':
-    cor_list = []
-    fal_neg_list = []
-    fal_pos_list = []
-    
-    # taoyuan 
-    sample_id_list, species_list = read_mifish_result(input_file=f'./validaton/mifish/taoyuan.csv')
-    
-    for i in range(1, 19):
-        sample_name = f'{i}_'
-        hit_result = read_custom_result(input_file=f'./validation/custom/{sample_name}zotu.csv')
-        answer = get_mifish_answer(sample_id_list=sample_id_list, species_list=species_list, sample_name=sample_name)
-        correct, fal_neg, fal_pos = compare_results(answer=answer, hit_result=hit_result)
-        total = correct + fal_neg + fal_pos
-        cor_list.append(correct/total)
-        fal_neg_list.append(fal_neg/total)
-        fal_pos_list.append(fal_pos/total)
 
-    print("taoyuan result:")
-    print(cor_list)
-    print(fal_neg_list)
-    print(fal_pos_list)
-    ci_acc = mean_confidence_interval(cor_list)
-    ci_fn = mean_confidence_interval(fal_neg_list)
-    ci_fp = mean_confidence_interval(fal_pos_list)
-    print('false positive: ', ci_fp)
-    print('accuracy: ', ci_acc)
-    print('false negative: ', ci_fn)
-   
-   # keelung
-    for time in ['3_C', '3_D', '3_H', '5_C', '5_D', '5_H', '6_C', '6_D', '6_H']:
-        sample_id_list, species_list = read_mifish_result(input_file=f'./validaton/mifish/230{time}.csv')
+if __name__ == '__main__':
+    # cor_list = []
+    # fal_neg_list = []
+    # fal_pos_list = []
+
+    # for time in ['6_H']: #['3_C', '3_D', '3_H', '5_C', '5_D', '5_H', '6_C', '6_D']:
+    #     sample_id_list, species_list = read_mifish_result(input_file=f'./validation/mifish/230{time}.csv')
 
         
-        for i in range(1, 6):
-            sample_name = f'230{time}0{i}'
-            hit_result = read_custom_result(input_file=f'./validation/custom/{sample_name}.csv')
-            answer = get_mifish_answer(sample_id_list=sample_id_list, species_list=species_list, sample_name=sample_name)
-            correct, fal_neg, fal_pos = compare_results(answer=answer, hit_result=hit_result)
-            total = correct + fal_neg + fal_pos
-            cor_list.append(correct/total)
-            fal_neg_list.append(fal_neg/total)
-            fal_pos_list.append(fal_pos/total)
+    #     for i in range(1, 5):
+    #         sample_name = f'230{time}0{i}'
+    #         print(sample_name)
+    #         hit_result = read_custom_result(input_file=f'./validation/custom/{sample_name}.csv')
+    #         answer = get_mifish_answer(sample_id_list=sample_id_list, species_list=species_list, sample_name=sample_name)
+    #         correct, fal_neg, fal_pos = compare_results(answer=answer, hit_result=hit_result)
+    #         total = correct + fal_neg + fal_pos
+    #         cor_list.append(correct/total)
+    #         fal_neg_list.append(fal_neg/total)
+    #         fal_pos_list.append(fal_pos/total)
 
-    print("keelung result:")
-    print(cor_list)
-    print(fal_neg_list)
-    print(fal_pos_list)
-    ci_acc = mean_confidence_interval(cor_list)
-    ci_fn = mean_confidence_interval(fal_neg_list)
-    ci_fp = mean_confidence_interval(fal_pos_list)
-    print('false positive: ', ci_fp)
-    print('accuracy: ', ci_acc)
-    print('false negative: ', ci_fn)
+    # print(cor_list)
+    # print(fal_neg_list)
+    # print(fal_pos_list)
+
+    # ci_acc = mean_confidence_interval(cor_list)
+    # ci_fn = mean_confidence_interval(fal_neg_list)
+    # ci_fp = mean_confidence_interval(fal_pos_list)
+    # print('false positive: ', ci_fp)
+    # print('accuracy: ', ci_acc)
+    # print('false negative: ', ci_fn)
