@@ -4,6 +4,35 @@ from blast_csv import read_hap_rank
 import os
 import time
 
+def get_sample_id_list(read_dir):
+    file_list = os.listdir(f'{read_dir}/4_derep')
+    sample_id_list = [file.replace('_uniq.fasta', '') for file in file_list if file.endswith('_uniq.fasta')]
+    return sample_id_list
+
+def check_dir(read_dir):
+    if os.path.exists(os.path.join(read_dir, "4_derep"))==False:
+        print("> Error: 4_derep folder does not exist in the specified directory.")
+        return
+    if os.path.exists(os.path.join(read_dir, "5_denoise"))==False:
+        print("> Error: 5_denoise folder does not exist in the specified directory.")
+        return
+    if os.path.exists(os.path.join(read_dir, "6_blast"))==False:
+        print("> Error: 6_blast folder does not exist in the specified directory.")
+        return
+
+def check_file(read_dir, sample_id_list):
+    for sample_id in sample_id_list:
+        if os.path.exists(os.path.join(read_dir, "4_derep", f"{sample_id}_uniq.fasta"))==False:
+            print(f"> Error: {sample_id}_uniq.fasta does not exist in the specified directory.")
+            return
+        if os.path.exists(os.path.join(read_dir, "5_denoise", f"{sample_id}_zotu.fasta"))==False:
+            print(f"> Error: {sample_id}_zotu.fasta does not exist in the specified directory.")
+            return
+        if os.path.exists(os.path.join(read_dir, "6_blast", f"{sample_id}_blast.csv"))==False:
+            print(f"> Error: {sample_id}_blast.csv does not exist in the specified directory.")
+            return
+    print("> All files exist.")
+
 class OneSample():
 
     def __init__(self, uniq_fasta_path, zotu_fasta_path, zotu_report_path, blast_csv_path):
@@ -26,34 +55,13 @@ class IntegrateSamples():
         start_time = time.time()
 
         print(f"> Reading samples from: {read_dir}.")
-        if os.path.exists(os.path.join(read_dir, "4_derep"))==False:
-            print("> Error: 4_derep folder does not exist in the specified directory.")
-            return
-        if os.path.exists(os.path.join(read_dir, "5_denoise"))==False:
-            print("> Error: 5_denoise folder does not exist in the specified directory.")
-            return
-        if os.path.exists(os.path.join(read_dir, "6_blast"))==False:
-            print("> Error: 6_blast folder does not exist in the specified directory.")
-            return
+        check_dir(read_dir)
 
         if sample_id_list is None:
             print("> No sample id list provided, reading sample id list from the directory.")
-            file_list = os.listdir(f'{read_dir}/4_derep')
-            sample_id_list = [file.replace('_uniq.fasta', '') for file in file_list if file.endswith('_uniq.fasta')]
+            sample_id_list = get_sample_id_list(read_dir)
         else:
             print("> Specified sample id list. Start checking whether files exist.")
-            for sample_id in sample_id_list:
-                if os.path.exists(os.path.join(read_dir, "4_derep", f"{sample_id}_uniq.fasta"))==False:
-                    print(f"> Error: {sample_id}_uniq.fasta does not exist in the specified directory.")
-                    return
-                if os.path.exists(os.path.join(read_dir, "5_denoise", f"{sample_id}_zotu.fasta"))==False:
-                    print(f"> Error: {sample_id}_zotu.fasta does not exist in the specified directory.")
-                    return
-                if os.path.exists(os.path.join(read_dir, "6_blast", f"{sample_id}_blast.csv"))==False:
-                    print(f"> Error: {sample_id}_blast.csv does not exist in the specified directory.")
-                    return
-            print("> All files exist.")
-
             check_file(read_dir, sample_id_list)
 
         self.sample_id_list.extend(sample_id_list)
