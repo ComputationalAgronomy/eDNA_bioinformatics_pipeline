@@ -23,44 +23,47 @@ class IntegrateAnalysis(IntegrateSamples):
     def __init__(self, load_path=None):
         super().__init__(load_path)
 
+    def get_sample_abundance(self, sample_id, rank):
+
+        abundance = {}
+        for hap, rank_dict in self.sample_data[sample_id].hap2rank.items():
+            rank_name = rank_dict[rank]
+            if rank_name not in abundance:
+                abundance[rank_name] = 0
+            size = int(self.sample_data[sample_id].hap_size[hap])
+            abundance[rank_name] += size
+
+        return abundance
+
     def barchart_relative_abundance(self, rank, sample_id_list=None, save_dir=None, save_name=None):
 
-        print(f"> Plotting barplot for {rank}...")
+        print(f"> Plotting barchart for {rank}...")
 
         if sample_id_list == None:
-            print("> No sample ID list specified. Using all sample IDs.")
+            print("> No sample ID list specified. Using all samples.")
             sample_id_list = self.sample_id_list
         else:
-            print(f"> Specified sample IDs:  {sample_id_list}")
+            print(f"> Specified samples:  {sample_id_list}")
 
-        all_samples_size = {}
+        samples_abundance = {}
         for sample_id in sample_id_list:
-            sample_size = {}
-            for hap, rank_list in self.sample_data[sample_id].hap2rank.items():
+            abundance = self.get_sample_abundance(sample_id, rank)
+            samples_abundance[sample_id] = normalize_abundance(abundance)
 
-                rank_name = rank_list[rank]
-                size = int(self.sample_data[sample_id].hap_size[hap])
-
-                if rank_name not in sample_size:
-                    sample_size[rank_name] = 0
-                sample_size[rank_name] += size
-            
-            all_samples_size[sample_id] = normalize_abundance(sample_size)
-
-        all_rank_name = [list(all_samples_size[sample_id].keys()) for sample_id in sample_id_list]
+        all_rank_name = [list(samples_abundance[sample_id].keys()) for sample_id in sample_id_list]
         uniq_rank_name = rank_name_union(all_rank_name)
     
         for sample_id in sample_id_list:
-            all_samples_size[sample_id] = [all_samples_size[sample_id].get(rank_name, 0) for rank_name in uniq_rank_name]
+            samples_abundance[sample_id] = [samples_abundance[sample_id].get(rank_name, 0) for rank_name in uniq_rank_name]
  
-        plotdata = pd.DataFrame(all_samples_size, index=uniq_rank_name)
+        plotdata = pd.DataFrame(samples_abundance, index=uniq_rank_name)
         fig = create_barchart_fig(plotdata.transpose())
         fig.show()
-        print("> Barplot generated.")
+        print("> Barchart generated.")
 
         if save_dir != None:
             if save_name == None:
                 save_name = f"{rank}_bar_chart"
             bar_chart_path = os.path.join(save_dir, f'{save_name}.html')
             fig.write_html(bar_chart_path)
-            print(f"> Barplot saved to:  {bar_chart_path}")
+            print(f"> Barchart saved to:  {bar_chart_path}")
