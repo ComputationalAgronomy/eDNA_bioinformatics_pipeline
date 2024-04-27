@@ -105,3 +105,8 @@ class IntegrateSamples():
 
         save_instance(self, save_path)
         print(f"> Sample data saved to: {save_path}\n")
+
+    def load_sample_data(self, load_path):
+        with open(load_path,'rb') as file:
+            self.__dict__ = pickle.load(file).__dict__
+        print(f"> Sample data loaded from: {load_path}\n")
