@@ -2,7 +2,13 @@ from fasta import read_seq
 from denoise_report import read_denoise_report
 from blast_csv import read_hap_rank
 import os
+import pickle
+from datetime import date
 import time
+
+def save_instance(instance, path):
+    with open(path, 'wb') as f:
+        pickle.dump(instance, f)
 
 def get_sample_id_list(read_dir):
     file_list = os.listdir(f'{read_dir}/4_derep')
@@ -79,3 +85,23 @@ class IntegrateSamples():
         print(f"> {len(sample_id_list)} Samples read.")
         print("Time Taken: ", time.strftime("%H:%M:%S",time.gmtime(seconds)), "\n")
 
+    def save_sample_data(self, save_dir, save_name=f"eDNA_samples_{date.today()}"):
+        print(f"> Saving sample data to: {save_dir}.")
+
+        save_path = os.path.join(save_dir, f"{save_name}.pkl")
+        # overwrite_y_n
+        if os.path.exists(save_path):
+            while True:
+                user_input = input("> File already exists, Do you want to overwrite it? (y/n)")
+                if user_input in ['y', 'Y', 'Yes', 'yes']:
+                    os.remove(save_path)
+                    print("> File overwritten.")
+                    break
+                elif user_input in ['n', 'N', 'No', 'no']:
+                    print("> File not saved.\n")
+                    return
+                else:
+                    print("> Invalid input.")
+
+        save_instance(self, save_path)
+        print(f"> Sample data saved to: {save_path}\n")
