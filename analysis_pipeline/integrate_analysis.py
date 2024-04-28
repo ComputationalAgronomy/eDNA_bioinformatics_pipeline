@@ -45,6 +45,62 @@ def umap_command(fasta_path_string, save_dir, prefix, neighbors, min_dist):
     cmd = f'usum {fasta_path_string} --neighbors {neighbors} --umap-min-dist {min_dist} --maxdist 1.0 --termdist 1.0 --output {save_path} -f --seed 1'
     subprocess.run(cmd, shell=True)
 
+def dereplicate_fasta(seq_file, uniq_file, relabel, threads=12):
+    cmd = f'usearch -fastx_uniques {seq_file} -threads {threads} \
+            -relabel {relabel}_ -fastaout {uniq_file}'
+    subprocess.run(cmd, shell=True)
+
+def write_mltree_fasta(units2fasta_dict, dereplicate):
+    fasta_string = ""
+    if dereplicate == True:
+        for unit_name, unit_seq in units2fasta_dict.items():
+            with open(f'./tmp/{unit_name}.fa', 'w') as file:
+                file.write(unit_seq)
+            dereplicate_fasta(seq_file=f'./tmp/{unit_name}.fa', uniq_file=f'./tmp/{unit_name}_uniq.fa', relabel=unit_name)
+            with open(f'./tmp/{unit_name}_uniq.fa', 'r') as file:
+                fasta_string += file.read()
+        with open(f'./tmp/mltree.fa', 'w') as file:
+            file.write(fasta_string)
+    else:    
+        for unit_seq in units2fasta_dict.values():
+            fasta_string += unit_seq
+        with open(f'./tmp/mltree.fa', 'w') as file:
+            file.write(fasta_string)
+    print(f"\n> Written MLTree fasta file to:  ./tmp/mltree.fa")
+
+def align_fasta(seq_file, aln_file):
+    cmd = f'clustalo -i {seq_file} -o {aln_file} --distmat-out={aln_file}.mat --guidetree-out={aln_file}.dnd --full --force'
+    subprocess.run(cmd, shell=True)
+    print(f"\n> Aligned fasta file to: {aln_file}\n")
+
+def check_mltree_overwrite(save_dir, prefix):
+    ckp_path = os.path.join(save_dir, prefix, prefix + '.ckp.gz') # e.g. save/dir/SpA/SpA.ckp.gz
+    if os.path.exists(ckp_path):
+        print(f"""
+        > MLTree checkpoint fileCheckpoint ({ckp_path}) indicates that a previous run successfully finished  already exists."
+        Use `-redo` option if you really want to redo the analysis and overwrite all output files.
+        Use `--redo-tree` option if you want to restore ModelFinder and only redo tree search.
+        Use `--undo` option if you want to continue previous run when changing/adding options.
+        """)
+        while True:
+            user_input = input("(-redo/--redo-tree/--undo/stop): ")
+            if user_input in ['-redo', '--redo-tree', '--undo', 'stop', 'Stop', 'STOP']:
+                return user_input
+            else:
+                print("> Invalid input.")
+    else:
+        return ""
+
+def iqtree2_command(seq_path, save_dir, prefix, model, bootstrap, threads, checkpoint):
+    save_subdir = os.path.join(save_dir, prefix)
+    if not os.path.isdir(save_subdir):
+        os.makedirs(save_subdir)
+    model = model if model != None else 'TEST'
+    bootstrap_string = f'-b {bootstrap} ' if bootstrap != None else ''
+    threads = threads if threads != None else 'AUTO'
+    cmd = f'iqtree2 -m {model} -s {seq_path} {bootstrap_string}--prefix {os.path.join(save_subdir, prefix)} -nt {threads}{checkpoint}'
+    subprocess.run(cmd, shell=True)
+
 class IntegrateAnalysis(IntegrateSamples):
     def __init__(self, load_path=None):
         super().__init__(load_path)
@@ -122,4 +178,22 @@ class IntegrateAnalysis(IntegrateSamples):
         fasta_path = write_umap_fasta(units2fasta)
         umap_command(fasta_path_string=fasta_path, save_dir=save_dir, prefix=target_name, neighbors = neighbors, min_dist = min_dist)
 
+        remove_dir('./tmp/')
+
+    def mltree_target(self, target_name, target_rank, units_rank="species", dereplicate=False, model=None, bootstrap=None, threads=None, save_dir='.', sample_id_list=None):
+        print(f"> Plotting MLTree for {target_name}...")
+
+        ckp = check_mltree_overwrite(save_dir=save_dir, prefix=target_name)
+        if ckp in ['stop', 'Stop', 'STOP']:
+            print("> Stopping analysis.")
+            return
+
+        create_dir('./tmp/')
+        
+        sample_id_list = self.get_sample_id_list(sample_id_list)
+        units2fasta = self.get_units2fasta_dict(target_name, target_rank, units_rank, sample_id_list)
+        write_mltree_fasta(units2fasta, dereplicate=dereplicate)
+        align_fasta(seq_file='./tmp/mltree.fa', aln_file='./tmp/mltree.aln')
+        iqtree2_command(seq_path='./tmp/mltree.aln', save_dir=save_dir, prefix=target_name, model=model, bootstrap=bootstrap, threads=threads, checkpoint=ckp)
+        
         remove_dir('./tmp/')
