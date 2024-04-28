@@ -1,6 +1,6 @@
 from Bio import SeqIO
 
-def read_seq(seq_path, seq_type="Haplotype"):
+def read_fasta_file(seq_path, seq_type="Haplotype"):
     # type = "Haplotype"
     # type = "Amplicon"
     seq_dict = {}
