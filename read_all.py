@@ -7,9 +7,9 @@ import subprocess
 import re
 from pymsaviz import MsaViz
 import shutil
-from matplotlib.cm import get_cmap
 import plotly.express as px
-import glob
+from usum import usum
+from Bio import SeqIO
 
 class OtuAnalysis(ABC):
 
@@ -20,11 +20,11 @@ class OtuAnalysis(ABC):
         self.otu_size = {}
         self.otu2unique = {}
         self.taxonomy2otu = {'kingdom':{}, 'phylum':{}, 'class':{}, 'order':{}, 'family':{}, 'genus':{}, 'species':{}}
-
+        self.taxonomylevel= {'kingdom':{}, 'phylum':{}, 'class':{}, 'order':{}, 'family':{}, 'genus':{}, 'species':{}}
         uniq_path = f'{read_dir}/4_derep/{sample_num}_derep.fasta'
-        otu_path = f'{read_dir}/5_haploid/zotu/{sample_num}_zotu.fasta'
-        otu_report_path = f'{read_dir}/5_haploid/zotu/{sample_num}_zotu_size.txt'
-        blast_path = f'{read_dir}/6_blast/mifish_db/{sample_num}_zotu.csv'
+        otu_path = f'{read_dir}/5_haploid/{sample_num}_zotu.fasta'
+        otu_report_path = f'{read_dir}/5_haploid/{sample_num}_zotu_report.txt'
+        blast_path = f'{read_dir}/6_blast/{sample_num}_zotu.csv'
         
         self.uniq_seq = self._read_seq(uniq_path)
         self.otu_seq = self._read_seq(otu_path)
@@ -57,11 +57,15 @@ class OtuAnalysis(ABC):
     def _read_blast(self, blast_path):
         with open(blast_path, 'r') as file:
             self.taxonomy2otu['order']['no_order_level'] = []
+            self.taxonomylevel['order']['no_order_level'] = []
 
             for line in file.readlines():
                 blast_list = line.split(',')
                 haploid, species, genus, family, order, class_, phylum, kingdom = blast_list[0], blast_list[2], blast_list[3], blast_list[4], blast_list[5], blast_list[6], blast_list[7], blast_list[8]
-
+                error_symbol= str.maketrans({':': '_', '/': '_', '\\': '_', '*': '_', '?': '_', '"': '_', '<': '_', '>': '_', '|': '_'})
+                species = species.translate(error_symbol)
+                family = 'Mugilidae' if family == 'Mugil' else family
+            
                 if species not in self.taxonomy2otu['species']:
                     self.taxonomy2otu['species'][species] = []
                 self.taxonomy2otu['species'][species].append(haploid)
@@ -93,6 +97,44 @@ class OtuAnalysis(ABC):
                     self.taxonomy2otu['kingdom'][kingdom] = []
                 self.taxonomy2otu['kingdom'][kingdom].append(haploid)
 
+
+                if species not in self.taxonomylevel['species']:
+                    self.taxonomylevel['species'][species] = []
+                self.taxonomylevel['species'][species].append(haploid)
+
+                if genus not in self.taxonomylevel['genus']:
+                    self.taxonomylevel['genus'][genus] = []
+                if species not in self.taxonomylevel['genus'][genus]:
+                    self.taxonomylevel['genus'][genus].append(species)
+
+                if family not in self.taxonomylevel['family']:
+                    self.taxonomylevel['family'][family] = []
+                if genus not in self.taxonomylevel['family'][family]:
+                    self.taxonomylevel['family'][family].append(genus)
+
+                if order == '' and family not in self.taxonomylevel['order']['no_order_level']:
+                    self.taxonomylevel['order']['no_order_level'].append(family)
+                else:
+                    if order not in self.taxonomylevel['order']:
+                        self.taxonomylevel['order'][order] = []
+                    if family not in self.taxonomylevel['order'][order]:
+                        self.taxonomylevel['order'][order].append(family)
+
+                if class_ not in self.taxonomylevel['class']:
+                    self.taxonomylevel['class'][class_] = []
+                if order not in self.taxonomylevel['class'][class_]:
+                    self.taxonomylevel['class'][class_].append(order)
+
+                if phylum not in self.taxonomylevel['phylum']:
+                    self.taxonomylevel['phylum'][phylum] = []
+                if class_ not in self.taxonomylevel['phylum'][phylum]:
+                    self.taxonomylevel['phylum'][phylum].append(class_)
+
+                if kingdom not in self.taxonomylevel['kingdom']:
+                    self.taxonomylevel['kingdom'][kingdom] = []
+                if phylum not in self.taxonomylevel['kingdom'][kingdom]:
+                    self.taxonomylevel['kingdom'][kingdom].append(phylum)
+
     # Split the sequences to conform to the fasta format.
     @staticmethod
     def _split_lines(seq):
@@ -105,14 +147,30 @@ class OtuAnalysis(ABC):
             os.makedirs('./tmp/')
 
     @staticmethod
-    def _make_umap(file_string, save_folder_name):
-        cmd = f'usum {file_string} --maxdist 1.0 --termdist 1.0 --output {save_folder_name} -f'
+    def _make_umap(file_string, save_folder_name, neighbors = 15, umap_min_dist = 0.1):
+        cmd = f'usum {file_string} --neighbors {neighbors} --umap-min-dist {umap_min_dist} --maxdist 1.0 --termdist 1.0 --output {save_folder_name} -f --seed 1'
         subprocess.run(cmd, shell=True)
 
     @staticmethod
     def _make_align_file(seq_file, aln_file):
-        cmd = f'clustalo -i {seq_file} -o {aln_file}.aln --distmat-out={aln_file}.mat --guidetree-out={aln_file}.dnd --full --force'
+        cmd = f'clustalo -i {seq_file} -o {aln_file} --distmat-out={aln_file}.mat --guidetree-out={aln_file}.dnd --full --force'
         subprocess.run(cmd, shell=True)
+    
+    @staticmethod
+    def _make_uniq_file(seq_file, relabel, uniq_file, report_file):
+        cmd = f'usearch -fastx_uniques {seq_file} -threads 12 \
+                -relabel {relabel} -fastaout {uniq_file} \
+                >{report_file} 2>&1'
+        subprocess.run(cmd, shell=True)
+
+    @staticmethod
+    def _make_ml_tree(seq_file, target, save_dir='./', bootstrap=100):
+        if not os.path.isdir(f'{save_dir}/{target}'):
+            os.makedirs(f'{save_dir}/{target}')
+        cmd = f'iqtree2 -m TEST -s {seq_file} -b {bootstrap} --prefix {save_dir}/{target}/{target} -nt AUTO'
+        subprocess.run(cmd, shell=True)
+        # cmd = f'move {target}.* {save_dir}/{target}'
+        # subprocess.run(cmd, shell=True)
 
     @staticmethod
     def _show_alignment(aln_seq_path, save_path, save_png=True):
@@ -398,41 +456,44 @@ class SumAllSample(OtuAnalysis):
 
         # shutil.rmtree('./tmp/')
 
-    def analysis_species_subspecies(self, species_name, save_dir='.', save_align_png=True, make_phylogenetic_tree=False, bootstrap_times=100):
+    def analysis_species_subspecies(self, species_name, save_dir='.', neighbors = 15, umap_min_dist = 0.1, alignment=True, dry=False):
         self._make_tmp_dir()
         
         align_seq = ''
         file_string = ''
-        
-        for sample_num in self.samplenum_list:
-            species_list = [species for species in self.sample_dict[sample_num].taxonomy2otu['species'].keys() if species_name in species]
-            for species in species_list:
+        species_list = [species for sample_num in self.samplenum_list for species in self.sample_dict[sample_num].taxonomy2otu['species'].keys() if species_name in species]
+        species_set = set(species_list)
+        if dry == False:
+            for species in species_set:
                 umap_seq = ''
-                otu_list = self.sample_dict[sample_num].taxonomy2otu['species'][species]
-                for otu in otu_list:
-                    title = f'>{sample_num}_{species}_{otu}'
-                    seq  = self.sample_dict[sample_num].otu_seq[otu]
-                    umap_seq = umap_seq + f'{title}\n{seq}\n'
-                    align_seq = align_seq + f'{title}\n{seq}\n'
+                for sample_num in self.samplenum_list:
+                    otu_list = self.sample_dict[sample_num].taxonomy2otu['species'].get(species, [])
+                    if otu_list != []:
+                        for otu in otu_list:
+                            title = f'>{species}_{sample_num}_{otu}'
+                            seq  = self.sample_dict[sample_num].otu_seq[otu]
+                            umap_seq = umap_seq + f'{title}\n{seq}\n'
+                            align_seq = align_seq + f'{title}\n{seq}\n'
 
-                with open(f'./tmp/{sample_num}_{species}.fasta', 'w') as file:
+                with open(f'./tmp/{species}.fasta', 'w') as file:
                     file.write(umap_seq)
-                file_string = file_string + f'./tmp/{sample_num}_{species}.fasta '
-        
-        with open(f'./tmp/seq.fa', 'w') as file:
-            file.write(align_seq)
+                file_string = file_string + f'./tmp/{species}.fasta '
 
-        self._make_umap(file_string=file_string, save_folder_name=f'{save_dir}/{species_name}')
+            with open(f'./tmp/seq.fa', 'w') as file:
+                file.write(align_seq)
 
-        self._make_align_file(seq_file='./tmp/seq.fa', aln_file=f'{save_dir}/{species_name}/{species_name}')
-        
-        if os.path.exists(f'{save_dir}/{species_name}/{species_name}.aln'):
-            self._show_alignment(aln_seq_path=f'{save_dir}/{species_name}/{species_name}.aln', save_path=f'{save_dir}/{species_name}/alignment.png', save_png=save_align_png)
-        else:
-            print(f'{species_name} contains 1 sequence, nothing to align')
+            self._make_umap(file_string=file_string, save_folder_name=f'{save_dir}/{species_name}', neighbors = neighbors, umap_min_dist = umap_min_dist)
 
-        shutil.rmtree('./tmp/')
-    
+            if alignment:
+                self._make_align_file(seq_file='./tmp/seq.fa', aln_file=f'{save_dir}/{species_name}/{species_name}')
+
+                if os.path.exists(f'{save_dir}/{species_name}/{species_name}.aln'):
+                    self._show_alignment(aln_seq_path=f'{save_dir}/{species_name}/{species_name}.aln', save_path=f'{save_dir}/{species_name}/alignment.png')
+                else:
+                    print(f'{species_name} contains 1 sequence, nothing to align')
+
+            shutil.rmtree('./tmp/')
+
     def species_multiple_otu(self):
         species2otu = {}
         for sample_num in self.samplenum_list:
@@ -455,15 +516,234 @@ class SumAllSample(OtuAnalysis):
         print(species_num)
         print(species_list)
 
+    def get_species_seq(self, species_target, sample_num):
+        species_seq = "" 
+
+        try:
+            zotu_list = self.sample_dict[sample_num].taxonomy2otu['species'][species_target]
+            for zotu in zotu_list:
+                title = f'>{species_target}_{sample_num}_{zotu}'
+                seq  = self.sample_dict[sample_num].otu_seq[zotu]
+                species_seq += f'{title}\n{seq}\n'
+                # for uniq in self.sample_dict[sample_num].otu2unique[zotu]:
+                #     title = f'>{species_target}_{sample_num}_{uniq}'
+                #     seq  = self.sample_dict[sample_num].uniq_seq[uniq]
+                #     species_seq += f'{title}\n{seq}\n'
+        except KeyError:
+            print(f'No {species_target} in {sample_num}.')
+
+        return species_seq
+    
+    def dereplicate_zotu(self, species_list, save_dir):
+        self._make_tmp_dir()
+
+        for species in species_list:
+            seq = ""
+            for sample_num in self.samplenum_list:
+                seq += a.get_species_seq(species_target=species, sample_num=sample_num)
+            with open(f'./tmp/{species}.fa', 'w') as file:
+                file.write(seq)
+            a._make_uniq_file(seq_file=f'./tmp/{species}.fa', relabel=f'{species}_Hap_', uniq_file=f'{save_dir}/{species}.fa', report_file=f'{save_dir}/{species}.txt')
+
+        shutil.rmtree('./tmp/')
+
+    def hap_net_species(self, species_target, save_dir='.', save_png=True):
+        self._make_tmp_dir()
+        if not os.path.isdir(f'{save_dir}/{species_target}'):
+            os.makedirs(f'{save_dir}/{species_target}')
+
+        # get species sequences
+        species_seq = ""
+        for sample_num in self.samplenum_list:
+            species_seq += self.get_species_seq(species_target=species_target, sample_num=sample_num)
+            species_seq += self.get_species_seq(species_target='Mugil_cephalus_cephalus', sample_num=sample_num)
+        with open(f'./tmp/{species_target}.fasta', 'a') as file:
+            file.write(species_seq)
+
+        # make haplotype & alignment files
+        self._make_align_file(seq_file=f'./tmp/{species_target}.fasta', aln_file=f'{save_dir}/{species_target}/aln_seq.fasta')
+        self._make_uniq_file(seq_file=f'{save_dir}/{species_target}/aln_seq.fasta', relabel='Hap_', uniq_file=f'{save_dir}/{species_target}/uniq_seq.fasta', report_file=f'{save_dir}/{species_target}/report.txt')
+        self._make_align_file(seq_file=f'{save_dir}/{species_target}/uniq_seq.fasta', aln_file=f'{save_dir}/{species_target}/aln_uniq_seq.fasta')
+
+        # calculate frequency
+        frequency = {}
+        uniq_seq_set = {}
+        fastx_sequences = SeqIO.parse(open(f'{save_dir}/{species_target}/aln_uniq_seq.fasta'), 'fasta')
+        for fastx in fastx_sequences:
+            uniq_id = fastx.description
+            uniq_seq = fastx.seq
+            uniq_seq_set[uniq_id] = str(uniq_seq)
+            print(len(uniq_seq))
+            frequency[uniq_id] = {'taoyuan':0, 'keelung':0}
+
+        fastx_sequences = SeqIO.parse(open(f'{save_dir}/{species_target}/aln_seq.fasta'), 'fasta')
+        for fastx in fastx_sequences:
+            aln_id = fastx.description
+            aln_seq = str(fastx.seq)
+
+            for uniq_id, uniq_seq in uniq_seq_set.items():
+                if aln_seq==uniq_seq:
+                    print(f'uniq_id={uniq_id}; aln_id={aln_id}')
+                    if 'taoyuan' in aln_id:
+                        frequency[uniq_id]['taoyuan'] +=1
+                    elif 'keelung' in aln_id:
+                        frequency[uniq_id]['keelung'] +=1
+                    else:
+                        print('Can not recognize!')
+
+        # print the data that NEXUS file need
+        uniq_seq_text = ""
+        for uniq_id, uniq_seq in uniq_seq_set.items():
+            uniq_seq_text += uniq_id + "\t" + uniq_seq + "\n\n"
+        print(uniq_seq_text)
+
+        frequency_text = ""
+        for uniq_id, frq in frequency.items():
+            frequency_text += f"{uniq_id} {frq['taoyuan']},{frq['keelung']}\n\n"
+        # self._show_alignment(aln_seq_path=f'./tmp/{species_target}.aln', save_path=f"{save_dir}/{species_target}.png", save_png=save_png)
+        print(frequency_text)
+
+        shutil.rmtree('./tmp/')
+ 
+    def umap_species(self, species_target, save_dir='.', neighbors = 15, umap_min_dist = 0.1, dry=False):
+        self._make_tmp_dir()
+
+        print(species_target)
+        species_seq = {} # key is species_name, value is its sequence from all samples
+        file_string = ''
+        for sample_num in self.samplenum_list:
+            for species in self.sample_dict[sample_num].taxonomylevel['species'].keys():
+                if species_target in species:
+                    if species not in species_seq:
+                        species_seq[species] = ""
+                    species_seq[species] += self.get_species_seq(species_target=species, sample_num=sample_num) 
+
+        if dry == False:
+            for species, seq in species_seq.items():
+                with open(f'./tmp/{species}.fasta', 'w') as file:
+                    file.write(seq)
+                file_string = file_string + f'./tmp/{species}.fasta '
+
+            self._make_umap(file_string=file_string, save_folder_name=f'{save_dir}/{species_target}', neighbors = neighbors, umap_min_dist = umap_min_dist)
+
+        shutil.rmtree('./tmp/')
+
+    def umap_genus(self, genus_target, save_dir='.', neighbors = 15, umap_min_dist = 0.1, dry=False):
+        self._make_tmp_dir()
+
+        print(genus_target)
+        species_seq = {} # key is species_name, value is its sequence from all samples
+        file_string = ''
+        for sample_num in self.samplenum_list:
+            for genus, species_list in self.sample_dict[sample_num].taxonomylevel['genus'].items():
+                if genus_target == genus:
+                    #to species level
+                    for species_target in species_list:
+                        if species_target not in species_seq:
+                            species_seq[species_target] = ""
+                        species_seq[species_target] += self.get_species_seq(species_target=species_target, sample_num=sample_num)
+
+        if dry == False:
+            for species, seq in species_seq.items():
+                with open(f'./tmp/{species}.fasta', 'w') as file:
+                    file.write(seq)
+                file_string = file_string + f'./tmp/{species}.fasta '
+
+            self._make_umap(file_string=file_string, save_folder_name=f'{save_dir}/{genus_target}', neighbors = neighbors, umap_min_dist = umap_min_dist)
+
+        shutil.rmtree('./tmp/')
+
+    def umap_family(self, family_target, save_dir='.', neighbors = 15, umap_min_dist = 0.1, dry=False):
+        self._make_tmp_dir()
+
+        print(family_target)
+        species_seq = {} # key is species_name, value is its sequence from all samples
+        file_string = ''
+        for sample_num in self.samplenum_list:
+            for family, genus_list in self.sample_dict[sample_num].taxonomylevel['family'].items():
+                if family_target == family:
+                    #to genus level
+                    for genus_target in genus_list:
+                        for genus, species_list in self.sample_dict[sample_num].taxonomylevel['genus'].items():
+                            if genus_target == genus:
+                                #to species level
+                                for species_target in species_list:
+                                    if species_target not in species_seq:
+                                        species_seq[species_target] = ""
+                                    species_seq[species_target] += self.get_species_seq(species_target=species_target, sample_num=sample_num)
+
+        if dry == False:
+            for species, seq in species_seq.items():
+                with open(f'./tmp/{species}.fasta', 'w') as file:
+                    file.write(seq)
+                file_string = file_string + f'./tmp/{species}.fasta '
+
+            self._make_umap(file_string=file_string, save_folder_name=f'{save_dir}/{family_target}', neighbors = neighbors, umap_min_dist = umap_min_dist)
+
+        shutil.rmtree('./tmp/')
+
+    def umap_family_genus_level(self, family_target, save_dir='.', neighbors = 15, umap_min_dist = 0.1, dry=False):
+        self._make_tmp_dir()
+
+        print(family_target)
+        genus_seq = {} # key is species_name, value is its sequence from all samples
+        file_string = ''
+        for sample_num in self.samplenum_list:
+            for family, genus_list in self.sample_dict[sample_num].taxonomylevel['family'].items():
+                if family_target == family:
+                    #to genus level
+                    for genus_target in genus_list:
+                        for genus, species_list in self.sample_dict[sample_num].taxonomylevel['genus'].items():
+                            if genus_target == genus:
+                                if genus_target not in genus_seq:
+                                    genus_seq[genus_target] = ""
+                                #to species level
+                                for species_target in species_list: 
+                                    # to zotu level
+                                    genus_seq[genus_target] += self.get_species_seq(species_target=species_target, sample_num=sample_num)
+
+        if dry == False:
+            for genus, seq in genus_seq.items():
+                with open(f'./tmp/{genus}.fasta', 'w') as file:
+                    file.write(seq)
+                file_string = file_string + f'./tmp/{genus}.fasta '
+
+            self._make_umap(file_string=file_string, save_folder_name=f'{save_dir}/{family_target}', neighbors = neighbors, umap_min_dist = umap_min_dist)
+
+        shutil.rmtree('./tmp/')
+
+    def mltree_genus(self, genus_target, save_dir='.', bootstrap=100, dry=False):
+        self._make_tmp_dir()
+
+        print(genus_target)
+        seq_target = ""
+        for sample_num in self.samplenum_list:
+            for genus, species_list in self.sample_dict[sample_num].taxonomylevel['genus'].items():
+                if genus_target == genus:
+                    #to species level
+                    for species_target in species_list:
+                        # to zotu level
+                       seq_target += self.get_species_seq(species_target=species_target, sample_num=sample_num)
+        if dry == False:
+            with open(f'./tmp/{genus_target}.fasta', 'w') as file:
+                file.write(seq_target)
+
+            self._make_align_file(seq_file=f'./tmp/{genus_target}.fasta', aln_file=f'./tmp/{genus_target}.aln')
+            self._make_ml_tree(seq_file=f'./tmp/{genus_target}.aln', target=genus_target, save_dir=save_dir, bootstrap=bootstrap)
+
 
 if __name__ == '__main__':
-    # sample1 = Zotu(read_dir='./keelung/2303', sample_num='2303-H02')
-    # sample1.within_otu_align('Zotu5', save=False)
-    # sample1.analysis_species_subspecies(species_name='Mugil_cephalus')
-    # sample16.usum_sample()
-    # sample1.barplot_sample(level='family', save_dir=None)
-    # a = SumAllSample(read_dir='./桃園eDNA pipeline')
+    read_path = './data/all_site'
+    a = SumAllSample(read_dir=read_path)
     # a.barplot_all(level='species', save=True)
-    # a.analysis_species('Mugil_cephalus')
-    # a.analysis_species_subspecies(species_name='Mugil_cephalus')
-    # a.species_multiple_otu()
+    # all_species_with_var = ['Abudefduf_vaigiensis', 'Enneapterygius_etheostomus', 'Mugil_cephalus']
+    # all_genus = ['Abudefduf', 'Enneapterygius', 'Mugil']
+    # all_family = ['Pomacentridae', 'Tripterygiidae', 'Blenniidae', 'Mugilidae', 'Labridae']
+    # for species in all_species_with_var: 
+        # a.umap_species(species_target=species, save_dir='./result/all_site_result/umap/species', neighbors=15, umap_min_dist=0.5, dry=False)
+    # for genus in all_genus:
+        # a.umap_genus(genus_target=genus, save_dir='./result/all_site_result/umap/genus', neighbors=20, umap_min_dist=0.8, dry=False)
+    # for family in all_family:
+        # a.umap_family(family_target=family, save_dir=f'./result/all_site_result/umap/family_noise', neighbors=15, umap_min_dist=0.5, dry=False)
+    # a.dereplicate_zotu(species_list=l, save_dir='./result/all_site_result/haplotype/Labridae')
+    # a.hap_net_species(species_target='Mugil_cephalus', save_dir='./result/all_site_result/hap_net', save_png=False)
