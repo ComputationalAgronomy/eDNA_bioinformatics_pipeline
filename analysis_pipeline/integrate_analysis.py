@@ -77,10 +77,10 @@ def check_mltree_overwrite(save_dir, prefix):
     ckp_path = os.path.join(save_dir, prefix, prefix + '.ckp.gz') # e.g. save/dir/SpA/SpA.ckp.gz
     if os.path.exists(ckp_path):
         print(f"""
-        > MLTree checkpoint fileCheckpoint ({ckp_path}) indicates that a previous run successfully finished  already exists."
-        Use `-redo` option if you really want to redo the analysis and overwrite all output files.
-        Use `--redo-tree` option if you want to restore ModelFinder and only redo tree search.
-        Use `--undo` option if you want to continue previous run when changing/adding options.
+> MLTree checkpoint fileCheckpoint ({ckp_path}) indicates that a previous run successfully finished  already exists."
+Use `-redo` option if you really want to redo the analysis and overwrite all output files.
+Use `--redo-tree` option if you want to restore ModelFinder and only redo tree search.
+Use `--undo` option if you want to continue previous run when changing/adding options.
         """)
         while True:
             user_input = input("(-redo/--redo-tree/--undo/stop): ")
