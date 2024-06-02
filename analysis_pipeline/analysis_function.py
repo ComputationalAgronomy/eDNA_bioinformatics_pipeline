@@ -2,18 +2,21 @@ import os
 import subprocess
 import plotly.express as px
 import shutil
+from typing import Dict, List
+import pandas as pd
+import plotly.graph_objects as go
 
-def normalize_abundance(abundance_dict):
+def normalize_abundance(abundance_dict: Dict[str, float]) -> Dict[str, float]:
     total_size = sum(abundance_dict.values())
     norm_abundance = {key: value/total_size * 100 for key, value in abundance_dict.items()}
     return norm_abundance
 
-def list_union(input_list): # e.g. [[1,2,3], [2,3,4], [3,4,5]] -> [1,2,3,4,5]
-    uniq_list = list(set().union(*input_list))
+def list_union(lists_to_union: List[List[int]]) -> List[int]:
+    uniq_list = list(set().union(*lists_to_union))
     uniq_list.sort()
     return uniq_list
 
-def create_barchart_fig(data):
+def create_barchart_fig(data: pd.DataFrame) -> go.Figure:
     fig = px.bar(data, barmode='stack', labels={'value': 'Percentage (%)'},color_discrete_sequence=px.colors.qualitative.Pastel)
     fig.update_xaxes(tickmode='linear')
     fig.update_layout(xaxis_title="Sample ID", yaxis_title="Percentage (%)", legend=dict(x=1.05, y=1, traceorder='normal', orientation='h'))
@@ -21,27 +24,29 @@ def create_barchart_fig(data):
 
 def create_dir(dir_path):
     if not os.path.isdir(dir_path):
-        print(f"> Creating directory: {dir_path}")
+        print("> Creating directory: {}"
+              .format(dir_path))
         os.makedirs(dir_path)
 
 def remove_dir(dir_path):
     if os.path.isdir(dir_path):
-        print(f"> Removing directory: {dir_path}")
+        print("> Removing directory: {}"
+              .format(dir_path))
         shutil.rmtree(dir_path)
 
-def write_umap_fasta(units2seq_dict):
-    fasta_path_string = ""
-    for unit_name, seq in units2seq_dict.items():
-        with open(f'./tmp/{unit_name}.fa', 'w') as file:
-            file.write(seq)
-        fasta_path_string += f'./tmp/{unit_name}.fa '
-    print(f"\n> Written fasta files to: {fasta_path_string}")
-    return fasta_path_string # e.g. "./tmp/SpA.fa ./tmp/SpB.fa ./tmp/SpC.fa "
+# def write_umap_fasta(units2seq_dict):
+#     fasta_path_string = ""
+#     for unit_name, seq in units2seq_dict.items():
+#         with open(f'./tmp/{unit_name}.fa', 'w') as file:
+#             file.write(seq)
+#         fasta_path_string += f'./tmp/{unit_name}.fa '
+#     print(f"\n> Written fasta files to: {fasta_path_string}")
+#     return fasta_path_string # e.g. "./tmp/SpA.fa ./tmp/SpB.fa ./tmp/SpC.fa "
 
-def umap_command(fasta_path_string, save_dir, prefix, neighbors, min_dist):
-    save_path = os.path.join(save_dir, prefix)
-    cmd = f'usum {fasta_path_string} --neighbors {neighbors} --umap-min-dist {min_dist} --maxdist 1.0 --termdist 1.0 --output {save_path} -f --seed 1'
-    subprocess.run(cmd, shell=True)
+# def umap_command(fasta_path_string, save_dir, prefix, neighbors, min_dist):
+#     save_path = os.path.join(save_dir, prefix)
+#     cmd = f'usum {fasta_path_string} --neighbors {neighbors} --umap-min-dist {min_dist} --maxdist 1.0 --termdist 1.0 --output {save_path} -f --seed 1'
+#     subprocess.run(cmd, shell=True)
 
 def dereplicate_fasta(seq_file, uniq_file, relabel, threads=12):
     cmd = f'usearch -fastx_uniques {seq_file} -threads {threads} \
@@ -49,23 +54,22 @@ def dereplicate_fasta(seq_file, uniq_file, relabel, threads=12):
     print("> Running USEARCH command: ", cmd)
     subprocess.run(cmd, shell=True)
 
-def write_mltree_fasta(units2fasta_dict, dereplicate=False):
-    fasta_string = ""
-    if dereplicate == True:
+def write_fasta(units2fasta_dict, seq_file, dereplicate=False):
+    if dereplicate:
+        fasta_strings = []
         for unit_name, unit_seq in units2fasta_dict.items():
             with open(f'./tmp/{unit_name}.fa', 'w') as file:
                 file.write(unit_seq)
             dereplicate_fasta(seq_file=f'./tmp/{unit_name}.fa', uniq_file=f'./tmp/{unit_name}_uniq.fa', relabel=unit_name)
             with open(f'./tmp/{unit_name}_uniq.fa', 'r') as file:
-                fasta_string += file.read()
-        with open(f'./tmp/mltree.fa', 'w') as file:
-            file.write(fasta_string)
+                fasta_strings.append(file.read())
+        with open(seq_file, 'w') as file:
+            file.write("".join(fasta_strings))
     else:    
-        for unit_seq in units2fasta_dict.values():
-            fasta_string += unit_seq
-        with open(f'./tmp/mltree.fa', 'w') as file:
+        fasta_string = "".join(units2fasta_dict.values())
+        with open(seq_file, 'w') as file:
             file.write(fasta_string)
-    print(f"\n> Written MLTree fasta file to:  ./tmp/mltree.fa")
+    print(f"\n> Written fasta file to:  {seq_file}")
 
 def align_fasta(seq_file, aln_file):
     cmd = f'clustalo -i {seq_file} -o {aln_file} --distmat-out={aln_file}.mat --guidetree-out={aln_file}.dnd --full --force'
@@ -82,12 +86,19 @@ Use `-redo` option if you really want to redo the analysis and overwrite all out
 Use `--redo-tree` option if you want to restore ModelFinder and only redo tree search.
 Use `--undo` option if you want to continue previous run when changing/adding options.
         """)
+        user_input_map = {
+            '-redo': '-redo',
+            '--redo-tree': '--redo-tree',
+            '--undo': '--undo',
+            'stop': 'stop',
+            'Stop': 'stop',
+            'STOP': 'stop'
+        }
         while True:
             user_input = input("(-redo/--redo-tree/--undo/stop): ")
-            if user_input in ['-redo', '--redo-tree', '--undo', 'stop', 'Stop', 'STOP']:
-                return user_input
-            else:
-                print("> Invalid input.")
+            if user_input in user_input_map:
+                return user_input_map[user_input]
+            print("> Invalid input.")
     else:
         return ""
 
