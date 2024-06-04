@@ -1,6 +1,6 @@
 from read_fasta import read_fasta_file
 from read_denoise_report import read_denoise_report
-from read_blast_csv import read_hap_rank
+from read_blast_csv import read_hap_level
 import os
 import pickle
 from datetime import date
@@ -25,7 +25,7 @@ def check_dir(read_dir):
     if os.path.exists(os.path.join(read_dir, "6_blast"))==False:
         print("> Error: 6_blast folder does not exist in the specified directory.")
         return
-
+    
 def check_file(read_dir, sample_id_list):
     for sample_id in sample_id_list:
         if os.path.exists(os.path.join(read_dir, "4_derep", f"{sample_id}_uniq.fasta"))==False:
@@ -45,7 +45,7 @@ class OneSample():
         self.amp_seq = read_fasta_file(uniq_fasta_path, seq_type="Amplicon")
         self.amp_size, self.hap2amp, self.hap_size = read_denoise_report(zotu_report_path)
         self.hap_seq = read_fasta_file(zotu_fasta_path, seq_type="Haplotype")
-        self.hap2rank = read_hap_rank(blast_csv_path)
+        self.hap2level = read_hap_level(blast_csv_path)
 
 class IntegrateSamples():
 
