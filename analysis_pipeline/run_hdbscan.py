@@ -1,7 +1,7 @@
 import hdbscan
-import pandas as pd
 import matplotlib.pyplot as plt
-from run_umap import remove_row_by_unit_occurance
+import numpy as np
+from umap.plot import _themes
 
 def fit_hdbscan(points, min_samples=5, min_cluster_size=5):
     labels = hdbscan.HDBSCAN(
@@ -9,25 +9,34 @@ def fit_hdbscan(points, min_samples=5, min_cluster_size=5):
         min_cluster_size=min_cluster_size
         ).fit_predict(points)
     clustered = (labels >= 0)
-    plt.scatter(
+
+    return labels, clustered
+
+def plot_hdbscan(points, labels, clustered, png_path, theme=None, cmap="Spectral", background="white", width=800, height=800):
+    dpi = plt.rcParams["figure.dpi"]
+    fig = plt.figure(figsize=(width / dpi, height / dpi))
+    ax = fig.add_subplot(111)
+    ax.set_facecolor(background)
+    
+    point_size = 300.0 / np.sqrt(points.shape[0])
+
+    if theme is not None:
+        cmap = _themes[theme]["cmap"]
+        if background is None:
+            background = _themes[theme]["background"]
+
+    ax.scatter(
         points[~clustered, 0],
         points[~clustered, 1],
         color=(0.5, 0.5, 0.5),
-        s=0.1,
+        s=point_size,
         alpha=0.5
         )
-    plt.scatter(
+    ax.scatter(
         points[clustered, 0],
         points[clustered, 1],
         c=labels[clustered],
-        s=0.1,
-        cmap='Spectral');   
-    plt.show()
+        s=point_size,
+        cmap=cmap)
+    ax.figure.savefig(png_path)
 
-if __name__ == "__main__":
-    index_file = ".\\..\\..\\test_umap\\umap_result\\index.tsv"
-    n_unit_threshold = 5
-    index = pd.read_csv(index_file, sep='\t')
-    index = remove_row_by_unit_occurance(index, n=n_unit_threshold)
-    points = index[["umap1", "umap2"]].to_numpy()
-    fit_hdbscan(points)
