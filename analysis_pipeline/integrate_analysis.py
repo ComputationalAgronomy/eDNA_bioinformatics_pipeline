@@ -1,5 +1,5 @@
 from integrate_samples import IntegrateSamples
-from run_umap import run_umap
+from run_umap import write_umap_file, plot_umap
 from analysis_function import *
 import os
 import pandas as pd
@@ -56,13 +56,13 @@ class IntegrateAnalysis(IntegrateSamples):
             fig.write_html(bar_chart_path)
             print(f"> Barchart saved to:  {bar_chart_path}")
 
-    def get_units2fasta_dict(self, target_name, target_rank, units_rank, sample_id_list):
+    def get_units2fasta_dict(self, target_name, target_level, units_level, sample_id_list):
         units2fasta = {}
         for sample_id in sample_id_list:
             for hap, rank_dict in self.sample_data[sample_id].hap2rank.items():
-                if target_name not in rank_dict[target_rank]:
+                if target_name not in rank_dict[target_level]:
                     continue
-                unit_name = rank_dict[units_rank]
+                unit_name = rank_dict[units_level]
                 title = f"{unit_name}-{sample_id}_{hap}"
                 seq = self.sample_data[sample_id].hap_seq[hap]
 
@@ -71,7 +71,7 @@ class IntegrateAnalysis(IntegrateSamples):
                 units2fasta[unit_name] += f'>{title}\n{seq}\n'
         return units2fasta # e.g. {unit_name: ">SpA_Sample1_Zotu1\nACGT\n>SpA_Sample1_Zotu2\nACGT\n"}
 
-    def mltree_target(self, target_name, target_rank, units_rank="species", dereplicate=False, model=None, bootstrap=None, threads=None, save_dir='.', sample_id_list=None):
+    def mltree_target(self, target_name, target_level, units_level="species", dereplicate=False, model=None, bootstrap=None, threads=None, save_dir='.', sample_id_list=None):
         print(f"> Plotting MLTree for {target_name}...")
 
         ckp = check_mltree_overwrite(save_dir=save_dir, prefix=target_name)
@@ -82,34 +82,47 @@ class IntegrateAnalysis(IntegrateSamples):
         create_dir('./tmp/')
 
         sample_id_list = self.get_sample_id_list(sample_id_list)
-        units2fasta = self.get_units2fasta_dict(target_name, target_rank, units_rank, sample_id_list)
+        units2fasta = self.get_units2fasta_dict(target_name, target_level, units_level, sample_id_list)
         write_fasta(units2fasta, seq_file='./tmp/mltree.fa', dereplicate=dereplicate)
         align_fasta(seq_file='./tmp/mltree.fa', aln_file='./tmp/mltree.aln')
         iqtree2_command(seq_path='./tmp/mltree.aln', save_dir=save_dir, prefix=target_name, model=model, bootstrap=bootstrap, threads=threads, checkpoint=ckp)
 
         remove_dir('./tmp/')
 
-    def umap_target(self, target_name, target_rank, units_rank="species", neighbors = 15, min_dist = 0.1, save_dir='.', sample_id_list=None):
-        print(f"> Plotting UMAP for {target_name}...")
+    def umap_target(self, target_list, target_level, units_level="species", neighbors = 15, min_dist = 0.1, parent_dir='.', save_dir_name='umap_result', sample_id_list=None):
+        print(f"> Plotting UMAP for {" ".join(target_list)}...")
 
         create_dir('./tmp/')
 
         sample_id_list = self.get_sample_id_list(sample_id_list)
-        units2fasta = self.get_units2fasta_dict(target_name, target_rank, units_rank, sample_id_list)
-        write_fasta(units2fasta, seq_file='./tmp/umap.fa', dereplicate=False)
-        run_umap(seq_file='./tmp/umap.fa', umap_dir=save_dir, target_name=target_name, neighbors=neighbors, min_dist=min_dist)
+        fasta_dict = {}
+        target2units_dict = {}
+        for target_name in target_list:
+            units2fasta = self.get_units2fasta_dict(target_name, target_level, units_level, sample_id_list)
+            fasta_dict.update(units2fasta)
+            target2units_dict[target_name] = list(units2fasta.keys())
+        write_fasta(fasta_dict, seq_file='./tmp/umap.fa', dereplicate=False)
+        save_dir = os.path.join(parent_dir, save_dir_name)
+        write_umap_file(seq_file='./tmp/umap.fa', save_dir=save_dir, target2units=target2units_dict, neighbors=neighbors, min_dist=min_dist)
+        plot_umap(index_file=os.path.join(save_dir, "index.tsv"), save_dir=save_dir, n_unit_threshold=15)
 
         remove_dir('./tmp/')
 
+    def umap_sep_target(self, index_file):
+        pass
+
+
+
 if __name__ == '__main__':
     read_dir = '.\\data\\all_site'
-    load_path = os.path.join(read_dir, 'all_site_sample_data.pkl')
+    load_path = os.path.join(read_dir, 'all_site_alpha_2.pkl')
     # a = IntegrateAnalysis()
     # a.import_samples(read_dir=read_dir)
-    # a.save_sample_data(save_dir=read_dir, save_name='all_site_sample_data')
+    # a.save_sample_data(save_dir=read_dir, save_name='all_site_alpha_8')
     a = IntegrateAnalysis(load_path=load_path)
     # a.umap_target(target_name='Chordata', target_rank='phylum', units_rank='family', neighbors=15, min_dist=0.5, save_dir='.\\test_umap',)
-    print(a.sample_id_list)
+    # print(a.sample_id_list)
     # a.barchart_relative_abundance(rank='species')
-    # a.umap_target(target_name='Mugil_cephalus', target_rank='species', units_rank='species', neighbors=15, min_dist=0.5, save_dir='.\\test_umap', )
-    a.mltree_target(target_name='Mugilidae', target_rank='family', dereplicate=True, model=None, bootstrap=999, threads=None, save_dir='.\\test_mltree')
+    a.umap_target(target_list=["Blenniidae", "Labridae", "Mugilidae", "Pomacentridae", "Tripterygiidae"], target_level='family', units_level='species', neighbors=15, min_dist=0.5, parent_dir='.\\test_umap', )
+    # a.mltree_target(target_name='Mugilidae', target_rank='family', dereplicate=True, model=None, bootstrap=999, threads=None, save_dir='.\\test_mltree')
+    # a.umap_target(target_name='Mugilidae', target_rank='family', units_rank='species', neighbors=15, min_dist=0.5, save_dir='.\\test_umap')
