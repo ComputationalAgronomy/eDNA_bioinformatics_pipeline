@@ -9,11 +9,10 @@ def fit_hdbscan(points, min_samples=5, min_cluster_size=5):
         min_cluster_size=min_cluster_size
         ).fit_predict(points)
     clustered = (labels >= 0)
-    num_c = max(labels) + 1
+    n_c = max(labels) + 1
     noise = sum(1 for i in labels if i < 0)
-    print(f'Number of clusters: {num_c}')
-    print(f'clustered percentage: {100 - noise / len(labels) * 100:.2f}%')
-    return labels, clustered
+    c_p = (1 - noise / len(labels)) * 100
+    return labels, clustered, n_c, c_p
 
 def plot_hdbscan(points, labels, clustered, png_path, cmap="Spectral", background="white", width=800, height=800):
     dpi = plt.rcParams["figure.dpi"]
@@ -38,3 +37,7 @@ def plot_hdbscan(points, labels, clustered, png_path, cmap="Spectral", backgroun
         cmap=cmap)
     ax.figure.savefig(png_path)
 
+def run_hdbscan(points, min_samples, min_cluster_size, cmap, png_path):
+    labels, clustered, n_c, c_p = fit_hdbscan(points, min_samples, min_cluster_size)
+    plot_hdbscan(points, labels, clustered, png_path, cmap)
+    return n_c, c_p

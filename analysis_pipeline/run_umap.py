@@ -98,7 +98,7 @@ def write_umap_file(seq_file, save_dir, target2units, random_state=42, neighbors
     index.to_csv(index_path, sep='\t', index=False)
     print(f'Saved index TSV to: {index_path}')
 
-def plot_umap(index_file, save_dir, n_unit_threshold=1, theme='fire', width=800, height=800):
+def plot_umap(index_file, save_dir, n_unit_threshold=1, cmap="Spectral", width=800, height=800):
     png_path = os.path.join(save_dir, "umap.png") 
     html_path = os.path.join(save_dir, "umap.html")
     index = pd.read_csv(index_file, sep='\t')
@@ -108,7 +108,7 @@ def plot_umap(index_file, save_dir, n_unit_threshold=1, theme='fire', width=800,
     points = index[["umap1", "umap2"]].to_numpy()
 
     print('\n> Drawing PNG...')
-    ax = plot_points(points, labels=index['unit'], markers=index['source'], theme=theme, width=width, height=height)
+    ax = plot_points(points, labels=index['unit'], markers=index['source'], cmap=cmap, width=width, height=height)
     ax.figure.savefig(png_path, bbox_inches='tight')
     print(f'Saved PNG to: {png_path}')
     
@@ -124,6 +124,9 @@ def plot_umap_each_target(index_file, n_unit_threshold=1, cluster=False, min_sam
     index = pd.read_csv(index_file, sep='\t')
     targets = index["target"]
     unique_target = np.unique(targets)
+    if cluster:
+        c_report = []
+
     for target in unique_target:
         png_path = os.path.join(dir, target + ".png")
         subindex = index[index["target"] == target]
@@ -137,9 +140,15 @@ def plot_umap_each_target(index_file, n_unit_threshold=1, cluster=False, min_sam
 
         if cluster:
             print(f'\n> Clustering {target}...')
-            labels, clustered = fit_hdbscan(points, min_samples, min_cluster_size)
             png_path = os.path.join(dir, target + "_cluster.png")
-            plot_hdbscan(points, labels, clustered, png_path, cmap)
+            numb_clus, clus_perc = run_hdbscan(points=points, min_samples=min_samples, min_cluster_size=min_cluster_size, cmap=cmap, png_path=png_path)
+            numb_unit = len(subindex["unit"].unique())
+            c_report.append([target, numb_unit, numb_clus, clus_perc])
+
+    if cluster:
+        cluster_report = pd.DataFrame(c_report, columns=["target_name", "number_of_unit", "number_of_cluster", "cluster_percentage"])
+        cluster_report.to_csv(os.path.join(dir, "cluster_report.tsv"), sep='\t', index=False)
+        print(f'Saved cluster report to: {os.path.join(dir, "cluster_report.tsv")}')
 
 
 if __name__ == "__main__":
