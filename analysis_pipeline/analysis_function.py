@@ -50,7 +50,7 @@ def remove_dir(dir_path):
 
 def dereplicate_fasta(seq_file, uniq_file, relabel, threads=12):
     cmd = f'usearch -fastx_uniques {seq_file} -threads {threads} \
-            -relabel {relabel}_ -fastaout {uniq_file}'
+            -relabel {relabel}- -fastaout {uniq_file}'
     print("> Running USEARCH command: ", cmd)
     subprocess.run(cmd, shell=True)
 
