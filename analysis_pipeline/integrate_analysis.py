@@ -1,8 +1,10 @@
 from integrate_samples import IntegrateSamples
 from run_umap import write_umap_file, plot_umap
+from run_hdbscan import run_hdbscan
 from analysis_function import *
 import os
 import pandas as pd
+import numpy as np
 
 class IntegrateAnalysis(IntegrateSamples):
     def __init__(self, load_path=None):
@@ -89,7 +91,19 @@ class IntegrateAnalysis(IntegrateSamples):
 
         remove_dir('./tmp/')
 
-    def umap_target(self, target_list, target_level, units_level="species", neighbors = 15, min_dist = 0.1, parent_dir='.', save_dir_name='umap_result', sample_id_list=None):
+    def umap_target(self,
+                    target_list,
+                    target_level,
+                    units_level="species",
+                    neighbors = 15,
+                    min_dist = 0.1,
+                    parent_dir='.',
+                    save_dir_name='umap_result',
+                    plot_all=True,
+                    plot_sep=False,
+                    cmap="rainbow",
+                    sample_id_list=None):
+
         print(f"> Plotting UMAP for {" ".join(target_list)}...")
 
         create_dir('./tmp/')
@@ -103,18 +117,54 @@ class IntegrateAnalysis(IntegrateSamples):
             target2units_dict[target_name] = list(units2fasta.keys())
         write_fasta(fasta_dict, seq_file='./tmp/umap.fa', dereplicate=False)
         save_dir = os.path.join(parent_dir, save_dir_name)
-        write_umap_file(seq_file='./tmp/umap.fa', save_dir=save_dir, target2units=target2units_dict, neighbors=neighbors, min_dist=min_dist)
-        plot_umap(index_file=os.path.join(save_dir, "index.tsv"), save_dir=save_dir, n_unit_threshold=15)
+        index = write_umap_file(seq_file='./tmp/umap.fa', save_dir=save_dir, target2units=target2units_dict, neighbors=neighbors, min_dist=min_dist)
+
+        if plot_all:
+            png_path = os.path.join(save_dir, "umap_all_targets.png")
+            plot_umap(index=index, n_unit_threshold=neighbors, png_path=png_path, cmap=cmap)
+        if plot_sep:
+            targets = index["target"]
+            unique_target = np.unique(targets)
+            for target in unique_target:
+                png_path = os.path.join(save_dir, target + ".png")
+                subindex = index[index["target"] == target]
+                plot_umap(index=subindex, n_unit_threshold=neighbors, png_path=png_path, cmap=cmap)
 
         remove_dir('./tmp/')
 
-    def umap_sep_target(self, index_file):
-        pass
+    @staticmethod
+    def cluster_umap(index_file, 
+                     n_unit_threshold=5, 
+                     min_samples=1, 
+                     min_cluster_size=5, 
+                     plot_all=True, 
+                     plot_sep=False, 
+                     cmap="rainbow"):
+        
+        cluster_report = []
+        index = pd.read_csv(index_file, sep='\t')
+        save_dir = os.path.dirname(index_file)
 
+        if plot_all:
+            png_path = os.path.join(save_dir, "all_targets_clustered.png")
+            numb_unit, numb_clus, clus_perc = run_hdbscan(index, n_unit_threshold, min_samples, min_cluster_size, png_path, cmap)
+            cluster_report.append(["all_targets", numb_unit, numb_clus, clus_perc])
+        if plot_sep:
+            targets = index["target"]
+            unique_target = np.unique(targets)
+            for target in unique_target:
+                png_path = os.path.join(save_dir, target + "_clustered.png")
+                subindex = index[index["target"] == target]
+                numb_unit, numb_clus, clus_perc = run_hdbscan(subindex, n_unit_threshold, min_samples, min_cluster_size, png_path, cmap)
+                cluster_report.append([target, numb_unit, numb_clus, clus_perc])
 
+        cluster_report_path = os.path.join(save_dir, "cluster_report.tsv")
+        cluster_report = pd.DataFrame(cluster_report, columns=["target_name", "number_of_units", "number_of_clusters", "clustered_percentage"])
+        cluster_report.to_csv(cluster_report_path, sep='\t', index=False)
+        print(f'Saved cluster report to: {cluster_report_path}')
 
 if __name__ == '__main__':
-    read_dir = '.\\data\\all_site'
+    read_dir = '.\\..\\..\\data\\all_site'
     load_path = os.path.join(read_dir, 'all_site_alpha_2.pkl')
     # a = IntegrateAnalysis()
     # a.import_samples(read_dir=read_dir)
@@ -123,6 +173,7 @@ if __name__ == '__main__':
     # a.umap_target(target_name='Chordata', target_rank='phylum', units_rank='family', neighbors=15, min_dist=0.5, save_dir='.\\test_umap',)
     # print(a.sample_id_list)
     # a.barchart_relative_abundance(rank='species')
-    a.umap_target(target_list=["Blenniidae", "Labridae", "Mugilidae", "Pomacentridae", "Tripterygiidae"], target_level='family', units_level='species', neighbors=15, min_dist=0.5, parent_dir='.\\test_umap', )
+    # a.umap_target(target_list=["Blenniidae", "Labridae", "Mugilidae", "Pomacentridae", "Tripterygiidae"], target_level='family', units_level='species', neighbors=15, min_dist=0.5, parent_dir='.\\..\\..\\test_umap', plot_all=True, plot_sep=True,)
+    a.cluster_umap(index_file='.\\..\\..\\test_umap\\umap_result\\index.tsv', n_unit_threshold=15, min_samples=5, min_cluster_size=5, plot_all=True, plot_sep=True)
     # a.mltree_target(target_name='Mugilidae', target_rank='family', dereplicate=True, model=None, bootstrap=999, threads=None, save_dir='.\\test_mltree')
     # a.umap_target(target_name='Mugilidae', target_rank='family', units_rank='species', neighbors=15, min_dist=0.5, save_dir='.\\test_umap')
