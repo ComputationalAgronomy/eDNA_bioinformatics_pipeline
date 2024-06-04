@@ -71,6 +71,12 @@ def get_index_target_label(index, target2units):
                 t.append(target)
     return t
 
+def remove_row_by_unit_occurance(index, n):
+    counts = index["unit"].value_counts()
+    units_to_remove = counts[counts < n].index
+    index = index[~index["unit"].isin(units_to_remove)]
+    return index
+
 def write_umap_file(seq_file, save_dir, target2units, random_state=42, neighbors=15, min_dist=0.1):
     create_dir(save_dir)
     index_fasta_file = os.path.join(save_dir, "input.fa")
@@ -84,21 +90,19 @@ def write_umap_file(seq_file, save_dir, target2units, random_state=42, neighbors
 
     calc_dist(seq_file=index_fasta_file, aln_file=aln_file, dist_file=dist_file)
     dist_matrix = load_sparse_dist_matrix(dist_file)
-    r, embedding = fit_umap(dist_matrix, random_state=random_state, neighbors=neighbors, min_dist=min_dist)
+    reducer, embedding = fit_umap(dist_matrix, random_state=random_state, neighbors=neighbors, min_dist=min_dist)
     index['umap1'] = embedding[:,0]
     index['umap2'] = embedding[:,1]
 
     index.to_csv(index_path, sep='\t', index=False)
     print(f'Saved index TSV to: {index_path}')
 
-def plot_umap(index_file, save_dir, n_unit_threshold = 1, theme='fire', width=800, height=800):
+def plot_umap(index_file, save_dir, n_unit_threshold=1, theme='fire', width=800, height=800):
     png_path = os.path.join(save_dir, "umap.png") 
     html_path = os.path.join(save_dir, "umap.html")
     index = pd.read_csv(index_file, sep='\t')
 
-    counts = index["unit"].value_counts()
-    units_to_remove = counts[counts < n_unit_threshold].index
-    index = index[~index["unit"].isin(units_to_remove)]
+    index = remove_row_by_unit_occurance(index, n=n_unit_threshold)
 
     points = index[["umap1", "umap2"]].to_numpy()
 
@@ -113,36 +117,23 @@ def plot_umap(index_file, save_dir, n_unit_threshold = 1, theme='fire', width=80
     # bokeh.plotting.save(p)
     # print(f'Saved plot HTML to: {html_path}')
 
-def plot_by_index(index_file, values=None, theme=None, cmap="Blues", color_key=None, color_key_cmap="Spectral", background="white", width=800, height=800, show_legend=True):
-    if theme is not None:
-        cmap = _themes[theme]["cmap"]
-        color_key_cmap = _themes[theme]["color_key_cmap"]
-        if background is None:
-            background = _themes[theme]["background"]
+def plot_umap_each_target(index_file, n_unit_threshold=1, theme=None, width=800, height=800, show_legend=True):
 
     dir = os.path.dirname(index_file)
     index = pd.read_csv(index_file, sep='\t')
-    familys = index["family"]
-    unique_family = np.unique(familys)
-    for family in unique_family:
-        print(family)
-        png_path = os.path.join(dir, family + ".png")
-        subindex = index[index["family"] == family]
+    targets = index["target"]
+    unique_target = np.unique(targets)
+    for target in unique_target:
+        png_path = os.path.join(dir, target + ".png")
+        subindex = index[index["target"] == target]
+        subindex = remove_row_by_unit_occurance(subindex, n=n_unit_threshold)
         points = subindex[["umap1", "umap2"]].to_numpy()
-        dpi = plt.rcParams["figure.dpi"]
-        fig = plt.figure(figsize=(width / dpi, height / dpi))
-        ax = fig.add_subplot(111)
-        labels = subindex["label"]
-        markers = subindex["source"]
-
-        if points.shape[0] <= width * height // 10:
-            ax = _matplotlib_points(points, ax, labels, markers, values, cmap, color_key, color_key_cmap, background, width, height, show_legend)
-        else:
-            ax = _datashade_points(points, ax, labels, values, cmap, color_key, color_key_cmap, background, width, height, show_legend)
-
-        ax.set(xticks=[], yticks=[])
+        
+        print(f'\n> Drawing PNG for {target}...') 
+        ax = plot_points(points, labels=subindex['unit'], markers=subindex['source'], theme=theme, width=width, height=height)
         ax.figure.savefig(png_path, bbox_inches='tight')
+        print(f'Saved PNG to: {png_path}')
 
 if __name__ == "__main__":
-    index_file = ".\\test_umap\\species_index_larger_15.tsv"
-    plot_by_index(index_file)
+    index_file = ".\\..\\..\\test_umap\\umap_result\\index.tsv"
+    plot_by_index(index_file, n_unit_threshold=15)
