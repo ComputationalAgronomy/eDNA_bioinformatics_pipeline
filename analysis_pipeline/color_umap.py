@@ -14,9 +14,8 @@ def _matplotlib_points(
     labels=None,
     markers=None,
     values=None,
-    cmap="Blues",
     color_key=None,
-    color_key_cmap="Spectral",
+    cmap="Spectral",
     background="white",
     width=800,
     height=800,
@@ -24,15 +23,15 @@ def _matplotlib_points(
     alpha=None,
     symbol_map = ["o", "D", "*", "s", "h", "8", "X", "p"]
 ):
-    """Use matplotlib to plot points"""
+
     point_size = 300.0 / np.sqrt(points.shape[0])
 
     legend_elements = None
 
-    if ax is None:
-        dpi = plt.rcParams["figure.dpi"]
-        fig = plt.figure(figsize=(width / dpi, height / dpi))
-        ax = fig.add_subplot(111)
+    # if ax is None:
+    #     dpi = plt.rcParams["figure.dpi"]
+    #     fig = plt.figure(figsize=(width / dpi, height / dpi))
+    #     ax = fig.add_subplot(111)
 
     ax.set_facecolor(background)
 
@@ -48,7 +47,7 @@ def _matplotlib_points(
         if color_key is None:
             unique_labels = np.unique(labels)
             num_labels = unique_labels.shape[0]
-            color_key = plt.get_cmap(color_key_cmap)(np.linspace(0, 1, num_labels))
+            color_key = plt.get_cmap(cmap)(np.linspace(0, 1, num_labels))
             legend_elements = [
                 Patch(facecolor=color_key[i], label=unique_labels[i])
                 for i, k in enumerate(unique_labels)
@@ -117,56 +116,17 @@ def _matplotlib_points(
 
     return ax
 
-def plot_points(points, labels=None, markers=None, values=None, theme=None, cmap="Blues", color_key=None, color_key_cmap="Spectral", background="white", width=800, height=800, show_legend=True):
-    if theme is not None:
-        cmap = _themes[theme]["cmap"]
-        color_key_cmap = _themes[theme]["color_key_cmap"]
-        if background is None:
-            background = _themes[theme]["background"]
+def plot_points(points, labels=None, markers=None, values=None, color_key=None, cmap="Spectral", background="white", width=800, height=800, show_legend=True):
 
     dpi = plt.rcParams["figure.dpi"]
     fig = plt.figure(figsize=(width / dpi, height / dpi))
     ax = fig.add_subplot(111)
 
     if points.shape[0] <= width * height // 10:
-        ax = _matplotlib_points(points, ax, labels, markers, values, cmap, color_key, color_key_cmap, background, width, height, show_legend)
+        ax = _matplotlib_points(points, ax, labels, markers, values, color_key, cmap, background, width, height, show_legend)
     else:
-        ax = _datashade_points(points, ax, labels, values, cmap, color_key, color_key_cmap, background, width, height, show_legend)
+        ax = _datashade_points(points, ax, labels, values, color_key, cmap, background, width, height, show_legend)
 
     ax.set(xticks=[], yticks=[])
  
     return ax
-
-def plot_by_index(index_file, values=None, theme=None, cmap="Blues", color_key=None, color_key_cmap="Spectral", background="white", width=800, height=800, show_legend=True):
-    if theme is not None:
-        cmap = _themes[theme]["cmap"]
-        color_key_cmap = _themes[theme]["color_key_cmap"]
-        if background is None:
-            background = _themes[theme]["background"]
-
-    dir = os.path.dirname(index_file)
-    index = pd.read_csv(index_file, sep='\t')
-    familys = index["family"]
-    unique_family = np.unique(familys)
-    for family in unique_family:
-        print(family)
-        png_path = os.path.join(dir, family + ".png")
-        subindex = index[index["family"] == family]
-        points = subindex[["umap1", "umap2"]].to_numpy()
-        dpi = plt.rcParams["figure.dpi"]
-        fig = plt.figure(figsize=(width / dpi, height / dpi))
-        ax = fig.add_subplot(111)
-        labels = subindex["label"]
-        markers = subindex["source"]
-
-        if points.shape[0] <= width * height // 10:
-            ax = _matplotlib_points(points, ax, labels, markers, values, cmap, color_key, color_key_cmap, background, width, height, show_legend)
-        else:
-            ax = _datashade_points(points, ax, labels, values, cmap, color_key, color_key_cmap, background, width, height, show_legend)
-
-        ax.set(xticks=[], yticks=[])
-        ax.figure.savefig(png_path, bbox_inches='tight')
-
-if __name__ == "__main__":
-    index_file = ".\\test_umap\\species_index_larger_15.tsv"
-    plot_by_index(index_file)

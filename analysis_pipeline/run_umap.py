@@ -1,5 +1,6 @@
 from analysis_function import align_fasta, create_dir
 from color_umap import plot_points
+from run_hdbscan import *
 import os
 import numpy as np
 import pandas as pd
@@ -117,7 +118,7 @@ def plot_umap(index_file, save_dir, n_unit_threshold=1, theme='fire', width=800,
     # bokeh.plotting.save(p)
     # print(f'Saved plot HTML to: {html_path}')
 
-def plot_umap_each_target(index_file, n_unit_threshold=1, theme=None, width=800, height=800, show_legend=True):
+def plot_umap_each_target(index_file, n_unit_threshold=1, cluster=False, min_samples=5, min_cluster_size=5, cmap="Spectral", width=800, height=800, show_legend=True):
 
     dir = os.path.dirname(index_file)
     index = pd.read_csv(index_file, sep='\t')
@@ -130,10 +131,17 @@ def plot_umap_each_target(index_file, n_unit_threshold=1, theme=None, width=800,
         points = subindex[["umap1", "umap2"]].to_numpy()
         
         print(f'\n> Drawing PNG for {target}...') 
-        ax = plot_points(points, labels=subindex['unit'], markers=subindex['source'], theme=theme, width=width, height=height)
+        ax = plot_points(points, labels=subindex['unit'], markers=subindex['source'], cmap=cmap, width=width, height=height)
         ax.figure.savefig(png_path, bbox_inches='tight')
         print(f'Saved PNG to: {png_path}')
 
+        if cluster:
+            print(f'\n> Clustering {target}...')
+            labels, clustered = fit_hdbscan(points, min_samples, min_cluster_size)
+            png_path = os.path.join(dir, target + "_cluster.png")
+            plot_hdbscan(points, labels, clustered, png_path, cmap)
+
+
 if __name__ == "__main__":
     index_file = ".\\..\\..\\test_umap\\umap_result\\index.tsv"
-    plot_by_index(index_file, n_unit_threshold=15)
+    plot_umap_each_target(index_file, n_unit_threshold=15, cluster=True, min_samples=5, min_cluster_size=5, cmap="rainbow")
