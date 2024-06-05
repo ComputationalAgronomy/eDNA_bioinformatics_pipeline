@@ -14,7 +14,7 @@ def fasta2index(seq_file, fasta_file):
         records = SeqIO.parse(seq_file, 'fasta')
         for i, record in enumerate(records):
             index = str(i)
-            unit = record.description.split("-")[0]
+            unit = record.description.rsplit("-", 1)[0]
             seq_id = record.description
             index_list.append([index, seq_id, unit])
             record.id = str(i)
@@ -70,12 +70,6 @@ def get_index_target_label(index, target2units):
                 t.append(target)
     return t
 
-def remove_row_by_unit_occurance(index, n):
-    counts = index["unit"].value_counts()
-    units_to_remove = counts[counts < n].index
-    index = index[~index["unit"].isin(units_to_remove)]
-    return index
-
 def write_umap_file(seq_file, save_dir, target2units, random_state=42, neighbors=15, min_dist=0.1):
     create_dir(save_dir)
     index_fasta_file = os.path.join(save_dir, "input.fa")
@@ -97,10 +91,8 @@ def write_umap_file(seq_file, save_dir, target2units, random_state=42, neighbors
     print(f'Saved index TSV to: {index_path}')
     return index
 
-def plot_umap(index, n_unit_threshold=1, png_path='./umap.png', cmap="Spectral", width=800, height=800, show_legend=True):
-    index = remove_row_by_unit_occurance(index, n=n_unit_threshold)
+def plot_umap(index, png_path='./umap.png', cmap="Spectral", width=800, height=800, show_legend=True):
     points = index[["umap1", "umap2"]].to_numpy()
-
     print('\n> Drawing PNG...')
     ax = plot_points(points, labels=index['unit'], markers=index['source'], cmap=cmap, width=width, height=height, show_legend=show_legend)
     ax.figure.savefig(png_path, bbox_inches='tight')
