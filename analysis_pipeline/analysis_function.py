@@ -112,3 +112,9 @@ def iqtree2_command(seq_path, save_dir, prefix, model, bootstrap, threads, check
     cmd = f'iqtree2 -m {model} -s {seq_path} {bootstrap_string}--prefix {os.path.join(save_subdir, prefix)} -nt {threads}{checkpoint}'
     print("> Running IQTREE2 command: ", cmd)
     subprocess.run(cmd, shell=True)
+
+def remove_row_by_unit_occurance(index, n):
+    counts = index["unit"].value_counts()
+    units_to_remove = counts[counts < n].index
+    index = index[~index["unit"].isin(units_to_remove)]
+    return index
