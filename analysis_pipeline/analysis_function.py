@@ -48,28 +48,32 @@ def remove_dir(dir_path):
 #     cmd = f'usum {fasta_path_string} --neighbors {neighbors} --umap-min-dist {min_dist} --maxdist 1.0 --termdist 1.0 --output {save_path} -f --seed 1'
 #     subprocess.run(cmd, shell=True)
 
-def dereplicate_fasta(seq_file, uniq_file, relabel, threads=12):
+def dereplicate_fasta(seq_file, uniq_file, relabel, threads=12, sizeout=False):
     cmd = f'usearch -fastx_uniques {seq_file} -threads {threads} \
             -relabel {relabel}- -fastaout {uniq_file}'
+    if sizeout:
+        cmd += ' -sizeout'
     print("> Running USEARCH command: ", cmd)
     subprocess.run(cmd, shell=True)
 
-def write_fasta(units2fasta_dict, seq_file, dereplicate=False):
+def write_fasta(units2fasta_dict, seq_file, dereplicate=False, sizeout=False):
     if dereplicate:
-        fasta_strings = []
+        fasta_list = []
         for unit_name, unit_seq in units2fasta_dict.items():
             with open(f'./tmp/{unit_name}.fa', 'w') as file:
                 file.write(unit_seq)
-            dereplicate_fasta(seq_file=f'./tmp/{unit_name}.fa', uniq_file=f'./tmp/{unit_name}_uniq.fa', relabel=unit_name)
+            dereplicate_fasta(seq_file=f'./tmp/{unit_name}.fa', uniq_file=f'./tmp/{unit_name}_uniq.fa', relabel=unit_name, sizeout=sizeout)
             with open(f'./tmp/{unit_name}_uniq.fa', 'r') as file:
-                fasta_strings.append(file.read())
+                fasta_list.append(file.read())
         with open(seq_file, 'w') as file:
-            file.write("".join(fasta_strings))
+            file.write("".join(fasta_list))
     else:    
-        fasta_string = "".join(units2fasta_dict.values())
+        fasta_list = [fasta for fasta in units2fasta_dict.values()]
         with open(seq_file, 'w') as file:
-            file.write(fasta_string)
-    print(f"\n> Written fasta file to:  {seq_file}")
+            file.write("".join(fasta_list))
+    num_seq = len(fasta_list)
+    print(f"\n> Written {num_seq} sequences to:  {seq_file}")
+    return num_seq
 
 def align_fasta(seq_file, aln_file):
     cmd = f'clustalo -i {seq_file} -o {aln_file} --distmat-out={aln_file}.mat --guidetree-out={aln_file}.dnd --full --force'
