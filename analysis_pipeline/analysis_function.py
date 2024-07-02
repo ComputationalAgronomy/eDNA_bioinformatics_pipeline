@@ -5,6 +5,10 @@ import shutil
 from typing import Dict, List
 import pandas as pd
 import plotly.graph_objects as go
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib
+from Bio import SeqIO
 
 def normalize_abundance(abundance_dict: Dict[str, float]) -> Dict[str, float]:
     total_size = sum(abundance_dict.values())
@@ -66,17 +70,19 @@ def write_fasta(units2fasta_dict, seq_file, dereplicate=False, sizeout=False):
             with open(f'./tmp/{unit_name}_uniq.fa', 'r') as file:
                 fasta_list.append(file.read())
         with open(seq_file, 'w') as file:
-            file.write("".join(fasta_list))
+            fasta_str = "".join(fasta_list)
+            file.write(fasta_str)
     else:    
         fasta_list = [fasta for fasta in units2fasta_dict.values()]
         with open(seq_file, 'w') as file:
-            file.write("".join(fasta_list))
-    num_seq = len(fasta_list)
+            fasta_str = "".join(fasta_list)
+            file.write(fasta_str)
+    num_seq = fasta_str.count(">")
     print(f"\n> Written {num_seq} sequences to:  {seq_file}")
     return num_seq
 
 def align_fasta(seq_file, aln_file):
-    cmd = f'clustalo -i {seq_file} -o {aln_file} --distmat-out={aln_file}.mat --guidetree-out={aln_file}.dnd --full --force'
+    cmd = f'clustalo -i {seq_file} -o {aln_file} --force'
     print("Running Clustal Omega command: ", cmd)
     subprocess.run(cmd, shell=True)
     print(f"\n> Aligned fasta file to: {aln_file}\n")
@@ -91,9 +97,9 @@ Use `--redo-tree` option if you want to restore ModelFinder and only redo tree s
 Use `--undo` option if you want to continue previous run when changing/adding options.
         """)
         user_input_map = {
-            '-redo': '-redo',
-            '--redo-tree': '--redo-tree',
-            '--undo': '--undo',
+            '-redo': ' -redo',
+            '--redo-tree': ' --redo-tree',
+            '--undo': ' --undo',
             'stop': 'stop',
             'Stop': 'stop',
             'STOP': 'stop'
@@ -122,3 +128,40 @@ def remove_row_by_unit_occurance(index, n):
     units_to_remove = counts[counts < n].index
     index = index[~index["unit"].isin(units_to_remove)]
     return index
+
+def get_color_hex(n, cmap="rainbow"):
+    color_key = plt.get_cmap(cmap)(np.linspace(0, 1, n))
+    color_hex = [matplotlib.colors.to_hex(color_key[i]) for i in range(n)]
+    print(f"> Color key: {" ".join(color_hex)}")
+    return color_hex
+
+def hex_to_rgb(value):
+    value = value.lstrip('#')
+    lv = len(value)
+    return tuple(int(value[i:i + lv // 3], 16) for i in range(0, lv, lv // 3))
+
+def get_uniq_seq_freq(seq_file, uniq_seq_file, seq_labels):
+    uniq_labels = np.unique(seq_labels)
+    unit_uniq_seq = SeqIO.parse(open(uniq_seq_file), 'fasta')
+    label_freq_each_uniq_seq = {}
+    for uniq_seq in unit_uniq_seq:
+        label_freq_each_uniq_seq[uniq_seq.name] = {label:0 for label in uniq_labels}
+        unit_seq = SeqIO.parse(open(seq_file), 'fasta')
+        for i, seq in enumerate(unit_seq):
+            if seq.seq == uniq_seq.seq:
+                label_freq_each_uniq_seq[uniq_seq.name][seq_labels[i]] += 1
+
+    freq_string = f"""    
+Begin Traits;
+Dimensions NTraits={len(uniq_labels)};
+format labels=yes missing=? separator=Comma;
+TraitLabels {" ".join(map(str, uniq_labels))};
+Matrix
+"""
+    for seq_id, freq_each_label in label_freq_each_uniq_seq.items():
+        freq_string += f"{seq_id} {",".join(map(str, list(freq_each_label.values())))}\n"
+    freq_string += """
+;
+end;
+"""
+    return freq_string

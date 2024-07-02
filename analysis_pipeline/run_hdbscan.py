@@ -6,7 +6,7 @@ def fit_hdbscan(points, min_samples=5, min_cluster_size=5):
     labels = hdbscan.HDBSCAN(
         min_samples=min_samples,
         min_cluster_size=min_cluster_size,
-        cluster_selection_epsilon=0.5,
+        cluster_selection_epsilon=1,
         alpha=1.0,
         allow_single_cluster=True
         ).fit_predict(points)
@@ -37,6 +37,7 @@ def plot_hdbscan(points, labels, clustered, png_path, cmap="Spectral", backgroun
         c=labels[clustered],
         s=point_size,
         cmap=cmap)
+    ax.tick_params(bottom=False, left=False, labelbottom=False, labelleft=False)
     ax.figure.savefig(png_path)
 
 def run_hdbscan(index, min_samples=5, min_cluster_size=5, png_path="./clustered.png", cmap="Spectral"):

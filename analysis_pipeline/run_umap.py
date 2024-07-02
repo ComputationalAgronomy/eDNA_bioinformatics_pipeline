@@ -1,4 +1,5 @@
 from analysis_function import align_fasta, create_dir
+import re
 from color_umap import plot_points
 import os
 import numpy as np
@@ -59,7 +60,7 @@ def get_index_source_label(seq_id):
         elif "keelung" in id:
             s.append("keelung")
         else:
-            s.append("reference")
+            s.append("unknown")
     return s
 
 def get_index_target_label(index, target2units):
@@ -70,15 +71,16 @@ def get_index_target_label(index, target2units):
                 t.append(target)
     return t
 
-def write_umap_file(seq_file, save_dir, target2units, random_state=42, neighbors=15, min_dist=0.1):
+def write_umap_file(seq_file, save_dir, target2units=None, random_state=42, neighbors=15, min_dist=0.1):
     create_dir(save_dir)
     index_fasta_file = os.path.join(save_dir, "input.fa")
-    aln_file = os.path.join(save_dir, f"input.aln")
+    aln_file = os.path.join(save_dir, "input.aln")
     dist_file = os.path.join(save_dir, "distance.txt")
     index_path = os.path.join(save_dir, "index.tsv")
 
     index = fasta2index(seq_file=seq_file, fasta_file=index_fasta_file)
-    index['target'] = get_index_target_label(index, target2units)
+    if target2units is not None:
+        index['target'] = get_index_target_label(index, target2units)
     index['source'] = get_index_source_label(index['seq_id'])
 
     calc_dist(seq_file=index_fasta_file, aln_file=aln_file, dist_file=dist_file)
