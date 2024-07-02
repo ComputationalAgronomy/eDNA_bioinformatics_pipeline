@@ -116,6 +116,7 @@ class IntegrateAnalysis(IntegrateSamples):
                     target_level,
                     units_level="species",
                     index_path=None,
+                    calc_dist = True,
                     neighbors = 15,
                     min_dist = 0.1,
                     dereplicate_sequence=False,
@@ -142,7 +143,7 @@ class IntegrateAnalysis(IntegrateSamples):
                 target2units_dict[target_name] = list(units2fasta.keys())
             write_fasta(fasta_dict, seq_file='./tmp/umap.fa', dereplicate=dereplicate_sequence)
             save_dir = os.path.join(parent_dir, save_dir_name)
-            index = write_umap_file(seq_file='./tmp/umap.fa', save_dir=save_dir, target2units=target2units_dict, neighbors=neighbors, min_dist=min_dist)
+            index = write_umap_file(seq_file='./tmp/umap.fa', save_dir=save_dir, target2units=target2units_dict, calc_dist=calc_dist, neighbors=neighbors, min_dist=min_dist)
         else:
             save_dir = os.path.dirname(index_path)
             index = pd.read_csv(index_path, sep='\t')
@@ -251,15 +252,15 @@ if __name__ == '__main__':
     # a.import_samples(read_dir=read_dir)
     # a.save_sample_data(save_dir=read_dir, save_name='amplicon_larger8')
     a = IntegrateAnalysis(load_path=load_path)
-    # sample_id_list = a.get_sample_id_list()
-    # all_family_name=[]
-    # for sample_id in sample_id_list:
-    #     for level in a.sample_data[sample_id].hap2level.values():
-    #         all_family_name.append(level['family'])
-    # uniq_family_name = np.unique(all_family_name)
+    sample_id_list = a.get_sample_id_list()
+    all_family_name=[]
+    for sample_id in sample_id_list:
+        for level in a.sample_data[sample_id].hap2level.values():
+            all_family_name.append(level['family'])
+    uniq_family_name = np.unique(all_family_name)
     # five_families = ["Blenniidae", "Labridae", "Mugilidae", "Pomacentridae", "Tripterygiidae"]
-    # a.umap_target(target_list=five_families, target_level='family', dereplicate_sequence=True, units_level='species', neighbors=15, min_dist=0.5, parent_dir='.\\result\\all_site\\permanova', save_dir_name='test', plot_all=False, plot_target=False, plot_unit=False)
-    # a.cluster_umap(index_file='.\\..\\..\\result\\all_site\\umap\\five_family_amp\\index.tsv', n_unit_threshold=15, min_samples=30, min_cluster_size=20, plot_all=False, plot_target=True, plot_unit=False)
+    a.umap_target(target_list=uniq_family_name, target_level='family', dereplicate_sequence=False, units_level='species', calc_dist=False, neighbors=15, min_dist=0.5, parent_dir='.\\result\\all_site\\umap', save_dir_name='all_family_test_number_ver', plot_all=True, plot_target=True, plot_unit=True)
+    # a.cluster_umap(index_file='.\\result\\all_site\\umap\\all_family_test_number_ver\\index.tsv', n_unit_threshold=15, min_samples=10, min_cluster_size=10, plot_all=False, plot_target=False, plot_unit=True)
     # a.barchart_relative_abundance(level='species')
     # a.mltree_target(target_list=five_families, target_level='family', units_level='species', n_unit_threshold=0, dereplicate_sequence=True, bootstrap=1000, threads=None, save_dir='.\\..\\..\\result\\all_site\\mltree\\five_family')
     # a.generata_nexus_file(index_file='.\\..\\..\\result\\all_site\\umap\\five_family_2\\index.tsv', unit_name='Abudefduf_vaigiensis', save_dir=".\\..\\..\\result\\all_site\\hap_net")
@@ -273,17 +274,17 @@ if __name__ == '__main__':
     #     annot_string += f"CONTAINS=={i[1]} {five_color[i[0]]}\n"
     # print(annot_string)
 
-    index = pd.read_csv(".\\result\\all_site\\umap\\five_family_2\\index.tsv", sep='\t')
-    # index = remove_row_by_unit_occurance(index, n=15)
-    subindex = index[index["target"] == "Pomacentridae"]
-    labels = np.unique(subindex["unit"])
-    print(" ".join(labels))
-    color = get_color_hex(len(labels))
-    annot_string = ""
-    for i, label in enumerate(labels):
-        annot_string += f"CONTAINS=={label} {color[i]}\n"
-        print(i)
-    print(annot_string)
+    # index = pd.read_csv(".\\result\\all_site\\umap\\five_family_2\\index.tsv", sep='\t')
+    # # index = remove_row_by_unit_occurance(index, n=15)
+    # subindex = index[index["target"] == "Pomacentridae"]
+    # labels = np.unique(subindex["unit"])
+    # print(" ".join(labels))
+    # color = get_color_hex(len(labels))
+    # annot_string = ""
+    # for i, label in enumerate(labels):
+    #     annot_string += f"CONTAINS=={label} {color[i]}\n"
+    #     print(i)
+    # print(annot_string)
 
     ## itol annot for intraspecific
     # create_dir('./tmp')
