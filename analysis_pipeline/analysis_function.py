@@ -10,6 +10,10 @@ import matplotlib.pyplot as plt
 import matplotlib
 from Bio import SeqIO
 
+# TODO(SW): This module is a collection of functions, but probably should be split into several smaller modules. Each module should have a clear purpose.
+
+
+
 def normalize_abundance(abundance_dict: Dict[str, float]) -> Dict[str, float]:
     total_size = sum(abundance_dict.values())
     norm_abundance = {key: value/total_size * 100 for key, value in abundance_dict.items()}
@@ -23,16 +27,21 @@ def list_union(lists_to_union: List[List[int]]) -> List[int]:
 def create_barchart_fig(data: pd.DataFrame) -> go.Figure:
     fig = px.bar(data, barmode='stack', labels={'value': 'Percentage (%)'},color_discrete_sequence=px.colors.qualitative.Pastel)
     fig.update_xaxes(tickmode='linear')
-    fig.update_layout(xaxis_title="Sample ID", yaxis_title="Percentage (%)", legend=dict(x=1.05, y=1, traceorder='normal', orientation='h'))
+    fig.update_layout(xaxis_title="Sample ID", yaxis_title="Percentage (%)", legend={"x":1.05, "y":1, "traceorder":'normal', "orientation":'h'})
     return fig
 
 def create_dir(dir_path):
-    if not os.path.isdir(dir_path):
-        print("> Creating directory: {}"
-              .format(dir_path))
-        os.makedirs(dir_path)
+    try:
+        os.makedirs(dir_path, exist_ok=True)
+        print("> Creating directory: {}".format(dir_path))
+    except FileExistsError:
+        print("> Directory already exists: {}".format(dir_path))
+    except Exception as e:
+        print("> Error creating directory: {}".format(dir_path))
+        print(e)
 
 def remove_dir(dir_path):
+    # TODO(SW): try-except block?
     if os.path.isdir(dir_path):
         print("> Removing directory: {}"
               .format(dir_path))
@@ -58,9 +67,14 @@ def dereplicate_fasta(seq_file, uniq_file, relabel, threads=12, sizeout=False):
     if sizeout:
         cmd += ' -sizeout'
     print("> Running USEARCH command: ", cmd)
-    subprocess.run(cmd, shell=True)
+    try:
+        subprocess.run(cmd, shell=True)
+    except Exception as e:
+        print(e)
+
 
 def write_fasta(units2fasta_dict, seq_file, dereplicate=False, sizeout=False):
+    # TODO(SW): Move this to a different module.
     if dereplicate:
         fasta_list = []
         for unit_name, unit_seq in units2fasta_dict.items():
@@ -72,8 +86,8 @@ def write_fasta(units2fasta_dict, seq_file, dereplicate=False, sizeout=False):
         with open(seq_file, 'w') as file:
             fasta_str = "".join(fasta_list)
             file.write(fasta_str)
-    else:    
-        fasta_list = [fasta for fasta in units2fasta_dict.values()]
+    else:
+        fasta_list = list(units2fasta_dict.values())
         with open(seq_file, 'w') as file:
             fasta_str = "".join(fasta_list)
             file.write(fasta_str)
@@ -114,11 +128,16 @@ Use `--undo` option if you want to continue previous run when changing/adding op
 
 def iqtree2_command(seq_path, save_dir, prefix, model, bootstrap, threads, checkpoint):
     save_subdir = os.path.join(save_dir, prefix)
-    if not os.path.isdir(save_subdir):
-        os.makedirs(save_subdir)
-    model = model if model != None else 'TEST'
-    bootstrap_string = f'-b {bootstrap} ' if bootstrap != None else ''
-    threads = threads if threads != None else 'AUTO'
+    # if not os.path.isdir(save_subdir):
+    os.makedirs(save_subdir, exist_ok=True)
+
+    model = model or 'TEST'
+
+    bootstrap_string = f'-b {bootstrap} ' if bootstrap is not None else ''
+    threads = threads or 'AUTO'
+
+    # TODO(SW): Technically shell=True is a security risk. It's convient, so it's used here. But you should be aware of this.
+    # TODO(SW): Try to bulid it wint shell=False and shlex.split().
     cmd = f'iqtree2 -m {model} -s {seq_path} {bootstrap_string}--prefix {os.path.join(save_subdir, prefix)} -nt {threads}{checkpoint}'
     print("> Running IQTREE2 command: ", cmd)
     subprocess.run(cmd, shell=True)
@@ -141,6 +160,7 @@ def hex_to_rgb(value):
     return tuple(int(value[i:i + lv // 3], 16) for i in range(0, lv, lv // 3))
 
 def get_uniq_seq_freq(seq_file, uniq_seq_file, seq_labels):
+    #TODO(SW): Needs to close() these files.
     uniq_labels = np.unique(seq_labels)
     unit_uniq_seq = SeqIO.parse(open(uniq_seq_file), 'fasta')
     label_freq_each_uniq_seq = {}
@@ -151,7 +171,7 @@ def get_uniq_seq_freq(seq_file, uniq_seq_file, seq_labels):
             if seq.seq == uniq_seq.seq:
                 label_freq_each_uniq_seq[uniq_seq.name][seq_labels[i]] += 1
 
-    freq_string = f"""    
+    freq_string = f"""
 Begin Traits;
 Dimensions NTraits={len(uniq_labels)};
 format labels=yes missing=? separator=Comma;

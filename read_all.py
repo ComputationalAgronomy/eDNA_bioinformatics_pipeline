@@ -341,7 +341,7 @@ class Otu(OtuAnalysis):
                 haploid, uniq_size = line_list[0], line_list[1].replace('size=','')
                 if 'otu' in line_list[2]:
                     # uniq_top = re.search(r'otu\d+', line[2]).group(0).replace('o','O')
-                    # TODO: Simpliy the code with re.sub
+                    # TODO(SW): Simpliy the code with re.sub
                     Otu.RE_OTU_NUM.sub("OUT\\1", line[2])
                 elif 'perfect\s' in line[2] or 'match' in line[2] or 'noisy' in line[2] or 'perfect_chimera' in line[2] :
                     uniq_top = re.search(r'top=[a-zA-Z]+\d+', line).group(0).replace('top=','')
