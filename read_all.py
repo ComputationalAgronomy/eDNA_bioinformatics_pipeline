@@ -1,31 +1,33 @@
+import os
+import re
+import shutil
+import subprocess
 from abc import ABC, abstractmethod
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import os
-import subprocess
-import re
-from pymsaviz import MsaViz
-import shutil
 import plotly.express as px
-from usum import usum
 from Bio import SeqIO
+from pymsaviz import MsaViz
+from usum import usum
+
 
 class OtuAnalysis(ABC):
-
+    TAX_LEVELS = ['species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom']
     def __init__(self, read_dir, sample_num):
         self.uniq_seq = {}
         self.uniq_size = {}
         self.otu_seq = {}
         self.otu_size = {}
         self.otu2unique = {}
-        self.taxonomy2otu = {'kingdom':{}, 'phylum':{}, 'class':{}, 'order':{}, 'family':{}, 'genus':{}, 'species':{}}
+        self.taxonomy2otu = dict.fromkeys(OtuAnalysis.TAX_LEVELS, {})
         self.taxonomylevel= {'kingdom':{}, 'phylum':{}, 'class':{}, 'order':{}, 'family':{}, 'genus':{}, 'species':{}}
-        uniq_path = f'{read_dir}/4_derep/{sample_num}_derep.fasta'
+        uniq_path = os.path.join(read_dir, "4_derep", f"{sample_num}_derep.fasta")
         otu_path = f'{read_dir}/5_haploid/{sample_num}_zotu.fasta'
         otu_report_path = f'{read_dir}/5_haploid/{sample_num}_zotu_report.txt'
         blast_path = f'{read_dir}/6_blast/{sample_num}_zotu.csv'
-        
+
         self.uniq_seq = self._read_seq(uniq_path)
         self.otu_seq = self._read_seq(otu_path)
         self._read_otu_report(otu_report_path)
@@ -46,7 +48,7 @@ class OtuAnalysis(ABC):
             return seq
 
     @abstractmethod
-    def _read_otu_report(report_path):
+    def _read_otu_report(self, report_path):
         raise NotImplementedError
 
     def _get_otu_size(self):
@@ -65,7 +67,7 @@ class OtuAnalysis(ABC):
                 error_symbol= str.maketrans({':': '_', '/': '_', '\\': '_', '*': '_', '?': '_', '"': '_', '<': '_', '>': '_', '|': '_'})
                 species = species.translate(error_symbol)
                 family = 'Mugilidae' if family == 'Mugil' else family
-            
+
                 if species not in self.taxonomy2otu['species']:
                     self.taxonomy2otu['species'][species] = []
                 self.taxonomy2otu['species'][species].append(haploid)
@@ -140,7 +142,7 @@ class OtuAnalysis(ABC):
     def _split_lines(seq):
         lines = [seq[i:i+59] for i in range(0, len(seq), 60)]
         return '\n'.join(lines)
-    
+
     @staticmethod
     def _make_tmp_dir():
         if not os.path.isdir('./tmp/'):
@@ -155,7 +157,7 @@ class OtuAnalysis(ABC):
     def _make_align_file(seq_file, aln_file):
         cmd = f'clustalo -i {seq_file} -o {aln_file} --distmat-out={aln_file}.mat --guidetree-out={aln_file}.dnd --full --force'
         subprocess.run(cmd, shell=True)
-    
+
     @staticmethod
     def _make_uniq_file(seq_file, relabel, uniq_file, report_file):
         cmd = f'usearch -fastx_uniques {seq_file} -threads 12 \
@@ -189,14 +191,14 @@ class OtuAnalysis(ABC):
             text = text + f'>{uniq}\n{self.uniq_seq[uniq]}\n'
         with open('./tmp/seq.fa', 'w') as f:
             f.write(text)
-        
+
         self._make_align_file(seq_file='./tmp/seq.fa', aln_file='./tmp/seq.aln')
 
         if os.path.exists('./tmp/seq.aln'):
             self._show_alignment(aln_seq_path='./tmp/seq.aln', save_path=f'{save_dir}/{otu_name}.png', save_png=save_align_png)
         else:
             print(f'{otu_name} contains 1 sequence, nothing to align')
-        
+
         shutil.rmtree('./tmp/')
 
     # plot UMAP and alignment between OTUs in one species.
@@ -223,9 +225,9 @@ class OtuAnalysis(ABC):
             seq = seq + f'>{otu}\n{subseq}\n'
         with open('./tmp/seq.fa', 'w') as f:
             f.write(seq)
-        
+
         self._make_align_file(seq_file='./tmp/seq.fa', aln_file='./tmp/seq.aln')
-        
+
         if os.path.exists('./tmp/seq.aln'):
             self._show_alignment(aln_seq_path='./tmp/seq.aln', save_path=f'{save_dir}/{species_name}/alignment.png', save_png=save_align_png)
         else:
@@ -241,10 +243,10 @@ class OtuAnalysis(ABC):
 
     def analysis_species_subspecies(self, species_name, save_dir='.', save_align_png=True, make_phylogenetic_tree=False, bootstrap_times=100):
         self._make_tmp_dir()
-        
+
         species_list = [species for species in self.taxonomy2otu['species'].keys() if species_name in species]
-        
-        for species in species_list: 
+
+        for species in species_list:
             otu_list = self.taxonomy2otu['species'][species]
             for otu in otu_list:
                 seq = ''
@@ -254,7 +256,7 @@ class OtuAnalysis(ABC):
                     seq = seq + f'>{otu}\n{subseq}\n'
                 with open(f'./tmp/{species}({otu}).fasta', 'w') as f:
                     f.write(seq)
-        
+
         file_list = os.listdir('./tmp')
         file_list = [f'./tmp/{file}' for file in file_list]
         file_string = ' '.join(file_list)
@@ -269,9 +271,9 @@ class OtuAnalysis(ABC):
                 seq = seq + f'>{otu}\n{subseq}\n'
         with open('./tmp/seq.fa', 'w') as f:
             f.write(seq)
-        
+
         self._make_align_file(seq_file='./tmp/seq.fa', aln_file='./tmp/seq.aln')
-        
+
         if os.path.exists('./tmp/seq.aln'):
             self._show_alignment(aln_seq_path='./tmp/seq.aln', save_path=f'{save_dir}/{species_name}/alignment.png', save_png=save_align_png)
         else:
@@ -331,16 +333,19 @@ class OtuAnalysis(ABC):
             fig.write_html(f'{save_dir}/sample_{level}_bar_chart.html')
 
 class Otu(OtuAnalysis):
+    RE_OTU_NUM = re.compile("otu(\\d+)")
     def _read_otu_report(self, otu_report_path):
         with open(otu_report_path, 'r') as file:
             for line in file.readlines():
                 line_list = line.split(';')
                 haploid, uniq_size = line_list[0], line_list[1].replace('size=','')
                 if 'otu' in line_list[2]:
-                    uniq_top = re.search(r'otu\d+', line[2]).group(0).replace('o','O')
+                    # uniq_top = re.search(r'otu\d+', line[2]).group(0).replace('o','O')
+                    # TODO: Simpliy the code with re.sub
+                    Otu.RE_OTU_NUM.sub("OUT\\1", line[2])
                 elif 'perfect\s' in line[2] or 'match' in line[2] or 'noisy' in line[2] or 'perfect_chimera' in line[2] :
                     uniq_top = re.search(r'top=[a-zA-Z]+\d+', line).group(0).replace('top=','')
-                
+
                 if uniq_top not in self.otu2unique:
                     self.otu2unique[uniq_top] = []
                 self.otu2unique[uniq_top].append(line[0].replace('Uniq',''))
@@ -353,7 +358,7 @@ class Zotu(OtuAnalysis):
             chi_num = 1
             for line in file.readlines():
                 line_list = line.split(';')
-                haploid= line_list[0] 
+                haploid= line_list[0]
                 if 'denoise' in line_list[2]:
                     if 'amp' in line_list[2]:
                         uniq_top = haploid
@@ -386,7 +391,7 @@ class SumAllSample(OtuAnalysis):
         for sample_num in self.samplenum_list:
             self.sample_dict[sample_num] = Zotu(read_dir=read_dir, sample_num=sample_num)
 
-    def _read_otu_report(report_path):
+    def _read_otu_report(report_path): # Question: static or self?
         return super()._read_otu_report()
 
     def barplot_all(self, level, save=True):
@@ -429,26 +434,28 @@ class SumAllSample(OtuAnalysis):
             if species2otu_list is not None:
                 for otu in species2otu_list:
 
-                    umap_seq = ''
+                    umap_seq = []
                     for uniq in self.sample_dict[sample_num].otu2unique[otu]:
                         seq = self.sample_dict[sample_num].uniq_seq[uniq]
                         seq = self._split_lines(seq)
-                        umap_seq = umap_seq + f'>{uniq}\n{seq}\n'
+                        umap_seq.append(f'>{uniq}\n{seq}\n')
+
+                    umap_seq_output = ''.join(umap_seq)
                     with open(f'./tmp/{sample_num}_{otu}.fasta', 'w') as file:
-                        file.write(umap_seq)
+                        file.write(umap_seq_output)
                     file_string = file_string + f'./tmp/{sample_num}_{otu}.fasta '
 
                     title = f'>{sample_num}_{otu}'
                     seq = self.sample_dict[sample_num].otu_seq[otu]
                     align_seq = align_seq + f'{title}\n{seq}\n'
-        
+
         with open('./tmp/seq.fa', 'w') as file:
             file.write(align_seq)
 
         self._make_umap(file_string=file_string, save_folder_name=f'{save_dir}/{species_name}')
 
         self._make_align_file(seq_file='./tmp/seq.fa', aln_file=f'{save_dir}/{species_name}/{species_name}')
-        
+
         if os.path.exists(f'{save_dir}/{species_name}/{species_name}.aln'):
             self._show_alignment(aln_seq_path='./tmp/seq.aln', save_path=f'{save_dir}/{species_name}/alignment.png', save_png=save_align_png)
         else:
@@ -458,12 +465,12 @@ class SumAllSample(OtuAnalysis):
 
     def analysis_species_subspecies(self, species_name, save_dir='.', neighbors = 15, umap_min_dist = 0.1, alignment=True, dry=False):
         self._make_tmp_dir()
-        
+
         align_seq = ''
         file_string = ''
         species_list = [species for sample_num in self.samplenum_list for species in self.sample_dict[sample_num].taxonomy2otu['species'].keys() if species_name in species]
         species_set = set(species_list)
-        if dry == False:
+        if dry is False:
             for species in species_set:
                 umap_seq = ''
                 for sample_num in self.samplenum_list:
@@ -472,9 +479,10 @@ class SumAllSample(OtuAnalysis):
                         for otu in otu_list:
                             title = f'>{species}_{sample_num}_{otu}'
                             seq  = self.sample_dict[sample_num].otu_seq[otu]
+                            # TODO(SW): Replacet with [string], and "".join()
                             umap_seq = umap_seq + f'{title}\n{seq}\n'
                             align_seq = align_seq + f'{title}\n{seq}\n'
-
+                # TODO(SW): Replace with https://docs.python.org/3/library/tempfile.html
                 with open(f'./tmp/{species}.fasta', 'w') as file:
                     file.write(umap_seq)
                 file_string = file_string + f'./tmp/{species}.fasta '
@@ -486,9 +494,10 @@ class SumAllSample(OtuAnalysis):
 
             if alignment:
                 self._make_align_file(seq_file='./tmp/seq.fa', aln_file=f'{save_dir}/{species_name}/{species_name}')
-
-                if os.path.exists(f'{save_dir}/{species_name}/{species_name}.aln'):
-                    self._show_alignment(aln_seq_path=f'{save_dir}/{species_name}/{species_name}.aln', save_path=f'{save_dir}/{species_name}/alignment.png')
+                # TODO(SW): Replace with os.path.join
+                file_aln = os.path.join(save_dir, species_name, f'{species_name}.aln')
+                if os.path.exists(file_aln):
+                    self._show_alignment(aln_seq_path=file_aln, save_path=f'{save_dir}/{species_name}/alignment.png')
                 else:
                     print(f'{species_name} contains 1 sequence, nothing to align')
 
@@ -506,7 +515,7 @@ class SumAllSample(OtuAnalysis):
         for sample_num in self.samplenum_list:
             for species, otu_list in species2otu[sample_num].items():
                 allsample_species[species].extend(otu_list)
-        
+
         species_num = 0
         species_list = []
         for species, otu_list in allsample_species.items():
@@ -517,7 +526,7 @@ class SumAllSample(OtuAnalysis):
         print(species_list)
 
     def get_species_seq(self, species_target, sample_num):
-        species_seq = "" 
+        species_seq = ""
 
         try:
             zotu_list = self.sample_dict[sample_num].taxonomy2otu['species'][species_target]
@@ -533,7 +542,7 @@ class SumAllSample(OtuAnalysis):
             print(f'No {species_target} in {sample_num}.')
 
         return species_seq
-    
+
     def dereplicate_zotu(self, species_list, save_dir):
         self._make_tmp_dir()
 
@@ -604,7 +613,7 @@ class SumAllSample(OtuAnalysis):
         print(frequency_text)
 
         shutil.rmtree('./tmp/')
- 
+
     def umap_species(self, species_target, save_dir='.', neighbors = 15, umap_min_dist = 0.1, dry=False):
         self._make_tmp_dir()
 
@@ -616,7 +625,7 @@ class SumAllSample(OtuAnalysis):
                 if species_target in species:
                     if species not in species_seq:
                         species_seq[species] = ""
-                    species_seq[species] += self.get_species_seq(species_target=species, sample_num=sample_num) 
+                    species_seq[species] += self.get_species_seq(species_target=species, sample_num=sample_num)
 
         if dry == False:
             for species, seq in species_seq.items():
@@ -698,7 +707,7 @@ class SumAllSample(OtuAnalysis):
                                 if genus_target not in genus_seq:
                                     genus_seq[genus_target] = ""
                                 #to species level
-                                for species_target in species_list: 
+                                for species_target in species_list:
                                     # to zotu level
                                     genus_seq[genus_target] += self.get_species_seq(species_target=species_target, sample_num=sample_num)
 
@@ -739,7 +748,7 @@ if __name__ == '__main__':
     # all_species_with_var = ['Abudefduf_vaigiensis', 'Enneapterygius_etheostomus', 'Mugil_cephalus']
     # all_genus = ['Abudefduf', 'Enneapterygius', 'Mugil']
     # all_family = ['Pomacentridae', 'Tripterygiidae', 'Blenniidae', 'Mugilidae', 'Labridae']
-    # for species in all_species_with_var: 
+    # for species in all_species_with_var:
         # a.umap_species(species_target=species, save_dir='./result/all_site_result/umap/species', neighbors=15, umap_min_dist=0.5, dry=False)
     # for genus in all_genus:
         # a.umap_genus(genus_target=genus, save_dir='./result/all_site_result/umap/genus', neighbors=20, umap_min_dist=0.8, dry=False)
