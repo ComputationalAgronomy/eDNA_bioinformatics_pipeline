@@ -42,8 +42,8 @@ def read_hap_level(blast_csv_path):
             if level_list[2] == BlastReader.TAX_REPLACMENT:
                 level_list[2] = BlastReader.TAX_REPLACMENT[level_list[2]]
 
-            hap2level[haplotype] = dict(zip(Reader.DESIRED_LEVEL, level_list))
-            n += 1 # Will this be equal to the number of lines in teh file?
+            hap2level[haplotype] = dict(zip(BlastReader.DESIRED_LEVEL, level_list))
+            n += 1 # TODO(SW) Will this be equal to the number of lines in teh file?
 
     print(f"Haplotype Assigned:  {n} species\n")
 

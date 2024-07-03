@@ -1,12 +1,13 @@
+import os
+
+import matplotlib.cm
+import matplotlib.colors
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib.colors
-import matplotlib.cm
 from matplotlib.patches import Patch
-from umap.plot import _themes, _datashade_points
-import matplotlib.pyplot as plt
-import os
+from umap.plot import _datashade_points, _themes
+
 
 def _matplotlib_points(
     points,
@@ -128,5 +129,5 @@ def plot_points(points, labels=None, markers=None, values=None, color_key=None, 
         ax = _datashade_points(points, ax, labels, values, color_key, cmap, background, width, height, show_legend)
 
     ax.set(xticks=[], yticks=[])
- 
+
     return ax
