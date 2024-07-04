@@ -43,7 +43,7 @@ class OtuAnalysis(ABC):
             size = sum(int(self.uniq_size[int(uniq)-1]) for uniq in uniq_group)
             self.otu_size.append(size)
 
-    # import derep.fasta, otu.fasta, otu_size.txt to get relationship between OTUs and unique sequences. 
+    # import derep.fasta, otu.fasta, otu_size.txt to get relationship between OTUs and unique sequences.
     def import_data(self, uniq_path, otu_path, otu_report_path):
         self.uniq_seq = self._read_seq(uniq_path)
         self.otu_seq = self._read_seq(otu_path)
@@ -54,7 +54,7 @@ class OtuAnalysis(ABC):
     def _split_lines(seq):
         lines = [seq[i:i+59] for i in range(0, len(seq), 60)]
         return '\n'.join(lines)
-    
+
     #plot MSA between unique sequences in one OTU.
     def within_otu_align(self, otu_name, save=False):
         uniq_list = self.otu2uniq[otu_name]
@@ -65,13 +65,13 @@ class OtuAnalysis(ABC):
             text = f"{text}>Uniq{uniq_list[i]}\n{subseq}\n"
         with open('seq.fa', 'w') as f:
             f.write(text)
-        
+
         cmd = '.\clustal-omega-1.2.2-win64\clustalo.exe -i seq.fa -o seq.aln'
         os.system(cmd)
         os.remove('seq.fa')
         mv = MsaViz('seq.aln', wrap_length=60, show_count=True, show_grid=False, show_consensus=True)
         mv.plotfig()
-        if save==True:
+        if save:
             mv.savefig(f'{otu_name}.png')
         os.remove('seq.aln')
 
@@ -86,17 +86,17 @@ class OtuAnalysis(ABC):
                 seq = seq + f'>Uniq{uniq}\n{subseq}\n'
             with open(f'Zotu{otu_name}.fasta', 'w') as f:
                 f.write(seq)
-        cmd = 'usum ' 
+        cmd = 'usum '
         for otu in otu_list:
             cmd = cmd + f'Zotu{otu}.fasta '
-        cmd = cmd +  '--labels ' 
+        cmd = cmd +  '--labels '
         for otu in otu_list:
             cmd = cmd + f'Zotu{otu} '
         cmd = cmd + f'--maxdist 1.0 --termdist 1.0 --output {spc_name} -f'
         os.system(cmd)
         for otu in otu_list:
             os.remove(f'Zotu{otu}.fasta')
-    
+
         seq=''
         for otu in otu_list:
             subseq = self.otu_seq[otu]
@@ -185,19 +185,19 @@ class Zotu(OtuAnalysis):
             self._get_otu_size()
 
 if __name__ == '__main__':
-    
+
     sample_num = 1
     uniq_path = f'./cleandata/4_derep/{sample_num}_derep.fasta'
     otu_path = f'./cleandata/5_haploid/otu/{sample_num}_otu.fasta'
     otu_report_path = f'./cleandata/5_haploid/otu/{sample_num}_otu_size.txt'
     zotu_path = f'./cleandata/5_haploid/zotu/{sample_num}_zotu.fasta'
     zotu_report_path = f'./cleandata/5_haploid/zotu/{sample_num}_zotu_size.txt'
-    
+
     a = Zotu()
     a.import_data(uniq_path=uniq_path, otu_path=zotu_path, otu_report_path=zotu_report_path)
-    
+
     otu_list = ['5', '17']
     species_name = 'Saurida_umeyoshii'
     a.usum_otu(otu_list=otu_list, spc_name=species_name)
-    
+
 

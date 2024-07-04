@@ -50,7 +50,7 @@ def _matplotlib_points(
             num_labels = unique_labels.shape[0]
             color_key = plt.get_cmap(cmap)(np.linspace(0, 1, num_labels))
             legend_elements = [
-                Patch(facecolor=color_key[i], label=unique_labels[i])
+                Patch(facecolor=color_key[i], label=k)
                 for i, k in enumerate(unique_labels)
             ]
 

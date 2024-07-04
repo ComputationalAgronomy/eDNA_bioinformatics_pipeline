@@ -178,7 +178,7 @@ class OtuAnalysis(ABC):
     def _show_alignment(aln_seq_path, save_path, save_png=True):
         mv = MsaViz(aln_seq_path, wrap_length=60, show_count=True, show_grid=False, show_consensus=True)
         mv.plotfig()
-        if save_png==True:
+        if save_png:
             mv.savefig(save_path)
 
     #plot MSA between unique sequences in one OTU.
@@ -233,7 +233,7 @@ class OtuAnalysis(ABC):
         else:
             print(f'{species_name} contains 1 sequence, nothing to align')
 
-        if make_phylogenetic_tree==True:
+        if make_phylogenetic_tree:
             cmd = f'iqtree2 -m GTR+F+I+G4 -s ./tmp/seq.aln -b {bootstrap_times} --prefix {species_name}'
             subprocess.run(cmd, shell=True)
             cmd = f'move {species_name}.* {save_dir}/{species_name}'
@@ -279,7 +279,7 @@ class OtuAnalysis(ABC):
         else:
             print(f'{species_name} contains 1 sequence, nothing to align')
 
-        if make_phylogenetic_tree==True:
+        if make_phylogenetic_tree:
             cmd = f'iqtree2 -m GTR+F+I+G4 -s ./tmp/seq.aln -b {bootstrap_times} --prefix {species_name}'
             subprocess.run(cmd, shell=True)
             cmd = f'move {species_name}.* {save_dir}/{species_name}'
@@ -391,7 +391,7 @@ class SumAllSample(OtuAnalysis):
         for sample_num in self.samplenum_list:
             self.sample_dict[sample_num] = Zotu(read_dir=read_dir, sample_num=sample_num)
 
-    def _read_otu_report(report_path): # Question: static or self?
+    def _read_otu_report(report_path): # TODO(SW): Question? is this static or self?
         return super()._read_otu_report()
 
     def barplot_all(self, level, save=True):
@@ -421,7 +421,7 @@ class SumAllSample(OtuAnalysis):
         fig.update_xaxes(tickmode='linear')
         fig.update_layout(xaxis_title="Sample No.", yaxis_title="Percentage (%)", legend=dict(x=1.05, y=1, traceorder='normal', orientation='h'))
         fig.show()
-        if save==True:
+        if save:
             fig.write_html(f'{level}_bar_chart.html')
 
     def analysis_species(self, species_name, save_dir = '.', save_align_png=True):
@@ -443,7 +443,7 @@ class SumAllSample(OtuAnalysis):
                     umap_seq_output = ''.join(umap_seq)
                     with open(f'./tmp/{sample_num}_{otu}.fasta', 'w') as file:
                         file.write(umap_seq_output)
-                    file_string = file_string + f'./tmp/{sample_num}_{otu}.fasta '
+                    file_string = file_string + f'./tmp/{sample_num}_{otu}.fasta ' # TODO(SW): Fix
 
                     title = f'>{sample_num}_{otu}'
                     seq = self.sample_dict[sample_num].otu_seq[otu]
@@ -577,7 +577,7 @@ class SumAllSample(OtuAnalysis):
         # calculate frequency
         frequency = {}
         uniq_seq_set = {}
-        fastx_sequences = SeqIO.parse(open(f'{save_dir}/{species_target}/aln_uniq_seq.fasta'), 'fasta')
+        fastx_sequences = SeqIO.parse(open(f'{save_dir}/{species_target}/aln_uniq_seq.fasta'), 'fasta') # TODO(SW): close()
         for fastx in fastx_sequences:
             uniq_id = fastx.description
             uniq_seq = fastx.seq
@@ -627,7 +627,7 @@ class SumAllSample(OtuAnalysis):
                         species_seq[species] = ""
                     species_seq[species] += self.get_species_seq(species_target=species, sample_num=sample_num)
 
-        if dry == False:
+        if dry is False:
             for species, seq in species_seq.items():
                 with open(f'./tmp/{species}.fasta', 'w') as file:
                     file.write(seq)
@@ -652,7 +652,7 @@ class SumAllSample(OtuAnalysis):
                             species_seq[species_target] = ""
                         species_seq[species_target] += self.get_species_seq(species_target=species_target, sample_num=sample_num)
 
-        if dry == False:
+        if dry is False:
             for species, seq in species_seq.items():
                 with open(f'./tmp/{species}.fasta', 'w') as file:
                     file.write(seq)
@@ -681,7 +681,7 @@ class SumAllSample(OtuAnalysis):
                                         species_seq[species_target] = ""
                                     species_seq[species_target] += self.get_species_seq(species_target=species_target, sample_num=sample_num)
 
-        if dry == False:
+        if dry is False:
             for species, seq in species_seq.items():
                 with open(f'./tmp/{species}.fasta', 'w') as file:
                     file.write(seq)
@@ -711,7 +711,7 @@ class SumAllSample(OtuAnalysis):
                                     # to zotu level
                                     genus_seq[genus_target] += self.get_species_seq(species_target=species_target, sample_num=sample_num)
 
-        if dry == False:
+        if dry is False:
             for genus, seq in genus_seq.items():
                 with open(f'./tmp/{genus}.fasta', 'w') as file:
                     file.write(seq)
@@ -733,7 +733,7 @@ class SumAllSample(OtuAnalysis):
                     for species_target in species_list:
                         # to zotu level
                        seq_target += self.get_species_seq(species_target=species_target, sample_num=sample_num)
-        if dry == False:
+        if dry is False:
             with open(f'./tmp/{genus_target}.fasta', 'w') as file:
                 file.write(seq_target)
 

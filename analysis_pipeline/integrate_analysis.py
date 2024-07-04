@@ -1,15 +1,27 @@
 from integrate_samples import IntegrateSamples
 from run_umap import write_umap_file, plot_umap
 from run_hdbscan import run_hdbscan
-from analysis_function import *
+from analysis_function import *   # TODO(SW): avoid import *
 import os
 import pandas as pd
 import numpy as np
 from Bio import AlignIO
+"""
+TODO(SW): for IntegrateAnalysis class, which looks like the main class you calling from, this is too complicated. When people look at a function, they can't figure out what does it to within a few seconds. Generally, refactor into separate classes or functions will help.
+
+- i.e., in umap class
+def umap_target(self, ...):
+    setup(self, ...)
+    run_umap(self, ...)
+    remove_row_by_unit_occurance(self, ...)
+    plot_umap(self, ...)
+    cleanup(self, ...)
+"""
 
 class IntegrateAnalysis(IntegrateSamples):
     def __init__(self, load_path=None):
         super().__init__(load_path)
+        # TODO(SW): My gut feeling is that you should have more variables here, i.e. workspace_dir, target_**
 
     def get_sample_id_list(self, sample_id_list=[]):
         if sample_id_list == []:
@@ -43,18 +55,17 @@ class IntegrateAnalysis(IntegrateSamples):
 
         all_level_name = [list(samples_abundance[sample_id].keys()) for sample_id in sample_id_list]
         uniq_level_name = list_union(all_level_name)
-    
+
         for sample_id in sample_id_list:
             samples_abundance[sample_id] = [samples_abundance[sample_id].get(level_name, 0) for level_name in uniq_level_name]
- 
+
         plotdata = pd.DataFrame(samples_abundance, index=uniq_level_name)
         fig = create_barchart_fig(plotdata.transpose())
         fig.show()
         print("> Barchart generated.")
 
-        if save_html_dir != None:
-            if save_name == None:
-                save_name = f"{level}_bar_chart"
+        if save_html_dir is not None:
+            save_name = save_name or f"{level}_bar_chart"
             bar_chart_path = os.path.join(save_html_dir, f'{save_html_name}.html')
             fig.write_html(bar_chart_path)
             print(f"> Barchart saved to:  {bar_chart_path}")
@@ -75,16 +86,16 @@ class IntegrateAnalysis(IntegrateSamples):
         return units2fasta # e.g. {unit_name: ">SpA_Sample1_Zotu1\nACGT\n>SpA_Sample1_Zotu2\nACGT\n"}
 
     def mltree_target(self,
-                      target_list, 
-                      target_level, 
-                      units_level="species", 
-                      n_unit_threshold=1, 
-                      dereplicate_sequence=True, 
-                      model=None, 
-                      bootstrap=None, 
-                      threads=None, 
-                      save_dir='.', 
-                      prefix="ml_tree", 
+                      target_list,
+                      target_level,
+                      units_level="species",
+                      n_unit_threshold=1,
+                      dereplicate_sequence=True,
+                      model=None,
+                      bootstrap=None,
+                      threads=None,
+                      save_dir='.',
+                      prefix="ml_tree",
                       sample_id_list=[]):
 
         print(f"> Plotting MLTree for {" ".join(target_list)}...")
@@ -133,7 +144,7 @@ class IntegrateAnalysis(IntegrateSamples):
 
         create_dir('./tmp/')
 
-        if index_path == None:
+        if index_path is None:
             sample_id_list = self.get_sample_id_list(sample_id_list)
             fasta_dict = {}
             target2units_dict = {}
@@ -147,7 +158,7 @@ class IntegrateAnalysis(IntegrateSamples):
         else:
             save_dir = os.path.dirname(index_path)
             index = pd.read_csv(index_path, sep='\t')
-        
+
         index = remove_row_by_unit_occurance(index, n=neighbors)
         if plot_all:
             png_path = os.path.join(save_dir, "all_targets.png")
@@ -160,6 +171,7 @@ class IntegrateAnalysis(IntegrateSamples):
                 subindex = index[index["target"] == target]
                 plot_umap(index=subindex, png_path=png_path, cmap=cmap)
         if plot_unit:
+            # TODO(SW): These two blocks are very similar. Can you combine/refactor them?
             units = index["unit"]
             unique_unit = np.unique(units)
             print(unique_target)
@@ -175,16 +187,16 @@ class IntegrateAnalysis(IntegrateSamples):
         remove_dir('./tmp/')
 
     def cluster_umap(self,
-                     index_file, 
-                     n_unit_threshold=5, 
-                     min_samples=5, 
-                     min_cluster_size=5, 
-                     plot_all=True, 
-                     plot_target=False, 
+                     index_file,
+                     n_unit_threshold=5,
+                     min_samples=5,
+                     min_cluster_size=5,
+                     plot_all=True,
+                     plot_target=False,
                      plot_unit=False,
                      cmap="rainbow"):
 
-        create_dir("./tmp")        
+        create_dir("./tmp")
         cluster_report = []
         save_dir = os.path.dirname(index_file)
         index = pd.read_csv(index_file, sep='\t')
@@ -206,6 +218,7 @@ class IntegrateAnalysis(IntegrateSamples):
                 numb_unit, numb_clus, clus_perc = run_hdbscan(subindex, min_samples, min_cluster_size, png_path, cmap)
                 cluster_report.append([target, numb_hapl, numb_unit, numb_clus, clus_perc])
         if plot_unit:
+            # TODO(SW): These two blocks are very similar. Can you combine/refactor them? See below.
             units = index["unit"]
             unique_unit = np.unique(units)
             for unit in unique_unit:
@@ -222,10 +235,29 @@ class IntegrateAnalysis(IntegrateSamples):
         print(f'Saved cluster report to: {cluster_report_path}')
         remove_dir("./tmp")
 
+    """
+    TODO(SW): Refactor thi cluster_report to something like this. Missed a few vars here, please fix that.
+    def cluster(self, index, index_key, tax_level, min_samples, min_cluster_size, cmap):
+        targets = index[index_key]
+        unique_target = np.unique(targets)
+        for target in unique_target:
+            png_path = os.path.join(save_dir, f"{tax_level}_{target}_clustered.png")
+            subindex = index[index[index_key] == target]
+            units2fasta = self.get_units2fasta_dict(target, tax_level, "species", self.get_sample_id_list())
+            numb_hapl = write_fasta(units2fasta, seq_file='./tmp/cluster.fa', dereplicate=True)
+            numb_unit, numb_clus, clus_perc = run_hdbscan(subindex, min_samples, min_cluster_size, png_path, cmap)
+            cluster_report.append([target, numb_hapl, numb_unit, numb_clus, clus_perc])
+
+    cluster("target", "family")
+    cluster("unit", "species")
+
+    """
+
+
     def generata_nexus_file(self, index_file, unit_name, save_dir=None):
         create_dir("./tmp")
-        if save_dir == None:
-            save_dir = os.path.dirname(index_file)
+
+        save_dir = save_dir or os.path.dirname(index_file)
         index = pd.read_csv(index_file, sep='\t')
         subindex = index[index["unit"] == unit_name]
         points = subindex[["umap1", "umap2"]].to_numpy()

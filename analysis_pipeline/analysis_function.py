@@ -10,9 +10,15 @@ import matplotlib.pyplot as plt
 import matplotlib
 from Bio import SeqIO
 
+
+"""
 # TODO(SW): This module is a collection of functions, but probably should be split into several smaller modules. Each module should have a clear purpose.
+- relate to fasta
+- relate to colour
+- relate to tree
+- general utilities functions
 
-
+"""
 
 def normalize_abundance(abundance_dict: Dict[str, float]) -> Dict[str, float]:
     total_size = sum(abundance_dict.values())
@@ -36,7 +42,7 @@ def create_dir(dir_path):
         print("> Creating directory: {}".format(dir_path))
     except FileExistsError:
         print("> Directory already exists: {}".format(dir_path))
-    except Exception as e:
+    except Exception as e: # Other exceptions
         print("> Error creating directory: {}".format(dir_path))
         print(e)
 
@@ -74,7 +80,7 @@ def dereplicate_fasta(seq_file, uniq_file, relabel, threads=12, sizeout=False):
 
 
 def write_fasta(units2fasta_dict, seq_file, dereplicate=False, sizeout=False):
-    # TODO(SW): Move this to a different module.
+    # TODO(SW): use tempfile module
     if dereplicate:
         fasta_list = []
         for unit_name, unit_seq in units2fasta_dict.items():
@@ -101,7 +107,9 @@ def align_fasta(seq_file, aln_file):
     subprocess.run(cmd, shell=True)
     print(f"\n> Aligned fasta file to: {aln_file}\n")
 
+
 def check_mltree_overwrite(save_dir, prefix):
+    # TODO(SW): Eventually, replace with argparse.
     ckp_path = os.path.join(save_dir, prefix, prefix + '.ckp.gz') # e.g. save/dir/SpA/SpA.ckp.gz
     if os.path.exists(ckp_path):
         print(f"""
@@ -178,6 +186,7 @@ format labels=yes missing=? separator=Comma;
 TraitLabels {" ".join(map(str, uniq_labels))};
 Matrix
 """
+    # TODO(SW): Avoid map() function
     for seq_id, freq_each_label in label_freq_each_uniq_seq.items():
         freq_string += f"{seq_id} {",".join(map(str, list(freq_each_label.values())))}\n"
     freq_string += """
