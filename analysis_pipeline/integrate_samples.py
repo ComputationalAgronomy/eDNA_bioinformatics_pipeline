@@ -1,10 +1,12 @@
-from read_fasta import read_fasta_file
-from read_denoise_report import read_denoise_report
-from read_blast_csv import read_hap_level
 import os
 import pickle
-from datetime import date
 import time
+from datetime import date
+
+from read_blast_csv import read_hap_level
+from read_denoise_report import read_denoise_report
+from read_fasta import read_fasta_file
+
 
 def save_instance(instance, path):
     with open(path, 'wb') as f:
@@ -16,25 +18,26 @@ def get_sample_id_list(read_dir):
     return sample_id_list
 
 def check_dir(read_dir):
-    if os.path.exists(os.path.join(read_dir, "4_derep"))==False:
+    # TODO(SW): simplify this with ["4_derep", "5_denoise", "6_blast"]
+    if os.path.exists(os.path.join(read_dir, "4_derep")) is False:
         print("> Error: 4_derep folder does not exist in the specified directory.")
         return
-    if os.path.exists(os.path.join(read_dir, "5_denoise"))==False:
+    if os.path.exists(os.path.join(read_dir, "5_denoise")) is False:
         print("> Error: 5_denoise folder does not exist in the specified directory.")
         return
-    if os.path.exists(os.path.join(read_dir, "6_blast"))==False:
+    if os.path.exists(os.path.join(read_dir, "6_blast")) is False:
         print("> Error: 6_blast folder does not exist in the specified directory.")
         return
-    
+
 def check_file(read_dir, sample_id_list):
     for sample_id in sample_id_list:
-        if os.path.exists(os.path.join(read_dir, "4_derep", f"{sample_id}_uniq.fasta"))==False:
+        if os.path.exists(os.path.join(read_dir, "4_derep", f"{sample_id}_uniq.fasta")) is False:
             print(f"> Error: {sample_id}_uniq.fasta does not exist in the specified directory.")
             return
-        if os.path.exists(os.path.join(read_dir, "5_denoise", f"{sample_id}_zotu.fasta"))==False:
+        if os.path.exists(os.path.join(read_dir, "5_denoise", f"{sample_id}_zotu.fasta")) is False:
             print(f"> Error: {sample_id}_zotu.fasta does not exist in the specified directory.")
             return
-        if os.path.exists(os.path.join(read_dir, "6_blast", f"{sample_id}_blast.csv"))==False:
+        if os.path.exists(os.path.join(read_dir, "6_blast", f"{sample_id}_blast.csv")) is False:
             print(f"> Error: {sample_id}_blast.csv does not exist in the specified directory.")
             return
     print("> All files exist.")
