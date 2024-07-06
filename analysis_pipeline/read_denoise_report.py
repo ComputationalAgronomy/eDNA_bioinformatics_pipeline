@@ -1,6 +1,6 @@
 import re
 
-from analysis_pipeline.read_blast_csv import Reader
+from read_blast_csv import Reader
 
 class ReadDenoiseReport(Reader):
     RE_DENOISE_PATTERN = re.compile(r"(Uniq\d*)|size=(\d*)|(amp\d*)|top=(Uniq\d*)")
@@ -12,57 +12,96 @@ class ReadDenoiseReport(Reader):
         self.hap2amp = {}
         self.hap_size = {}
 
-# TODO(SW): Make this a instance method later
-def read_denoise_report(zotu_report_path):
-    amp_size = {}
-    hap2amp = {}
-    hap_size = {}
+    @staticmethod
+    def read_denoise_line(line: str) -> list:
+        """
+        Read a line containing 'denoise' string and return a list of the values.
 
-    print(f"> Denoising Report:  {zotu_report_path}")
+        :param line: one line from the denoise report
+        :return: [Amplicon_id, Size, Top]. e.g. ['Uniq1', '88422', 'amp1'], ['Uniq6', '8126', 'Uniq2']
+        """
+        line_list = [
+            "".join(t)
+            for t in ReadDenoiseReport.RE_DENOISE_PATTERN.findall(line)
+        ]
 
-    zotu_n = 0
-    ch_n = 0
+        # If Top is "ampXX", it is a true amplicon, otherwise, it is a noise.
+        if 'amp' in line_list[2]:
+            line_list[2] = line_list[0]
 
-    with open(zotu_report_path, 'r') as file:
-        for line in file.readlines():
-            # create relationship between haplotypes(top) and amplicons
-            if 'denoise' in line:
-                # TODO(SW): If you refactor this into functions, you can make this more readable and easier to do pytest on it.
-                line_list = [
-                    "".join(t)
-                    for t in ReadDenoiseReport.RE_DENOISE_PATTERN.findall(line)
-                ]
-                # e.g of line_list: ['Uniq1', '88422', 'amp1'], ['Uniq6', '8126', 'Uniq2'] <- [Amplicon_id, Size, Top]. If Top is "ampXX", it is a true amplicon, otherwise, it is a noise.
-                if 'amp' in line_list[2]:
-                    line_list[2] = line_list[0]
+        return line_list
 
-                amplicon, size, top = line_list[0], line_list[1], line_list[2]
+    @staticmethod
+    def read_chifilter_line(line: str) -> list:
+        """
+        Read a line containing 'chifilter' string and return a list of the values.
 
-                amp_size[amplicon] = size
+        :param line: one line from the denoise report
+        :return: [Amplicon_id, Size, Assigned_type]. e.g. ['Uniq1', '88422', 'zotu'], ['Uniq102', '124', 'chimera']
+        """
+        line_list = [
+            "".join(t)
+            for t in ReadDenoiseReport.RE_CHFILTER_PATTERN.findall(line)
+        ]
 
-                if top not in hap2amp:
-                    hap2amp[top] = []
-                hap2amp[top].append(amplicon)
+        return line_list
+    
+    def process_denoise_line(self, line: str):
+        """
+        Process a line containing 'denoise' string and update amp_size and hap2amp dictionaries.
+        This step create relationship between haplotypes(top) and amplicons and record the size of each amplicon (it means unique sequence here).
+        
+        :param line: One line from the denoise report
+        """
+        amplicon, size, top = ReadDenoiseReport.read_denoise_line(line)
 
-            # rename top
-            elif 'chfilter' in line:
-                line_list = [
-                    "".join(t)
-                    for t in ReadDenoiseReport.RE_CHFILTER_PATTERN.findall(line)
-                ]
-                # e.g of line_list: ['Uniq1', '88422', 'zotu'], ['Uniq102', '124', 'chimera'] <- [Amplicon_id, assigned_type]
-                old_top, size, assigned_type = line_list[0], line_list[1], line_list[2]
+        self.amp_size[amplicon] = size
 
-                if assigned_type == 'zotu':
-                    zotu_n += 1 # TODO(SW): So you will be starting from 1 instead of 0?
-                    new_top = f'Zotu{zotu_n}'
-                    hap_size[new_top] = size
-                elif assigned_type == 'chimera':
-                    ch_n += 1
-                    new_top = f'Chimera{ch_n}'
+        if top not in self.hap2amp:
+            self.hap2amp[top] = []
+        self.hap2amp[top].append(amplicon)
 
-                hap2amp[new_top] = hap2amp.pop(old_top)
+    def process_chifilter_line(self, line: str, zotu_count: int, chimera_count: int) -> tuple[int, int]:
+        """
+        Process a line containing 'chifilter' string and update hap_size and hap2amp dictionaries.
+        This step rename the top from 'UniqXX' to 'ZotuYY' or 'ChimeraZZ' and record the size for each haplotype (it means ZOTU here).
+        
+        :param line: One line from the denoise report
+        :param zotu_count: Current count of zotus
+        :param chimera_count: Current count of chimeras
+        :return: Updated counts of zotus and chimeras
+        """
+        old_top, size, assigned_type = self.read_chifilter_line(line)
 
-    print(f"Biological Haplotypes:  {zotu_n} kept\nPredicted Chimeras:  {ch_n} removed")
+        if assigned_type == 'zotu':
+            zotu_count += 1
+            new_top = f'Zotu{zotu_count}'
+            self.hap_size[new_top] = size
+        elif assigned_type == 'chimera':
+            chimera_count += 1
+            new_top = f'Chimera{chimera_count}'
+        
+        if old_top in self.hap2amp:
+            self.hap2amp[new_top] = self.hap2amp.pop(old_top)
+        
+        return zotu_count, chimera_count
 
-    return amp_size, hap2amp, hap_size
+    def read_denoise_report(self, zotu_report_path):
+        """
+        read a denoise report (.txt) generated from usearch and update amp_size, hap2amp and hap_size dictionaries.
+
+        :param zotu_report_path: path to the denoise report
+        """
+        print(f"> Denoising Report:  {zotu_report_path}")
+
+        zotu_count = 0
+        chimera_count = 0
+
+        with open(zotu_report_path, 'r') as file:
+            for line in file.readlines():
+                if 'denoise' in line:
+                    self.process_denoise_line(line)
+                elif 'chfilter' in line:
+                    zotu_count, chimera_count = self.process_chifilter_line(line, zotu_count, chimera_count)
+
+        print(f"Biological Haplotypes:  {zotu_count} kept\nPredicted Chimeras:  {chimera_count} removed")
