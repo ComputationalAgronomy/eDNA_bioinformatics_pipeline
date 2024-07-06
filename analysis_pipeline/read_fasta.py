@@ -1,30 +1,52 @@
 from Bio import SeqIO
 
-from analysis_pipeline.read_blast_csv import Reader
+from read_blast_csv import Reader
 
-class ReadFasta(Reader):
+class FastaReader(Reader):
 
     def __init__(self):
         super().__init__()
         self.seq_dict = {}
 
-def read_fasta_file(seq_path, seq_type="Haplotype"):
-    # type = "Haplotype"
-    # type = "Amplicon"
-    seq_dict = {}
+    @staticmethod
+    def parse_fasta(seq_path: str, seq_type: str):
+        """
+        Parse the fasta file and return a list of tuples containing sequence names and sequences.
 
-    print(f"> {seq_type} FASTA files:  {seq_path}")
-    n = 0
+        :param seq_path: The path to the fasta file.
+        :param seq_type: The type of sequence, either "Haplotype" or "Amplicon".
+        :return: A list of tuples (name, seq).
+        """
+        sequences = []
+        with open(seq_path) as handle:
+            for record in SeqIO.parse(handle, 'fasta'):
+                name, seq = record.description, str(record.seq)
+                if seq_type == "Amplicon":
+                    name = name.split(';')[0]
+                sequences.append((name, seq))
 
-    fasta_sequences = SeqIO.parse(open(seq_path),'fasta')
-    for fasta in fasta_sequences:
-        name, seq = fasta.description, str(fasta.seq)
-        if seq_type == "Amplicon":
-            name = name.split(';')[0]
-        seq_dict[name] = seq
-        n += 1 # TODO(SW): if 'name' is unique, then this == len(seq_dict). If not unique, then this is the number of lines in the file, but do you need this number?
+        return sequences
 
-    # TODO(SW): You need to close() the file, or use with open() as file: ...
-    print(f"{seq_type} Sequences:  {n} reads")
+    def update_seq_dict(self, sequences):
+        """
+        Update the dictionary 'self.seq_dict' with the provided sequences.
 
-    return seq_dict
+        :param sequences: A list of tuples (name, seq).
+        """
+        for name, seq in sequences:
+            self.seq_dict[name] = seq
+
+    def read_fasta(self, seq_path: str, seq_type: str ="Haplotype"):
+        """
+        Read a fasta file and update a dictionary of sequences.
+
+        :param seq_path: The path to the fasta file.
+        :param seq_type: The type of sequence,  either "Haplotype" or "Amplicon", default is "Haplotype".
+        """
+        print(f"> {seq_type} FASTA files:  {seq_path}")
+
+        sequences = FastaReader.parse_fasta(seq_path, seq_type)
+        self.update_seq_dict(sequences)
+
+        read_count = len(self.seq_dict)
+        print(f"{seq_type} Sequences:  {read_count} reads")
