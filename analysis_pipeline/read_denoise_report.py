@@ -2,7 +2,7 @@ import re
 
 from read_blast_csv import Reader
 
-class ReadDenoiseReport(Reader):
+class DenoiseReportReader(Reader):
     RE_DENOISE_PATTERN = re.compile(r"(Uniq\d*)|size=(\d*)|(amp\d*)|top=(Uniq\d*)")
     RE_CHFILTER_PATTERN = re.compile(r"(Uniq\d*)|size=(\d*)|(zotu)|(chimera)")
 
@@ -22,7 +22,7 @@ class ReadDenoiseReport(Reader):
         """
         line_list = [
             "".join(t)
-            for t in ReadDenoiseReport.RE_DENOISE_PATTERN.findall(line)
+            for t in DenoiseReportReader.RE_DENOISE_PATTERN.findall(line)
         ]
 
         # If Top is "ampXX", it is a true amplicon, otherwise, it is a noise.
@@ -41,7 +41,7 @@ class ReadDenoiseReport(Reader):
         """
         line_list = [
             "".join(t)
-            for t in ReadDenoiseReport.RE_CHFILTER_PATTERN.findall(line)
+            for t in DenoiseReportReader.RE_CHFILTER_PATTERN.findall(line)
         ]
 
         return line_list
@@ -53,7 +53,7 @@ class ReadDenoiseReport(Reader):
         
         :param line: One line from the denoise report
         """
-        amplicon, size, top = ReadDenoiseReport.read_denoise_line(line)
+        amplicon, size, top = DenoiseReportReader.read_denoise_line(line)
 
         self.amp_size[amplicon] = size
 
@@ -71,7 +71,7 @@ class ReadDenoiseReport(Reader):
         :param chimera_count: Current count of chimeras
         :return: Updated counts of zotus and chimeras
         """
-        old_top, size, assigned_type = self.read_chifilter_line(line)
+        old_top, size, assigned_type = DenoiseReportReader.read_chifilter_line(line)
 
         if assigned_type == 'zotu':
             zotu_count += 1
