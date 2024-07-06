@@ -26,35 +26,48 @@ class BlastReader(Reader):
     def __init__(self):
         super().__init__()
         self.error_table = BlastReader.generate_error_table()
+        self.hap2level = {}
 
-    def read_hap_level(self, blast_csv_path: str) -> dict[str, dict[str, str]]:
+    def process_line(self, line: str) -> tuple[str, dict[str, str]]:
         """
-        Read the BLAST CSV table and return a dictionary of the corresponding taxonomic terms at each level for every haplotype (ZOTU).
+        Process a single line from the BLAST CSV table.
+        The line list should be in the format: 
+        0: Haplotype_id
+        (not used)1: Subject accession
+        2-8: species, genus, family, order, class, phylum, kingdom
+        (not used)9-18: pident, length, mismatch, gapopen, qstart, qend, sstart, send, evalue, bitscore (check specifiers: https://www.biostars.org/p/88944/#88949)
+
+        :param line: The line to process.
+        :return: A tuple containing the haplotype_id (e.g. "Zotu1") and a dictionary of taxonomic levels (e.g. {"species": "spcA", ...}).
+        """
+        line_list = line.split(',')
+        haplotype = line_list[0]
+        level_list = [str(line_list[i]) for i in range(2, 9)]
+        # identity = line_list[9]
+        # length = line_list[14]
+        # evalue = line_list[17]
+        # bitscore = line_list[18]
+
+        level_list[0] = level_list[0].translate(self.error_table)
+        if level_list[2] in self.TAX_REPLACMENT:
+            level_list[2] = self.TAX_REPLACMENT[level_list[2]]
+        hap2level_entry = dict(zip(self.DESIRED_LEVEL, level_list))
+
+        return haplotype, hap2level_entry
+
+    def read_blast_csv(self, blast_csv_path: str):
+        """
+        Read the BLAST CSV table and update the dictionary 'self.hap2level' with the corresponding taxonomic names at each level for every haplotype (ZOTU).
         Seven levels are used: species, genus, family, order, class, phylum, kingdom.
 
         :param blast_csv_path: Path to the BLAST CSV table.
-        :return: A dictionary containing the taxonomic terms for each haplotype. e.g. {"Zotu1": {"species": "spcA", ...}, ...}
         """
         print(f"> Blast CSV Table:  {blast_csv_path}")
 
-        hap2level = {}
         with open(blast_csv_path, 'r') as file:
             for line in file.readlines():
-                line_list = line.split(',')
-                haplotype = line_list[0]
-                level_list = [str(line_list[i]) for i in range(2, 9)]
-                # identity = line_list[9]
-                # length = line_list[14]
-                # evalue = line_list[17]
-                # bitscore = line_list[18]
-    
-                level_list[0] = level_list[0].translate(self.error_table)
-                if level_list[2] in self.TAX_REPLACMENT:
-                    level_list[2] = self.TAX_REPLACMENT[level_list[2]]
+                haplotype, hap2level_entry = self.process_line(line)
+                self.hap2level[haplotype] = hap2level_entry
 
-                hap2level[haplotype] = dict(zip(self.DESIRED_LEVEL, level_list))
-
-        hap_count = len(hap2level)
+        hap_count = len(self.hap2level)
         print(f"Haplotype Assigned:  {hap_count} species\n")
-    
-        return hap2level
