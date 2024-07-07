@@ -32,6 +32,7 @@ def check_mltree_overwrite(save_dir: str, prefix: str) -> str:
 def iqtree2_command(seq_path:str, save_dir: str, prefix: str, model:str = None, bootstrap: int = None, threads: int = None) -> None:
     """
     Run IQTREE2 command with specified options.
+    (IQTREE2 command reference: http://www.iqtree.org/doc/Command-Reference)
 
     :param seq_path: Path to the input aligned sequence file.
     :param save_dir: Directory to save the output files.
@@ -49,20 +50,19 @@ def iqtree2_command(seq_path:str, save_dir: str, prefix: str, model:str = None, 
 
     model = model or 'TEST'
     prefix_path = os.path.join(save_dir, prefix)
-    bootstrap_string = f'-b {bootstrap} ' if bootstrap else ''
     threads = threads or 'AUTO'
 
     cmd = [
-        'iqtree2', '-m', model, '-s', seq_path, '--prefix', prefix_path,
-        bootstrap_string, '-nt', threads, checkpoint
+        'iqtree2', '-m', model, '-s', seq_path, '--prefix', prefix_path, '-nt', threads
     ]
-    cmd = [c for c in cmd if c]
+    if bootstrap:
+        cmd.extend(["-b", str(bootstrap)])
+    if checkpoint:
+        cmd.append(checkpoint)
 
     print("> Running IQTREE2 command: ", ' '.join(cmd))
     try:
         subprocess.run(cmd, check=True)
-        print(f"> IQTREE2 finished. Output files are in {save_dir}.")
+        print(f"> IQTREE2 finished. Output files saved in: {save_dir}.")
     except subprocess.CalledProcessError as e:
         print(f"> Error occurred during IQTREE2 run: {e}")
-
-iqtree2_command(seq_path='.\\..\\..\\test.fa', save_dir='.\\..\\..\\test_dir', prefix='test')
