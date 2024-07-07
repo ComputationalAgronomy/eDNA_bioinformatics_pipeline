@@ -10,7 +10,7 @@ class BlastReader(Reader):
                       #"KEY2": "REPLACE2"} # Allow multiple replacements later
 
     @staticmethod
-    def generate_error_table(error_code=':/\\*?"<>|', replace_symbol='_'):
+    def generate_error_table(error_code:str = ':/\\*?"<>|', replace_symbol: str = '_') -> dict[str, str]:
         """
         Generate an error table to translate illegal characters in species names to a standard symbol.
 
@@ -55,7 +55,7 @@ class BlastReader(Reader):
 
         return haplotype, hap2level_entry
 
-    def read_blast_csv(self, blast_csv_path: str):
+    def read_blast_csv(self, blast_csv_path: str) -> None:
         """
         Read the BLAST CSV table and update the dictionary 'self.hap2level' with the corresponding taxonomic names at each level for every haplotype (ZOTU).
         Seven levels are used: species, genus, family, order, class, phylum, kingdom.

@@ -13,7 +13,7 @@ class DenoiseReportReader(Reader):
         self.hap_size = {}
 
     @staticmethod
-    def read_denoise_line(line: str) -> list:
+    def read_denoise_line(line: str) -> list[str]:
         """
         Read a line containing 'denoise' string and return a list of the values.
 
@@ -32,7 +32,7 @@ class DenoiseReportReader(Reader):
         return line_list
 
     @staticmethod
-    def read_chifilter_line(line: str) -> list:
+    def read_chifilter_line(line: str) -> list[str]:
         """
         Read a line containing 'chifilter' string and return a list of the values.
 
@@ -46,7 +46,7 @@ class DenoiseReportReader(Reader):
 
         return line_list
     
-    def process_denoise_line(self, line: str):
+    def process_denoise_line(self, line: str) -> None:
         """
         Process a line containing 'denoise' string and update amp_size and hap2amp dictionaries.
         This step create relationship between haplotypes(top) and amplicons and record the size of each amplicon (it means unique sequence here).
@@ -86,7 +86,7 @@ class DenoiseReportReader(Reader):
         
         return zotu_count, chimera_count
 
-    def read_denoise_report(self, zotu_report_path):
+    def read_denoise_report(self, zotu_report_path: str) -> None:
         """
         read a denoise report (.txt) generated from usearch and update amp_size, hap2amp and hap_size dictionaries.
 

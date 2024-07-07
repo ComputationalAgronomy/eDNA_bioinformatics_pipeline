@@ -35,7 +35,7 @@ def write_fasta(units2fasta_dict: dict[str, str], seq_path: str, dereplicate: bo
     :param units2fasta_dict: Dictionary with sequence names as keys and FASTA format sequences as values.
     :param seq_path: Path to the output FASTA file.
     :param dereplicate: If True, dereplicate the sequences before writing to the file. Default is False.
-    :param sizeout: See the docstring for derep_fasta.
+    :param sizeout: If True, size annotations will be added to the output sequence labels. Only works when dereplicating. Default is False.
     """
     if dereplicate:
         fasta_list = []

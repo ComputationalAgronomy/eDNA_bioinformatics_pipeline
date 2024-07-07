@@ -36,9 +36,9 @@ def iqtree2_command(seq_path:str, save_dir: str, prefix: str, model:str = None, 
     :param seq_path: Path to the input aligned sequence file.
     :param save_dir: Directory to save the output files.
     :param prefix: Prefix for the output file names.
-    :param model: Model to specify for tree inference. If not specified, it will use the best-fit model found (default: None).
-    :param bootstrap: Number of bootstrap replicates (default: None).
-    :param threads: Number of threads to use. If not specified, it will automatically determine the best number of cores given the current data and computer (default: None).
+    :param model: Model to specify for tree inference. If not specified, it will use the best-fit model found. Default is None.
+    :param bootstrap: Number of bootstrap replicates. Default is None.
+    :param threads: Number of threads to use. If not specified, it will automatically determine the best number of cores given the current data and computer. Default is None.
     """
     os.makedirs(save_dir, exist_ok=True)
 
