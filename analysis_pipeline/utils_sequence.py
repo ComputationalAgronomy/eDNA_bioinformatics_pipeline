@@ -7,6 +7,7 @@ import tempfile
 def derep_fasta(seq_path: str, uniq_path: str, relabel: str, threads: int = 12, sizeout: bool = False) -> None:
     """
     Dereplicate a FASTA file by removing duplicate sequences.
+    (USEARCH command reference: https://drive5.com/usearch/manual/cmd_fastx_uniques.html)
 
     :param seq_path: Path to the input FASTA file.
     :param uniq_path: Path to the output FASTA file with unique sequences.
@@ -66,6 +67,7 @@ def write_fasta(units2fasta_dict: dict[str, str], seq_path: str, dereplicate: bo
 def align_fasta(seq_path: str, aln_path: str) -> None:
     """
     Align sequences in a FASTA file using Clustal Omega and save the aligned sequences to an output file.
+    (ClustalO command reference: http://www.clustal.org/omega/README)
 
     :param seq_path: Path to the input FASTA file containing sequences to align.
     :param aln_path: Path to the output FASTA file to save the aligned sequences.
