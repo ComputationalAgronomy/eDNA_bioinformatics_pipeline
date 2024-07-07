@@ -86,6 +86,12 @@ def get_index_target_label(index, target2units):
                 t.append(target)
     return t
 
+def remove_row_by_unit_occurance(index, n):
+    counts = index["unit"].value_counts()
+    units_to_remove = counts[counts < n].index
+    index = index[~index["unit"].isin(units_to_remove)]
+    return index
+
 def write_umap_file(seq_file, save_dir, target2units=None, random_state=42, calc_dist=True, neighbors=15, min_dist=0.1):
     create_dir(save_dir)
     index_fasta_file = os.path.join(save_dir, "input.fa")
