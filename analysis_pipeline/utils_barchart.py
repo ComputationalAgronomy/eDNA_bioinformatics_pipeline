@@ -2,7 +2,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-def normalize_abundance(abundance_dict: dict[str, float]) -> dict[str, float]:
+def normalize_abundance(abundance_dict: dict[str, int]) -> dict[str, float]:
     """
     Normalize the abundance values in the dictionary to percentages.
 
