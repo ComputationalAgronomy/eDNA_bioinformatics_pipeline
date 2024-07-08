@@ -10,9 +10,13 @@ from read_fasta import FastaReader
 class OneSampleContainer():
     """
     Container for handling and processing data from various bioinformatics files.
-
     This class initializes by reading data from given FASTA, denoise report, and BLAST table files,
     and stores the parsed information for further use.
+
+    :param uniq_fasta_path: Path to the unique amplicon FASTA file.
+    :param zotu_fasta_path: Path to the ZOTU haplotype FASTA file.
+    :param denoise_report_path: Path to the denoise report file.
+    :param blast_table_path: Path to the BLAST table file.
 
     :attribute amp_seq: A dictionary containing amplicon sequences from the unique FASTA file.
     :attribute hap_seq: A dictionary containing haplotype sequences from the ZOTU FASTA file.
@@ -21,10 +25,6 @@ class OneSampleContainer():
     :attribute hap_size: A dictionary containing haplotype sizes from the denoise report.
     :attribute hap2level: A dictionary mapping haplotypes to taxonomic levels from the BLAST table.
 
-    :param uniq_fasta_path: Path to the unique amplicon FASTA file.
-    :param zotu_fasta_path: Path to the ZOTU haplotype FASTA file.
-    :param denoise_report_path: Path to the denoise report file.
-    :param blast_table_path: Path to the BLAST table file.
     """
     def __init__(self,
             uniq_fasta_path: str,
@@ -51,7 +51,15 @@ class OneSampleContainer():
         self.hap2level = br.hap2level
 
 class SamplesContainer():
+    """
+    A class to manage sample data files.
 
+    :attribute DATA_FILE_INFO: A dictionary mapping input data types to tuples containing the corresponding child directory and file suffix.
+    :attribute sample_data: A dictionary to store sample data.
+    :attribute sample_id_list: A list to store sample IDs.
+    """
+    # 
+    # keys are data type, values are tuples of (child directory, file suffix).
     DATA_FILE_INFO = {
         "uniq_fasta": ("4_derep", "_uniq.fasta"),
         "zotu_fasta": ("5_denoise", "_zotu.fasta"),
@@ -60,12 +68,24 @@ class SamplesContainer():
     }
 
     @staticmethod
-    def save_instance(instance, path):
+    def save_instance(instance: 'SamplesContainer', path: str) -> None:
+        """
+        Save an instance of SamplesContainer to a specified path.
+
+        :param instance: The SamplesContainer instance to save.
+        :param path: The file path where the instance will be saved.
+        """
         with open(path, 'wb') as f:
             pickle.dump(instance, f)
 
     @staticmethod
-    def get_sample_id_list(parent_dir):
+    def get_sample_id_list(parent_dir: str) -> list[str]:
+        """
+        Retrieve a list of sample IDs from the specified parent directory.
+
+        :param parent_dir: Path to the parent directory containing sample data.
+        :return: A list of sample IDs.
+        """
         child_dir, suffix = tuple(SamplesContainer.DATA_FILE_INFO.values())[0]
         child_dir_path = os.path.join(parent_dir, child_dir)
         print(f"> Searching files with the suffix '{suffix}' from the directory: {child_dir_path}.")
@@ -75,7 +95,12 @@ class SamplesContainer():
         return sample_id_list
 
     @staticmethod
-    def check_dir(parent_dir):
+    def check_dir(parent_dir: str) -> None:
+        """
+        Check if all necessary child directories exist within the specified parent directory.
+
+        :param parent_dir: Path to the parent directory to check.
+        """
         for child_dir, _ in SamplesContainer.DATA_FILE_INFO.values():
             child_dir_path = os.path.join(parent_dir, child_dir)
             if not os.path.isdir(child_dir_path):
@@ -84,7 +109,13 @@ class SamplesContainer():
         print("> All directories exist.")
 
     @staticmethod
-    def check_file(parent_dir, sample_id_list):
+    def check_file(parent_dir: str, sample_id_list: list[str]) -> None:
+        """
+        Check if all necessary files for the given sample IDs exist within the specified parent directory.
+
+        :param parent_dir: Path to the parent directory to check.
+        :param sample_id_list: List of sample IDs to check.
+        """
         print("\n> Start checking whether files exist...")
         for child_dir, suffix in SamplesContainer.DATA_FILE_INFO.values():
             for sample_id in sample_id_list:
@@ -95,22 +126,43 @@ class SamplesContainer():
         print("> All files exist.")
 
     @staticmethod
-    def get_file_paths(sample_id, parent_dir):
+    def get_file_paths(sample_id: str, parent_dir: str) -> dict[str, str]:
+        """
+        Retrieve the file paths for all data types for a given sample ID.
+
+        :param sample_id: The sample ID to retrieve file paths for.
+        :param parent_dir: Path to the parent directory containing sample data.
+        :return: A dictionary mapping data types to their respective file paths.
+        """
         file_paths = {}
         for file_key, (child_dir, suffix) in SamplesContainer.DATA_FILE_INFO.items():
             file_path = os.path.join(parent_dir, child_dir, f"{sample_id}{suffix}")
             file_paths[file_key] = file_path
         return file_paths
 
-    def __init__(self, load_path=None):
+    def __init__(self, load_path: str = None):
+        """
+        Initialize a SamplesContainer instance.
+
+        :param load_path: Path to a pre-existing SamplesContainer instance to load. Defaults is None.
+        """
         self.sample_data = {}
         self.sample_id_list = []
+        self.data_parent_dir = None
+        self.instance_path = None
 
         if load_path:
             self.load_sample_data(load_path)
 
-    def import_samples(self, parent_dir, sample_id_list=None): # read_dir: path to the directory containing the "4_derep", "5_denoise", "6_blast" folders.
+    def import_samples(self, parent_dir: str, sample_id_list: list[str] = None) -> None:
+        """
+        Import sample data from the specified parent directory.
+        The parent directory is expected to contain four data types recorded in 'DATA_FILE_INFO'.
+        Data should be organized in child directories with specific suffixes as defined in 'DATA_FILE_INFO'.
 
+        :param parent_dir: Path to the parent directory containing the sample data.
+        :param sample_id_list: List of sample IDs to import. If not provided, all available sample IDs will be imported. The sample IDs are extracted from the file names using the provided suffix.
+        """
         start_time = time.time()
 
         print(f"> Reading samples from: {parent_dir}.")
@@ -124,6 +176,7 @@ class SamplesContainer():
             print("> Specified sample id list.")
             SamplesContainer.check_file(parent_dir, sample_id_list)
 
+        self.data_parent_dir = parent_dir
         self.sample_id_list.extend(sample_id_list)
 
         for sample_id in sample_id_list:
@@ -140,7 +193,13 @@ class SamplesContainer():
         print(f"> {len(sample_id_list)} Samples read.")
         print("Time Taken: ", time.strftime("%H:%M:%S",time.gmtime(seconds)), "\n")
 
-    def save_sample_data(self, save_dir, save_name=f"eDNA_samples_{date.today()}"):
+    def save_sample_data(self, save_dir: str, save_name: str = f"eDNA_samples_{date.today()}") -> None:
+        """
+        Save the current sample data to a specified directory.
+
+        :param save_dir: The directory where the sample data will be saved.
+        :param save_name: The name of the save file. Defaults to 'eDNA_samples_<current_date>'.
+        """
         os.makedirs(save_dir, exist_ok=True)
 
         save_path = os.path.join(save_dir, f"{save_name}.pkl")
@@ -161,9 +220,15 @@ class SamplesContainer():
                     print("> Invalid input.")
 
         SamplesContainer.save_instance(self, save_path)
+        self.instance_path = save_path
         print(f"> Sample data saved to: {save_path}\n")
 
-    def load_sample_data(self, load_path):
+    def load_sample_data(self, load_path: str) -> None:
+        """
+        Load sample data from a specified path.
+
+        :param load_path: The file path to load the sample data from.
+        """
         with open(load_path,'rb') as file:
             self.__dict__ = pickle.load(file).__dict__
         print(f"> Sample data loaded from: {load_path}\n")
