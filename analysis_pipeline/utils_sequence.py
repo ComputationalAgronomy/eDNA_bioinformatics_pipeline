@@ -29,12 +29,12 @@ def derep_fasta(seq_path: str, uniq_path: str, relabel: str, threads: int = 12, 
     except subprocess.CalledProcessError as e:
         print(f"Error occurred during dereplication: {e}")
 
-def write_fasta(units2fasta_dict: dict[str, str], seq_path: str, dereplicate: bool = False, sizeout: bool = False) -> None:
+def write_fasta(units2fasta_dict: dict[str, str], save_path: str, dereplicate: bool = False, sizeout: bool = False) -> None:
     """
     Write sequences to a FASTA file.
 
-    :param units2fasta_dict: Dictionary with sequence names as keys and FASTA format sequences as values.
-    :param seq_path: Path to the output FASTA file.
+    :param units2fasta_dict: Dictionary with sequence names (unit names) as keys and FASTA format sequences as values.
+    :param save_path: Path to the output FASTA file.
     :param dereplicate: If True, dereplicate the sequences before writing to the file. Default is False.
     :param sizeout: If True, size annotations will be added to the output sequence labels. Only works when dereplicating. Default is False.
     """
@@ -56,11 +56,11 @@ def write_fasta(units2fasta_dict: dict[str, str], seq_path: str, dereplicate: bo
         fasta_list = list(units2fasta_dict.values())
 
     fasta_str = "".join(fasta_list)
-    with open(seq_path, 'w') as file:
+    with open(save_path, 'w') as file:
         file.write(fasta_str)
 
     num_seq = fasta_str.count(">")
-    print(f"\n> Written {num_seq} sequences to: {seq_path}")
+    print(f"\n> Written {num_seq} sequences to: {save_path}")
 
     return num_seq
 

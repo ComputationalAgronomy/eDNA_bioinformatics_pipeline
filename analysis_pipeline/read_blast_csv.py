@@ -55,16 +55,16 @@ class BlastReader(Reader):
 
         return haplotype, hap2level_entry
 
-    def read_blast_csv(self, blast_csv_path: str) -> None:
+    def read_blast_table(self, blast_table_path: str) -> None:
         """
         Read the BLAST CSV table and update the dictionary 'self.hap2level' with the corresponding taxonomic names at each level for every haplotype (ZOTU).
         Seven levels are used: species, genus, family, order, class, phylum, kingdom.
 
-        :param blast_csv_path: Path to the BLAST CSV table.
+        :param blast_table_path: Path to the BLAST CSV table.
         """
-        print(f"> Blast CSV Table:  {blast_csv_path}")
+        print(f"> Blast CSV Table:  {blast_table_path}")
 
-        with open(blast_csv_path, 'r') as file:
+        with open(blast_table_path, 'r') as file:
             for line in file.readlines():
                 haplotype, hap2level_entry = self.process_line(line)
                 self.hap2level[haplotype] = hap2level_entry

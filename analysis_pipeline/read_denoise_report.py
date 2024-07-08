@@ -86,18 +86,18 @@ class DenoiseReportReader(Reader):
         
         return zotu_count, chimera_count
 
-    def read_denoise_report(self, zotu_report_path: str) -> None:
+    def read_denoise_report(self, denoise_report_path: str) -> None:
         """
         read a denoise report (.txt) generated from usearch and update amp_size, hap2amp and hap_size dictionaries.
 
-        :param zotu_report_path: path to the denoise report
+        :param denoise_report_path: path to the denoise report
         """
-        print(f"> Denoising Report:  {zotu_report_path}")
+        print(f"> Denoising Report:  {denoise_report_path}")
 
         zotu_count = 0
         chimera_count = 0
 
-        with open(zotu_report_path, 'r') as file:
+        with open(denoise_report_path, 'r') as file:
             for line in file.readlines():
                 if 'denoise' in line:
                     self.process_denoise_line(line)
