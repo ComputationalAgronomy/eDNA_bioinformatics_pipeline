@@ -9,25 +9,52 @@ class BarchartGenerator(AnalysisManager):
         super().__init__(load_path)
         self.samples_abundance = {}
 
-    def get_hap_size(self, sample_id, hap):
+    def load_hap_size(self, sample_id: str, hap: str) -> int:
+        """
+        Get the size of a haplotype for a given sample.
+
+        :param sample_id: The ID of the sample.
+        :param hap: The ID of the haplotype.
+        :return: The size of the haplotype.
+        """
         return int(self.sample_data[sample_id].hap_size[hap])
 
-    def get_levelname2abundance_dict(self, sample_id, level):
+    def load_levelname2abundance_dict(self, sample_id: str, level: str):
+        """
+        Get the abundance of a level for a given sample.
+
+        :param sample_id: The ID of the sample.
+        :param level: The name of the level.
+        :return: A dictionary mapping level names to abundances.
+        """
         abundance = {}
         for hap, level_dict in self.sample_data[sample_id].hap2level.items():
             level_name = level_dict[level]
             if level_name not in abundance:
                 abundance[level_name] = 0
-            size = self.get_hap_size(sample_id, hap)
+            size = self.load_hap_size(sample_id, hap)
             abundance[level_name] += size
         return abundance # e.g. {'SpA': 3, 'SpB': 4, 'SpC': 5}
 
-    def plot_barchart(self, level, save_html_dir=None, save_html_name=None, sample_id_list=None):
+    def plot_barchart(self,
+            level: str,
+            save_html_dir: str = '.',
+            save_html_name: str = None,
+            sample_id_list: list[str] = None
+        ) -> None:
+        """
+        Plot a barchart to visualize the abundance of a level across samples.
+
+        :param level: The name of the level to plot (e.g., species, family, etc.).
+        :param save_html_dir: The directory to save the HTML file. Default is current directory.
+        :param save_html_name: The name of the HTML file. Default is None.
+        :param sample_id_list: A list of sample IDs to plot. Default is None (plot all samples).
+        """
         print(f"> Plotting barchart for {level}...")
         sample_id_list = self.load_sample_id_list(sample_id_list)
 
         for sample_id in sample_id_list:
-            abundance = self.get_levelname2abundance_dict(sample_id, level)
+            abundance = self.load_levelname2abundance_dict(sample_id, level)
             self.samples_abundance[sample_id] = normalize_abundance(abundance)
 
         all_level_name = [list(self.samples_abundance[sample_id].keys()) for sample_id in sample_id_list]
