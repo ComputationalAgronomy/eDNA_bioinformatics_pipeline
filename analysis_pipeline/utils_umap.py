@@ -8,9 +8,10 @@ import os
 import pandas as pd
 from scipy import sparse
 import subprocess
+import tempfile
 import umap
 from umap.plot import _datashade_points, _themes
-from utils_sequence import align_fasta
+from utils_sequence import write_fasta, align_fasta
 
 def fasta2index(seq_path: str, index_fasta_path: str) -> pd.DataFrame:
     """
@@ -163,21 +164,19 @@ def create_one_hot_matrix(seq_path: str) -> np.ndarray:
 
 def fit_umap(
         matrix: np.ndarray,
-        neighbors: int = 15,
-        min_dist: float = 0.1,
-        random_state: int = None,
-        spread: float = 1.0,
-        precomputed: bool = True
+        neighbors: int,
+        min_dist: float,
+        random_state: int,
+        precomputed: bool,
     ) -> tuple[umap.UMAP, np.ndarray]:
     """
     Fit UMAP and return the UMAP object and the embedding.
 
     :param matrix: distance matrix or one-hot encoded matrix
-    :param neighbors: Number of neighbors for umap. Defaults is 15.
-    :param min_dist: Minimum distance for umap. Defaults is 0.1.
-    :param random_state: Random state for umap. Defaults is None.
-    :param spread: Spread for umap. Defaults is 1.0.
-    :param precomputed: Whether the elements of the matrix are distances or not. Defaults is True.
+    :param neighbors: Number of neighbors for umap. 
+    :param min_dist: Minimum distance for umap. 
+    :param random_state: Random state for umap. 
+    :param precomputed: Whether the elements of the matrix are distances or not. 
     :return: UMAP object and embedding
     """
     print(f'> Creating UMAP embedding with {neighbors} neighbors...')
@@ -186,7 +185,6 @@ def fit_umap(
         n_neighbors=neighbors,
         min_dist=min_dist,
         random_state=random_state,
-        spread=spread,
         metric="precomputed" if precomputed else "euclidean"
     )
 
@@ -197,9 +195,9 @@ def fit_umap(
 def compute_embedding_with_distmx(
         seq_path: str,
         save_distmx_dir: str,
-        neighbors: int = 15,
-        min_dist: float = 0.1,
-        random_state: int = None,
+        neighbors: int,
+        min_dist: float,
+        random_state: int,
     ) -> np.ndarray:
     """
     The steps for calculating distance matrix and fitting UMAP.
@@ -218,9 +216,9 @@ def compute_embedding_with_distmx(
 
 def compute_embedding_with_onehotmx(
         seq_path: str,
-        neighbors: int = 15,
-        min_dist: float = 0.1,
-        random_state: int = None,
+        neighbors: int,
+        min_dist: float,
+        random_state: int,
     ) -> np.ndarray:
     """
     The steps for fitting UMAP with one-hot encoded matrix.
@@ -235,7 +233,11 @@ def compute_embedding_with_onehotmx(
     )
     return embedding
 
-def update_index(index: pd.DataFrame, unit2target: dict[str, str], embedding: np.ndarray) -> pd.DataFrame:
+def update_index(
+        index: pd.DataFrame,
+        unit2target: dict[str, str],
+        embedding: np.ndarray
+    ) -> pd.DataFrame:
     """
     The steps for updating the index DataFrame with source/target labels and UMAP cordinates.
     """
@@ -261,6 +263,7 @@ def filter_index_by_unit_occurrence(index: pd.DataFrame, n: int = 1) -> pd.DataF
     counts = index["unit"].value_counts()
     units_to_remove = counts[counts < n].index
     filtered_index = index[~index["unit"].isin(units_to_remove)]
+    print(f"> units with less than {n} occurrences have been removed.")
     return filtered_index
 
 def _matplotlib_points(
@@ -387,45 +390,44 @@ def plot_points(points, labels=None, markers=None, values=None, color_key=None, 
     return ax
 
 def run_umap(
-        seq_path: str,
+        units2fasta: dict[str, str],
+        dereplicate_sequence: bool,
         save_dir: str,
-        neighbors: int = 15,
-        min_dist: float = 0.1,
-        random_state: int = 42,
-        calc_dist: bool = True,
-        unit2target: dict[str, str]=None
+        neighbors: int,
+        min_dist: float,
+        random_state: int,
+        calc_dist: bool,
+        unit2target: dict[str, str]
     ) -> pd.DataFrame:
     """
     Run the UMAP pipeline and save the index TSV file.
     Step:
-        1. Convert the input FASTA file to as index FASTA file and an index TSV file.
-        2. Align the sequences using Clustal Omega.
-        3. Compute the UMAP embedding using either the distance matrix or one-hot encoding.
-        4. Update the index TSV file with the UMAP coordinates and target labels (if provided).
-        5. Save the index TSV file to the specified output directory.
-
-    :param seq_path: Path to the input aligned FASTA file.
-    :param save_dir: Path to the output directory.
-    :param neighbors: Number of neighbors for umap. Defaults is 15.
-    :param min_dist: Minimum distance for umap. Defaults is 0.1.
-    :param random_state: Random state for umap. Defaults is 42.
-    :param calc_dist: Whether to calculate the distance matrix as the input of umap. Default is True
-    :param unit2target: Dictionary mapping unit labels to target labels, used to create the 'target' column for the index. Default is None.
-    :return: Index DataFrame.
+        1. Write the units FASTA to a file, with the sequence title formatted as >{unit_name}-{sample_id}_{haplotype_id}.
+        2. Convert the unit FASTA file to as index FASTA file, with sequence title formatted as >{index}, and an index TSV file.
+        3. Align the sequences using Clustal Omega.
+        4. Compute the UMAP embedding using either the distance matrix or one-hot encoding.
+        5. Update the index TSV file with the UMAP coordinates and target labels (if provided).
+        6. Save the index TSV file to the specified output directory.
     """
     os.makedirs(save_dir, exist_ok=True)
 
-    index_fasta_path = os.path.join(save_dir, "input.fa")
-    aln_path = os.path.join(save_dir, "input.aln")
+    temp_dir = tempfile.TemporaryDirectory()
+    unit_fasta_path = os.path.join(temp_dir.name, 'umap.fa')
+    index_fasta_path = os.path.join(temp_dir.name, "input.fa")
+    aln_fasta_path = os.path.join(save_dir, "input.aln")
     index_path = os.path.join(save_dir, "umap_index.tsv")
 
-    index = fasta2index(seq_path=seq_path, index_fasta_path=index_fasta_path)
+    write_fasta(units2fasta_dict=units2fasta, save_path=unit_fasta_path, dereplicate=dereplicate_sequence)
 
-    align_fasta(seq_path=seq_path, aln_path=aln_path)
+    index = fasta2index(seq_path=unit_fasta_path, index_fasta_path=index_fasta_path)
+
+    align_fasta(seq_path=index_fasta_path, aln_path=aln_fasta_path)
+
+    temp_dir.cleanup()
 
     if calc_dist:
         embedding = compute_embedding_with_distmx(
-            seq_path=aln_path,
+            seq_path=aln_fasta_path,
             save_distmx_dir=save_dir,
             neighbors=neighbors,
             min_dist=min_dist,
@@ -433,7 +435,7 @@ def run_umap(
         )
     else:
         embedding = compute_embedding_with_onehotmx(
-            seq_path=aln_path,
+            seq_path=aln_fasta_path,
             neighbors=neighbors,
             min_dist=min_dist,
             random_state=random_state
@@ -453,11 +455,6 @@ def plot_umap(
     ) -> None:
     """
     Plot the UMAP embedding and save the plot as a PNG file.
-
-    :param index: Index DataFrame.
-    :param png_path: Path to the output PNG file. Default is 'umap.png'.
-    :param cmap: Color map for the plot. Default is 'rainbow'.
-    :param show_legend: Whether to show the legend. Default is True.
     """
     points = index[["umap1", "umap2"]].to_numpy()
     ax = plot_points(
@@ -481,28 +478,28 @@ def plot_umap_by_category(
         category: str,
         prefix: str,
         png_dir: str,
-        cmap: str = 'rainbow',
-        show_legend: bool = True
+        cmap: str,
+        show_legend: bool
     ) -> None:
     """
     Plot the UMAP embedding and save the plot as a PNG file, grouped by the specified category.
-
-    :param index: Index DataFrame.
+    
+    :param index: The index DataFrame containing the UMAP coordinates and category labels.
     :param category: Column name to group the units by, restricted to 'unit', 'target', or 'all'.
-    :param prefix: Prefix for the output PNG file names.
-    :param png_dir: Directory to save the output PNG files.
-    :param cmap: Color map for the plot. Default is 'rainbow'.
-    :param show_legend: Whether to show the legend. Default is True.
+    :param prefix: The prefix for the output file names.
+    :param png_dir: The directory to save the PNG files in.
+    :param cmap: The colormap to use for the plots.
+    :param show_legend: Whether to show the legend in the plots.
     """
     if category == 'all':
         print('\n> Drawing PNG for all units...')
-        png_path = os.path.join(png_dir, "all_units.png")
+        png_path = os.path.join(png_dir, f"{prefix}_umap.png")
         plot_umap(index=index, png_path=png_path, cmap=cmap, show_legend=show_legend)
         return
 
     unique_values = np.unique(index[category])
     for value in unique_values:
         print(f'\n> Drawing PNG for {category} {value}...')
-        png_path = os.path.join(png_dir, f"{prefix}_{value}.png")
+        png_path = os.path.join(png_dir, f"{prefix}_{value}_umap.png")
         subindex = index[index[category] == value]
         plot_umap(index=subindex, png_path=png_path, cmap=cmap, show_legend=show_legend)

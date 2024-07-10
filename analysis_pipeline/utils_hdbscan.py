@@ -89,7 +89,7 @@ def run_hdbscan(
     print(f'Saved PNG to: {png_path}')
     return str(numb_unit), str(numb_clus), str(clus_perc)
 
-def write_cluster_report(cluster_report: list[list[str]], prefix: str, save_dir: str):
+def write_cluster_report(cluster_report: list[list[str]], prefix: str, save_dir: str) -> None:
     """
     Write the cluster report to a TSV file.
     Columns: name, unit_counts, cluster_counts, clustered_ratio
