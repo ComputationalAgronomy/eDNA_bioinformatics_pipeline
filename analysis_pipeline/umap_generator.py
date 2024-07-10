@@ -11,7 +11,7 @@ class UmapGenerator(AnalysisManager):
     def __init__(self, load_path=None):
         super().__init__(load_path)
 
-    def update_umap_units2fasta(self,
+    def load_umap_units2fasta(self,
             target_list: list[str],
             target_level: str,
             unit_level: str,
@@ -32,7 +32,7 @@ class UmapGenerator(AnalysisManager):
 
         return all_targets_units2fasta, unitlabel2targetlabel
 
-    def create_umap_index(self,
+    def write_umap_index(self,
             target_list: list[str],
             target_level: str, 
             unit_level: str, 
@@ -45,10 +45,10 @@ class UmapGenerator(AnalysisManager):
             calc_dist: bool
         ) -> pd.DataFrame:
         """
-        Generate UMAP index for a list of targets.
+        Write UMAP index to a file and return the index DataFrame.
         """
     
-        units2fasta, unit2target = self.update_umap_units2fasta(
+        units2fasta, unit2target = self.load_umap_units2fasta(
             target_list=target_list,
             target_level=target_level,
             unit_level=unit_level,
@@ -111,7 +111,7 @@ class UmapGenerator(AnalysisManager):
         os.makedirs(save_dir, exist_ok=True)
 
         if not index_path:
-            index = self.create_umap_index(
+            index = self.write_umap_index(
                 target_level=target_list,
                 target_level=target_level,
                 unit_level=unit_level,
@@ -163,20 +163,20 @@ class UmapGenerator(AnalysisManager):
         self.results_dir = save_dir
         self.parameters.update(
             {
-            "target_list": target_list,
-            "target_level": target_level,
-            "unit_level": unit_level,
-            "plot_all": plot_all,
-            "plot_target": plot_target,
-            "plot_unit": plot_unit,
-            "n_neighbors": n_neighbors,
-            "min_dist": min_dist,
-            "random_state": random_state,
-            "calc_dist": calc_dist,
-            "index_path": index_path,
-            "dereplicate_sequence": dereplicate_sequence,
-            "cmap": cmap,
-            "show_legend": show_legend,
+                "target_list": target_list,
+                "target_level": target_level,
+                "unit_level": unit_level,
+                "plot_all": plot_all,
+                "plot_target": plot_target,
+                "plot_unit": plot_unit,
+                "n_neighbors": n_neighbors,
+                "min_dist": min_dist,
+                "random_state": random_state,
+                "calc_dist": calc_dist,
+                "index_path": index_path,
+                "dereplicate_sequence": dereplicate_sequence,
+                "cmap": cmap,
+                "show_legend": show_legend,
             }
         )
 
