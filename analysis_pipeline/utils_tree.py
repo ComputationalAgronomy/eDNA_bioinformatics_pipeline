@@ -27,22 +27,19 @@ def check_mltree_overwrite(save_dir: str, prefix: str) -> str:
                 return user_input
             print("> Invalid input.")
     else:
-        return ''
+        pass
 
-def iqtree2_command(seq_path:str, save_dir: str, prefix: str, model:str = None, bootstrap: int = None, threads: int = None) -> None:
+def run_iqtree2(
+        seq_path:str,
+        save_dir: str,
+        prefix: str,
+        model:str = None,
+        bootstrap: int = None,
+        threads: int = None
+    ) -> None:
     """
-    Run IQTREE2 command with specified options.
-    (IQTREE2 command reference: http://www.iqtree.org/doc/Command-Reference)
-
-    :param seq_path: Path to the input aligned sequence file.
-    :param save_dir: Directory to save the output files.
-    :param prefix: Prefix for the output file names.
-    :param model: Model to specify for tree inference. If not specified, it will use the best-fit model found. Default is None.
-    :param bootstrap: Number of bootstrap replicates. Default is None.
-    :param threads: Number of threads to use. If not specified, it will automatically determine the best number of cores given the current data and computer. Default is None.
+    Run IQTREE2 command.
     """
-    os.makedirs(save_dir, exist_ok=True)
-
     checkpoint = check_mltree_overwrite(save_dir, prefix)
     if checkpoint == 'stop':
         print("> Stopping the run.")
