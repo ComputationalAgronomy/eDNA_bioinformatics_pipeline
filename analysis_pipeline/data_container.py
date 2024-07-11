@@ -57,6 +57,8 @@ class SamplesContainer():
     :attribute DATA_FILE_INFO: A dictionary mapping input data types to tuples containing the corresponding child directory and file suffix.
     :attribute sample_data: A dictionary to store sample data.
     :attribute sample_id_list: A list to store sample IDs.
+    :attribute data_parent_dir: The parent directory path where the data files are located.
+    :attribute instance_path: The file path where the instance of SamplesContainer is saved or loaded.
     """
     # 
     # keys are data type, values are tuples of (child directory, file suffix).
@@ -144,11 +146,11 @@ class SamplesContainer():
         """
         Initialize a SamplesContainer instance.
 
-        :param load_path: Path to a pre-existing SamplesContainer instance to load. Defaults is None.
+        :param load_path: If provided, load a pre-existing SamplesContainer instance from the path. Defaults is None.
         """
         self.sample_data = {}
         self.sample_id_list = []
-        self.data_parent_dir = None
+        self.data_imported_dir = None
         self.instance_path = None
 
         if load_path:
@@ -176,7 +178,7 @@ class SamplesContainer():
             print("> Specified sample id list.")
             SamplesContainer.check_file(parent_dir, sample_id_list)
 
-        self.data_parent_dir = parent_dir
+        self.data_imported_dir = parent_dir
         self.sample_id_list.extend(sample_id_list)
 
         for sample_id in sample_id_list:
@@ -231,4 +233,5 @@ class SamplesContainer():
         """
         with open(load_path,'rb') as file:
             self.__dict__ = pickle.load(file).__dict__
+        self.instance_path = load_path
         print(f"> Sample data loaded from: {load_path}\n")
