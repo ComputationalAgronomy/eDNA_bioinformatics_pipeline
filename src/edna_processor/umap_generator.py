@@ -1,8 +1,8 @@
-from analysis_manager import AnalysisManager
+from edna_processor.analysis_manager import AnalysisManager
 import os
 import pandas as pd
-from utils_hdbscan import run_hdbscan_by_category
-from utils_umap import run_umap, plot_umap_by_category, filter_index_by_unit_occurrence
+from edna_processor.utils_hdbscan import run_hdbscan_by_category
+from edna_processor.utils_umap import run_umap, plot_umap_by_category, filter_index_by_unit_occurrence
 
 class UmapGenerator(AnalysisManager):
     """

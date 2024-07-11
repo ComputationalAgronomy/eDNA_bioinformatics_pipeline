@@ -1,6 +1,6 @@
 from Bio import SeqIO
 
-from read_blast_csv import Reader
+from edna_processor.read_blast_csv import Reader
 
 class FastaReader(Reader):
 

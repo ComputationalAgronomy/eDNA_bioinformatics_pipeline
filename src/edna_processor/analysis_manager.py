@@ -1,4 +1,4 @@
-from data_container import SamplesContainer
+from edna_processor.data_container import SamplesContainer
 
 class AnalysisManager(SamplesContainer):
     def __init__(self, load_path=None):
@@ -7,6 +7,7 @@ class AnalysisManager(SamplesContainer):
         self.sample_id_used = None
         self.parameters = {}
         self.results_dir = None
+
 
     def load_sample_id_list(self, sample_id_list: str = []) -> list[str]:
         if sample_id_list == []:
