@@ -1,7 +1,7 @@
 from edna_processor.analysis_manager import AnalysisManager
 import os
 import pandas as pd
-from edna_processor.utils_barchart import normalize_abundance, list_union, create_barchart_fig
+from edna_processor.utils.utils_barchart import normalize_abundance, list_union, create_barchart_fig
 
 class BarchartGenerator(AnalysisManager):
 

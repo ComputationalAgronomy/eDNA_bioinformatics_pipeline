@@ -1,8 +1,8 @@
 from edna_processor.analysis_manager import AnalysisManager
 import os
 import tempfile
-from edna_processor.utils_sequence import write_fasta, align_fasta
-from edna_processor.utils_tree import run_iqtree2
+from edna_processor.utils.utils_sequence import write_fasta, align_fasta
+from edna_processor.utils.utils_tree import run_iqtree2
 
 class MLTreeGenerator(AnalysisManager):
 
