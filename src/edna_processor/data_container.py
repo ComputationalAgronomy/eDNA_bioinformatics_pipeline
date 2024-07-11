@@ -3,9 +3,9 @@ import pickle
 import time
 from datetime import date
 
-from edna_processor.read_blast_csv import BlastReader
-from edna_processor.read_denoise_report import DenoiseReportReader
-from edna_processor.read_fasta import FastaReader
+from edna_processor.read.read_blast_csv import BlastReader
+from edna_processor.read.read_denoise_report import DenoiseReportReader
+from edna_processor.read.read_fasta import FastaReader
 
 class OneSampleContainer():
     """
