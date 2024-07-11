@@ -11,7 +11,7 @@ import subprocess
 import tempfile
 import umap
 from umap.plot import _datashade_points, _themes
-from utils_sequence import write_fasta, align_fasta
+from edna_processor.utils_sequence import write_fasta, align_fasta
 
 def fasta2index(seq_path: str, index_fasta_path: str) -> pd.DataFrame:
     """

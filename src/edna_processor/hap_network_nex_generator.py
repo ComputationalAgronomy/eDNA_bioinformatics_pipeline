@@ -1,11 +1,11 @@
-from analysis_manager import AnalysisManager
+from edna_processor.analysis_manager import AnalysisManager
 from Bio import AlignIO
 import numpy as np
 import os
 import pandas as pd
 import tempfile
-from utils_hdbscan import fit_hdbscan
-from utils_sequence import write_fasta, align_fasta, get_uniq_seq_freq
+from edna_processor.utils_hdbscan import fit_hdbscan
+from edna_processor.utils_sequence import write_fasta, align_fasta, get_uniq_seq_freq
 
 class HapNetNexusGenerator(AnalysisManager):
  

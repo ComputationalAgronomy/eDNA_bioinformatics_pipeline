@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools >= 61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "edna_bioinfo_pipeline"
+version = "0.0.1"
+authors = [
+  { name="Shan-En Chen", email="shawn.for.office@gmail.com" },
+]
+description = "eDNA bioinformatics pipeline"
+readme = "README.md"
+requires-python = ">=3.11"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]  # ["."] by default
+include = ["*"]  # ["*"] by default
+
