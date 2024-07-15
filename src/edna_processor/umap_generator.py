@@ -1,12 +1,12 @@
 import os
 import pandas as pd
 
-from edna_processor.analysis_manager import AnalysisManager
+from edna_processor.data_container import SamplesContainer
 from edna_processor.utils.base_logger import logger, get_file_handler
 from edna_processor.utils.utils_hdbscan import run_hdbscan_by_category
 from edna_processor.utils.utils_umap import run_umap, plot_umap_by_category, filter_index_by_unit_occurrence
 
-class UmapGenerator(AnalysisManager):
+class UmapGenerator(SamplesContainer):
     """
     Class for managing UMAP analysis.
     """
