@@ -1,10 +1,11 @@
 import os
 import pandas as pd
 
-from edna_processor.analysis_manager import AnalysisManager
+from edna_processor.data_container import SamplesContainer
 from edna_processor.utils.base_logger import logger, get_file_handler
 from edna_processor.utils.utils_barchart import normalize_abundance, list_union, create_barchart_fig
-class BarchartGenerator(AnalysisManager):
+
+class BarchartGenerator(SamplesContainer):
 
     def __init__(self, load_path=None):
         super().__init__(load_path)

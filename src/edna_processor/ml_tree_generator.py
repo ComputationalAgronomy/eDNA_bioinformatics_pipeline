@@ -1,12 +1,12 @@
 import os
 import tempfile
 
-from edna_processor.analysis_manager import AnalysisManager
+from edna_processor.data_container import SamplesContainer
 from edna_processor.utils.base_logger import logger, get_file_handler
 from edna_processor.utils.utils_sequence import write_fasta, align_fasta
 from edna_processor.utils.utils_tree import run_iqtree2
 
-class MLTreeGenerator(AnalysisManager):
+class MLTreeGenerator(SamplesContainer):
 
     def __init__(self, load_path=None):
         super().__init__(load_path)
