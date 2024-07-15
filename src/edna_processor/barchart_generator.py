@@ -1,8 +1,9 @@
-from edna_processor.analysis_manager import AnalysisManager
 import os
 import pandas as pd
-from edna_processor.utils.utils_barchart import normalize_abundance, list_union, create_barchart_fig
 
+from edna_processor.analysis_manager import AnalysisManager
+from edna_processor.utils.base_logger import logger, get_file_handler
+from edna_processor.utils.utils_barchart import normalize_abundance, list_union, create_barchart_fig
 class BarchartGenerator(AnalysisManager):
 
     def __init__(self, load_path=None):
@@ -50,7 +51,10 @@ class BarchartGenerator(AnalysisManager):
         :param save_html_name: The name of the HTML file. Default is None.
         :param sample_id_list: A list of sample IDs to plot. Default is None (plot all samples).
         """
-        print(f"> Plotting barchart for {level}...")
+        bg_fh = get_file_handler(os.path.join(save_html_dir, "barchart_generator.log"))
+        logger.addHandler(bg_fh)
+
+        logger.info(f"Plotting barchart for {level}...")
         sample_id_list = self.load_sample_id_list(sample_id_list)
 
         for sample_id in sample_id_list:
@@ -66,13 +70,13 @@ class BarchartGenerator(AnalysisManager):
         plotdata = pd.DataFrame(self.samples_abundance, index=uniq_level_name)
         fig = create_barchart_fig(plotdata.transpose())
         fig.show()
-        print("> Barchart generated.")
+        logger.info("Barchart generated.")
 
         if save_html_dir is not None:
             save_name = save_name or f"{level}_bar_chart"
             bar_chart_path = os.path.join(save_html_dir, f'{save_html_name}.html')
             fig.write_html(bar_chart_path)
-            print(f"> Barchart saved to:  {bar_chart_path}")
+            logger.info(f"Barchart saved to:  {bar_chart_path}")
 
         self.analysis_type = "barchart"
         self.results_dir = save_html_dir

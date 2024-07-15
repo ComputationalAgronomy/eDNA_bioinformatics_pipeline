@@ -1,6 +1,8 @@
-from edna_processor.analysis_manager import AnalysisManager
 import os
 import pandas as pd
+
+from edna_processor.analysis_manager import AnalysisManager
+from edna_processor.utils.base_logger import logger, get_file_handler
 from edna_processor.utils.utils_hdbscan import run_hdbscan_by_category
 from edna_processor.utils.utils_umap import run_umap, plot_umap_by_category, filter_index_by_unit_occurrence
 
@@ -47,7 +49,6 @@ class UmapGenerator(AnalysisManager):
         """
         Write UMAP index to a file and return the index DataFrame.
         """
-    
         units2fasta, unit2target = self.load_umap_units2fasta(
             target_list=target_list,
             target_level=target_level,
@@ -107,8 +108,12 @@ class UmapGenerator(AnalysisManager):
         :param show_legend: If True, show legend in the plots. Default is True.
         :param sample_id_list: A list of sample IDs to use for UMAP. If not specified (empty), all samples will be used. Default is an empty list.
         """
-        print(f"> Plotting UMAP for {" ".join(target_list)}...")
         os.makedirs(save_dir, exist_ok=True)
+
+        ug_fh = get_file_handler(os.path.join(save_dir, 'umap_generator.log'))
+        logger.addHandler(ug_fh)
+
+        logger.info(f"Plotting UMAP for {" ".join(target_list)}...")
 
         if not index_path:
             index = self.write_umap_index(
@@ -211,6 +216,9 @@ class UmapGenerator(AnalysisManager):
         :param cmap: Colormap for the plots.
         """
         os.makedirs(save_dir, exist_ok=True)
+
+        uc_fh = get_file_handler(os.path.join(save_dir, 'umap_cluster.log'))
+        logger.addHandler(uc_fh)
 
         index = pd.read_csv(index_file, sep='\t')
         index = filter_index_by_unit_occurrence(index, n_unit_threshold)
