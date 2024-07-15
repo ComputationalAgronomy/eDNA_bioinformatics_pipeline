@@ -244,7 +244,7 @@ def update_index(
     The steps for updating the index DataFrame with source/target labels and UMAP cordinates.
     """
     if unit2target is not None:
-        index['target'] = get_index_target_label(index, unit2target)
+        index['target'] = get_index_target_label(index["unit"], unit2target)
     index['source'] = get_index_source_label(list(index['seq_id']))
     index["umap1"] = embedding[:,0]
     index["umap2"] = embedding[:,1]

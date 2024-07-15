@@ -24,7 +24,7 @@ def derep_fasta(seq_path: str, uniq_path: str, relabel: str, threads: int = 12, 
     if sizeout:
         cmd.append('-sizeout')
 
-    logger.info("Running USEARCH command:", ' '.join(cmd))
+    logger.info(f"Running USEARCH command: {' '.join(cmd)}")
     try:
         subprocess.run(cmd, check=True)
         logger.info(f"Dereplicated FASTA file saved to: {uniq_path}")
@@ -78,7 +78,7 @@ def align_fasta(seq_path: str, aln_path: str) -> None:
         'clustalo', '-i', seq_path, '-o', aln_path, '--force'
     ]
 
-    logger.info("Running Clustal Omega command:", ' '.join(cmd))
+    logger.info(f"Running Clustal Omega command: {' '.join(cmd)}")
     try:
         subprocess.run(cmd, check=True)
         logger.info(f"Aligned FASTA file saved to: {aln_path}")

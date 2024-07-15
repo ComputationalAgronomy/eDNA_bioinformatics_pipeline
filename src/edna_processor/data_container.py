@@ -65,7 +65,7 @@ class SamplesContainer():
     DATA_FILE_INFO = {
         "uniq_fasta": ("4_derep", "_uniq.fasta"),
         "zotu_fasta": ("5_denoise", "_zotu.fasta"),
-        "denoise_report": ("5_denoise", "_zotu_report.csv"),
+        "denoise_report": ("5_denoise", "_zotu_report.txt"),
         "blast_table": ("6_blast", "_blast.csv")
     }
 
@@ -128,7 +128,7 @@ class SamplesContainer():
 
         for child_dir, suffix in SamplesContainer.DATA_FILE_INFO.values():
             for sample_id in sample_id_list:
-                file_path = os.path.join(parent_dir, child_dir, f"{sample_id}{suffix[0]}")
+                file_path = os.path.join(parent_dir, child_dir, f"{sample_id}{suffix}")
 
                 if not os.path.isfile(file_path):
                     raise FileNotFoundError(f"File does not exist: {file_path}.")
@@ -183,7 +183,7 @@ class SamplesContainer():
 
         if sample_id_list is None:
             logger.info(f"No sample id list provided.")
-            SamplesContainer.get_sample_id_list(parent_dir)
+            sample_id_list = SamplesContainer.get_sample_id_list(parent_dir)
             SamplesContainer.check_file(parent_dir, sample_id_list)
         else:
             logger.info("Specified sample id list.")

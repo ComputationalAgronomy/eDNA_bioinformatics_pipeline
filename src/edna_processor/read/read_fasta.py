@@ -36,7 +36,7 @@ class FastaReader(Reader):
         """
         logger.info(f"Reading {seq_type} FASTA files:  {seq_path}")
 
-        self.seq_dict = self.update_seq_dict(seq_path, seq_type)
+        self.seq_dict = self.parse_fasta(seq_path, seq_type)
 
         read_count = len(self.seq_dict)
         logger.info(f"Read finished. {seq_type} Sequences:  {read_count} reads")

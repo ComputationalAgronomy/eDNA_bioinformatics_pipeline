@@ -143,7 +143,7 @@ def run_hdbscan_by_category(
             cmap=cmap
         )
 
-        cluster_report = ["all_targets", numb_unit, numb_clus, clus_perc]
+        cluster_report = [["all_targets", numb_unit, numb_clus, clus_perc]]
         write_cluster_report(cluster_report, prefix, save_dir)
 
         return
