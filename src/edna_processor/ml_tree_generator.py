@@ -1,6 +1,8 @@
-from edna_processor.analysis_manager import AnalysisManager
 import os
 import tempfile
+
+from edna_processor.analysis_manager import AnalysisManager
+from edna_processor.utils.base_logger import logger, get_file_handler
 from edna_processor.utils.utils_sequence import write_fasta, align_fasta
 from edna_processor.utils.utils_tree import run_iqtree2
 
@@ -87,10 +89,12 @@ class MLTreeGenerator(AnalysisManager):
         :param bootstrap: Number of bootstrap replicates. Default is None.
         :param threads: Number of threads to use. If not specified, it will automatically determine the best number of cores given the current data and computer. Default is None.
         """
-
-        print(f"> Plotting MLTree for {" ".join(target_list)}...")
-
         os.makedirs(save_dir, exist_ok=True)
+
+        mtg_fh = get_file_handler(os.path.join(save_dir, "ml_tree_generator.log"))
+        logger.addHandler(mtg_fh)
+
+        logger.info(f"Plotting MLTree for {" ".join(target_list)}...")
  
         ml_fasta_path = os.path.join(save_dir, f'{prefix}.aln')
 

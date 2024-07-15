@@ -1,11 +1,11 @@
 import os
 import pickle
-import time
 from datetime import date
 
 from edna_processor.read.read_blast_csv import BlastReader
 from edna_processor.read.read_denoise_report import DenoiseReportReader
 from edna_processor.read.read_fasta import FastaReader
+from edna_processor.utils.base_logger import logger
 
 class OneSampleContainer():
     """
@@ -89,11 +89,16 @@ class SamplesContainer():
         :return: A list of sample IDs.
         """
         child_dir, suffix = tuple(SamplesContainer.DATA_FILE_INFO.values())[0]
+
         child_dir_path = os.path.join(parent_dir, child_dir)
-        print(f"> Searching files with the suffix '{suffix}' from the directory: {child_dir_path}.")
+
+        logger.info(f"Searching files with the suffix '{suffix}' from the directory: {child_dir_path}.")
+    
         file_list = os.listdir(child_dir_path)
         sample_id_list = [file.replace(suffix, '') for file in file_list if file.endswith(suffix)]
-        print(f"> Found {len(sample_id_list)} samples.")
+
+        logger.info(f"Found {len(sample_id_list)} samples.")
+    
         return sample_id_list
 
     @staticmethod
@@ -105,10 +110,11 @@ class SamplesContainer():
         """
         for child_dir, _ in SamplesContainer.DATA_FILE_INFO.values():
             child_dir_path = os.path.join(parent_dir, child_dir)
+
             if not os.path.isdir(child_dir_path):
-                print(f"> Error: Directory {child_dir_path} does not exist")
-                return 
-        print("> All directories exist.")
+                raise FileNotFoundError(f"Directory does not exist: {child_dir_path}.")
+
+        logger.info("All directories exist.")
 
     @staticmethod
     def check_file(parent_dir: str, sample_id_list: list[str]) -> None:
@@ -118,14 +124,16 @@ class SamplesContainer():
         :param parent_dir: Path to the parent directory to check.
         :param sample_id_list: List of sample IDs to check.
         """
-        print("\n> Start checking whether files exist...")
+        logger.info("Start checking whether files exist...")
+
         for child_dir, suffix in SamplesContainer.DATA_FILE_INFO.values():
             for sample_id in sample_id_list:
                 file_path = os.path.join(parent_dir, child_dir, f"{sample_id}{suffix[0]}")
+
                 if not os.path.isfile(file_path):
-                    print(f"> Error: {file_path} does not exist.")
-                    return
-        print("> All files exist.")
+                    raise FileNotFoundError(f"File does not exist: {file_path}.")
+
+        logger.info("All files exist.")
 
     @staticmethod
     def get_file_paths(sample_id: str, parent_dir: str) -> dict[str, str]:
@@ -140,6 +148,7 @@ class SamplesContainer():
         for file_key, (child_dir, suffix) in SamplesContainer.DATA_FILE_INFO.items():
             file_path = os.path.join(parent_dir, child_dir, f"{sample_id}{suffix}")
             file_paths[file_key] = file_path
+
         return file_paths
 
     def __init__(self, load_path: str = None):
@@ -165,17 +174,15 @@ class SamplesContainer():
         :param parent_dir: Path to the parent directory containing the sample data.
         :param sample_id_list: List of sample IDs to import. If not provided, all available sample IDs will be imported. The sample IDs are extracted from the file names using the provided suffix.
         """
-        start_time = time.time()
-
-        print(f"> Reading samples from: {parent_dir}.")
+        logger.info(f"Reading samples from: {parent_dir}.")
         SamplesContainer.check_dir(parent_dir)
 
         if sample_id_list is None:
-            print(f"> No sample id list provided.")
+            logger.info(f"No sample id list provided.")
             SamplesContainer.get_sample_id_list(parent_dir)
             SamplesContainer.check_file(parent_dir, sample_id_list)
         else:
-            print("> Specified sample id list.")
+            logger.info("Specified sample id list.")
             SamplesContainer.check_file(parent_dir, sample_id_list)
 
         self.data_imported_dir = parent_dir
@@ -191,9 +198,7 @@ class SamplesContainer():
 
             self.sample_data[sample_id] = OneSampleContainer(uniq_fasta_path=uniq_fasta_path, zotu_fasta_path=zotu_fasta_path, denoise_report_path=zotu_report_path, blast_table_path=blast_table_path)
 
-        seconds = time.time() - start_time
-        print(f"> {len(sample_id_list)} Samples read.")
-        print("Time Taken: ", time.strftime("%H:%M:%S",time.gmtime(seconds)), "\n")
+        logger.info(f"{len(sample_id_list)} Samples read.")
 
     def save_sample_data(self, save_dir: str, save_name: str = f"eDNA_samples_{date.today()}") -> None:
         """
@@ -205,7 +210,7 @@ class SamplesContainer():
         os.makedirs(save_dir, exist_ok=True)
 
         save_path = os.path.join(save_dir, f"{save_name}.pkl")
-        print(f"> Saving sample data to: {save_path}.")
+        logger.info(f"Saving sample data to: {save_path}.")
 
         # overwrite_y_n
         if os.path.exists(save_path):
@@ -223,7 +228,7 @@ class SamplesContainer():
 
         SamplesContainer.save_instance(self, save_path)
         self.instance_path = save_path
-        print(f"> Sample data saved to: {save_path}\n")
+        logger.info(f"Sample data saved to: {save_path}\n")
 
     def load_sample_data(self, load_path: str) -> None:
         """
@@ -234,4 +239,4 @@ class SamplesContainer():
         with open(load_path,'rb') as file:
             self.__dict__ = pickle.load(file).__dict__
         self.instance_path = load_path
-        print(f"> Sample data loaded from: {load_path}\n")
+        logger.info(f"Sample data loaded from: {load_path}\n")
