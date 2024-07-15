@@ -1,5 +1,6 @@
 from Bio import SeqIO
 
+from edna_processor.base_logger import logger
 from edna_processor.read.read_blast_csv import Reader
 
 class FastaReader(Reader):
@@ -33,9 +34,9 @@ class FastaReader(Reader):
         :param seq_path: The path to the fasta file.
         :param seq_type: The type of sequence,  either "Haplotype" or "Amplicon". Default is "Haplotype".
         """
-        print(f"> {seq_type} FASTA files:  {seq_path}")
+        logger.info(f"Reading {seq_type} FASTA files:  {seq_path}")
 
         self.seq_dict = self.update_seq_dict(seq_path, seq_type)
 
         read_count = len(self.seq_dict)
-        print(f"{seq_type} Sequences:  {read_count} reads")
+        logger.info(f"Read finished. {seq_type} Sequences:  {read_count} reads")

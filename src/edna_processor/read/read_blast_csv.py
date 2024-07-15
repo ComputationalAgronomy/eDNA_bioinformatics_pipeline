@@ -1,3 +1,5 @@
+from edna_processor.base_logger import logger
+
 class Reader:
     def __init__(self):
         pass
@@ -62,7 +64,7 @@ class BlastReader(Reader):
 
         :param blast_table_path: Path to the BLAST CSV table.
         """
-        print(f"> Blast CSV Table:  {blast_table_path}")
+        logger.info(f"Reading Blast CSV Table: {blast_table_path}")
 
         with open(blast_table_path, 'r') as file:
             for line in file.readlines():
@@ -70,4 +72,4 @@ class BlastReader(Reader):
                 self.hap2level[haplotype] = hap2level_entry
 
         hap_count = len(self.hap2level)
-        print(f"Haplotype Assigned:  {hap_count} species\n")
+        logger.info(f"Read finished. Assigned {hap_count} haplotypes to species.")
