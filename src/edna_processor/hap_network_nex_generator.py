@@ -1,6 +1,4 @@
-from edna_processor.analysis_manager import AnalysisManager
 from Bio import AlignIO
-import numpy as np
 import os
 import pandas as pd
 import tempfile
