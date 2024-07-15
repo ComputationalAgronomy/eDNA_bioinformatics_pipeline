@@ -4,6 +4,8 @@ import os
 import subprocess
 import tempfile
 
+from edna_processor.utils.base_logger import logger
+
 def derep_fasta(seq_path: str, uniq_path: str, relabel: str, threads: int = 12, sizeout: bool = False) -> None:
     """
     Dereplicate a FASTA file by removing duplicate sequences.
@@ -22,12 +24,12 @@ def derep_fasta(seq_path: str, uniq_path: str, relabel: str, threads: int = 12, 
     if sizeout:
         cmd.append('-sizeout')
 
-    print("> Running USEARCH command:", ' '.join(cmd))
+    logger.info("Running USEARCH command:", ' '.join(cmd))
     try:
         subprocess.run(cmd, check=True)
-        print(f"\n> Dereplicated FASTA file saved to: {uniq_path}\n")
+        logger.info(f"Dereplicated FASTA file saved to: {uniq_path}")
     except subprocess.CalledProcessError as e:
-        print(f"Error occurred during dereplication: {e}")
+        logger.error(f"Error occurred during dereplication: {e}")
 
 def write_fasta(units2fasta_dict: dict[str, str], save_path: str, dereplicate: bool = False, sizeout: bool = False) -> None:
     """
@@ -60,7 +62,7 @@ def write_fasta(units2fasta_dict: dict[str, str], save_path: str, dereplicate: b
         file.write(fasta_str)
 
     num_seq = fasta_str.count(">")
-    print(f"\n> Written {num_seq} sequences to: {save_path}")
+    logger.info(f"Written {num_seq} sequences to: {save_path}")
 
     return num_seq
 
@@ -75,13 +77,13 @@ def align_fasta(seq_path: str, aln_path: str) -> None:
     cmd = [
         'clustalo', '-i', seq_path, '-o', aln_path, '--force'
     ]
-    print("Running Clustal Omega command:", ' '.join(cmd))
 
+    logger.info("Running Clustal Omega command:", ' '.join(cmd))
     try:
         subprocess.run(cmd, check=True)
-        print(f"\n> Aligned FASTA file saved to: {aln_path}\n")
+        logger.info(f"Aligned FASTA file saved to: {aln_path}")
     except subprocess.CalledProcessError as e:
-        print(f"Error occurred during alignment: {e}")
+        logger.error(f"Error occurred during alignment: {e}")
 
 def get_uniq_seq_freq(seqs_path: str, uniq_seqs_path: str, seq_labels: list[str]) -> str:
     """

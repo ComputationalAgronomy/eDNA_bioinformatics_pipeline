@@ -4,6 +4,8 @@ import numpy as np
 import os
 import pandas as pd
 
+from edna_processor.utils.base_logger import logger
+
 def fit_hdbscan(
         points: np.ndarray,
         min_samples: int,
@@ -86,7 +88,7 @@ def run_hdbscan(
     labels, clustered, numb_clus, clus_perc = fit_hdbscan(points, min_samples, min_cluster_size, cluster_selection_epsilon, alpha)
     numb_unit = len(index["unit"].unique())
     plot_hdbscan(points, labels, clustered, png_path, cmap)
-    print(f'Saved PNG to: {png_path}')
+    logger.info(f'Saved hdbscan plot to: {png_path}')
     return str(numb_unit), str(numb_clus), str(clus_perc)
 
 def write_cluster_report(cluster_report: list[list[str]], prefix: str, save_dir: str) -> None:
@@ -100,7 +102,7 @@ def write_cluster_report(cluster_report: list[list[str]], prefix: str, save_dir:
         columns=["name", "unit_counts", "cluster_counts", "clustered_ratio"]
     )
     cluster_report.to_csv(cluster_report_path, sep='\t', index=False)
-    print(f'Saved cluster report to: {cluster_report_path}')
+    logger.info(f'Saved cluster report to: {cluster_report_path}')
 
 def run_hdbscan_by_category(
         index: pd.DataFrame,
@@ -128,7 +130,7 @@ def run_hdbscan_by_category(
     :param cmap: Color map for the plot.
     """
     if category == 'all':
-        print("> Clustering for all units...")
+        logger.info("Clustering for all units...")
         png_path = os.path.join(save_dir, f"{prefix}_hdbscan.png")
 
         numb_unit, numb_clus, clus_perc = run_hdbscan(
@@ -150,7 +152,7 @@ def run_hdbscan_by_category(
 
     unique_values = np.unique(index[category])
     for value in unique_values:
-        print(f"> Clustering for {category}: {value}...")
+        logger.info(f"Clustering for {category}: {value}...")
         png_path = os.path.join(save_dir, f"{prefix}_{value}_hdbscan.png")
 
         subindex = index[index[category] == value]
