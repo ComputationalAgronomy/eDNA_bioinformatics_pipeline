@@ -1,7 +1,7 @@
 from Bio import SeqIO
 
-from edna_processor.base_logger import logger
 from edna_processor.read.read_blast_csv import Reader
+from edna_processor.utils.base_logger import logger
 
 class FastaReader(Reader):
 
