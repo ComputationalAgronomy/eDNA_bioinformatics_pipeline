@@ -1,7 +1,7 @@
 import re
 
-from edna_processor.base_logger import logger
 from edna_processor.read.read_blast_csv import Reader
+from edna_processor.utils.base_logger import logger
 
 class DenoiseReportReader(Reader):
     RE_DENOISE_PATTERN = re.compile(r"(Uniq\d*)|size=(\d*)|(amp\d*)|top=(Uniq\d*)")
