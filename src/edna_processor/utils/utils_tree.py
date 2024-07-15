@@ -59,7 +59,7 @@ def run_iqtree2(
     if checkpoint:
         cmd.append(checkpoint)
 
-    logger.info("Running IQTREE2 command: ", ' '.join(cmd))
+    logger.info(f"Running IQTREE2 command: {' '.join(cmd)}")
     try:
         subprocess.run(cmd, check=True)
         logger.info(f"IQTREE2 finished. Output files saved in: {save_dir}")

@@ -117,7 +117,7 @@ class UmapGenerator(SamplesContainer):
 
         if not index_path:
             index = self.write_umap_index(
-                target_level=target_list,
+                target_list=target_list,
                 target_level=target_level,
                 unit_level=unit_level,
                 sample_id_list=sample_id_list,
@@ -244,7 +244,7 @@ class UmapGenerator(SamplesContainer):
                 cluster_selection_epsilon=cluster_selection_epsilon,
                 alpha=alpha,
                 category="target",
-                prefix=self.parameters["target_level"] or "target",
+                prefix=self.parameters.get("target_level", "target"),
                 save_dir=save_dir,
                 cmap=cmap
             )
@@ -257,7 +257,7 @@ class UmapGenerator(SamplesContainer):
                 cluster_selection_epsilon=cluster_selection_epsilon,
                 alpha=alpha,
                 category="unit",
-                prefix=self.parameters["unit_level"] or "unit",
+                prefix=self.parameters.get("unit_level", "unit"),
                 save_dir=save_dir,
                 cmap=cmap
             )
