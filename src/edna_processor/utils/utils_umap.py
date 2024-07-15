@@ -11,7 +11,9 @@ import subprocess
 import tempfile
 import umap
 from umap.plot import _datashade_points, _themes
-from edna_processor.utils_sequence import write_fasta, align_fasta
+
+from edna_processor.utils.base_logger import logger
+from edna_processor.utils.utils_sequence import write_fasta, align_fasta
 
 def fasta2index(seq_path: str, index_fasta_path: str) -> pd.DataFrame:
     """
@@ -102,12 +104,12 @@ def calc_distmx(seq_path: str, dist_path: str, maxdist: float = 1.0, termdist: f
     if threads:
         cmd.extend(["-threads", str(threads)])
 
-    print("> Running USEARCH command:", cmd)
+    logger.info("> Running USEARCH command:", cmd)
     try:
         subprocess.run(cmd, check=True)
-        print(f"> USEARCH finished. Output distance matrix file saved to: {dist_path}.")
+        logger.info(f"USEARCH finished. Output distance matrix file saved to: {dist_path}")
     except subprocess.CalledProcessError as e:
-        print(f"> Error occurred during the calculation of the distance matrix: {e}")
+        logger.error(f"Error occurred during the calculation of the distance matrix: {e}")
 
 def load_sparse_dist_matrix(dist_path: str) -> np.ndarray:
     """
@@ -117,7 +119,7 @@ def load_sparse_dist_matrix(dist_path: str) -> np.ndarray:
     :return: Sparse distance matrix as a NumPy array.
     """
     dist_matrix = pd.read_csv(dist_path, header=None, sep='\t')
-    print(f"> Loading sparse {max(dist_matrix[0])+1} x {max(dist_matrix[0])+1} distance matrix from: {dist_path}")
+    logger.info(f"Loading sparse {max(dist_matrix[0])+1} x {max(dist_matrix[0])+1} distance matrix from: {dist_path}")
     
     diagonal = dist_matrix[0] == dist_matrix[1]
     row = np.concatenate([dist_matrix[0], dist_matrix[1][~diagonal]])
@@ -153,7 +155,7 @@ def create_one_hot_matrix(seq_path: str) -> np.ndarray:
     :param seq_path: Path to the input FASTA file.
     :return: One-hot encoded matrix as a NumPy array.
     """
-    print(f"> Creating one-hot encoded matrix from: {seq_path}")
+    logger.info(f"Creating one-hot encoded matrix from: {seq_path}")
 
     one_hot_matrix = []
     with open(seq_path, 'r') as handle:
@@ -179,7 +181,7 @@ def fit_umap(
     :param precomputed: Whether the elements of the matrix are distances or not. 
     :return: UMAP object and embedding
     """
-    print(f'> Creating UMAP embedding with {neighbors} neighbors...')
+    logger.info(f'Creating UMAP embedding with {neighbors} neighbors...')
 
     reducer = umap.UMAP(
         n_neighbors=neighbors,
@@ -263,7 +265,7 @@ def filter_index_by_unit_occurrence(index: pd.DataFrame, n: int = 1) -> pd.DataF
     counts = index["unit"].value_counts()
     units_to_remove = counts[counts < n].index
     filtered_index = index[~index["unit"].isin(units_to_remove)]
-    print(f"> units with less than {n} occurrences have been removed.")
+    logger.info(f"Units with less than {n} occurrences have been removed.")
     return filtered_index
 
 def _matplotlib_points(
@@ -443,7 +445,7 @@ def run_umap(
 
     index = update_index(index, unit2target, embedding)
     index.to_csv(index_path, sep='\t', index=False)
-    print(f'Saved index TSV to: {index_path}')
+    logger.info(f'Saved index TSV to: {index_path}')
 
     return index
 
@@ -465,7 +467,7 @@ def plot_umap(
         show_legend=show_legend
     )
     ax.figure.savefig(png_path, bbox_inches='tight')
-    print(f'Saved PNG to: {png_path}')
+    logger.info(f"Saved PNG to: {png_path}")
 
     # print('\n> Drawing interactive plot...')
     # p = umap.plot.interactive(reducer, labels=index['label'], theme=theme, width=width, height=height, hover_data=index);
@@ -492,14 +494,14 @@ def plot_umap_by_category(
     :param show_legend: Whether to show the legend in the plots.
     """
     if category == 'all':
-        print('\n> Drawing PNG for all units...')
+        logger.info("Drawing PNG for all units...")
         png_path = os.path.join(png_dir, f"{prefix}_umap.png")
         plot_umap(index=index, png_path=png_path, cmap=cmap, show_legend=show_legend)
         return
 
     unique_values = np.unique(index[category])
     for value in unique_values:
-        print(f'\n> Drawing PNG for {category} {value}...')
+        logger.info(f"Drawing PNG for {category} {value}...")
         png_path = os.path.join(png_dir, f"{prefix}_{value}_umap.png")
         subindex = index[index[category] == value]
         plot_umap(index=subindex, png_path=png_path, cmap=cmap, show_legend=show_legend)
