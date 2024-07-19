@@ -1,6 +1,8 @@
 import os
 import subprocess
 
+from edna_processor.utils.base_logger import logger
+
 def check_mltree_overwrite(save_dir: str, prefix: str) -> str:
     # TODO(SW): Eventually, replace with argparse.
     """
@@ -42,7 +44,7 @@ def run_iqtree2(
     """
     checkpoint = check_mltree_overwrite(save_dir, prefix)
     if checkpoint == 'stop':
-        print("> Stopping the run.")
+        logger.info("> Stopping the run.")
         return
 
     model = model or 'TEST'
@@ -57,9 +59,9 @@ def run_iqtree2(
     if checkpoint:
         cmd.append(checkpoint)
 
-    print("> Running IQTREE2 command: ", ' '.join(cmd))
+    logger.info(f"Running IQTREE2 command: {' '.join(cmd)}")
     try:
         subprocess.run(cmd, check=True)
-        print(f"> IQTREE2 finished. Output files saved in: {save_dir}.")
+        logger.info(f"IQTREE2 finished. Output files saved in: {save_dir}")
     except subprocess.CalledProcessError as e:
-        print(f"> Error occurred during IQTREE2 run: {e}")
+        logger.error(f"Error occurred during IQTREE2 run: {e}")
