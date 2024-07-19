@@ -3,7 +3,7 @@ import os
 from stage.stage_builder import StageBuilder
 
 
-class UsearchMergeStage(StageBuilder):
+class PairendMergeStage(StageBuilder):
     def __init__(self, config, heading="usearch",
                  fastq_dir="", save_dir="",
                  maxdiff=5, pctid=90):
@@ -39,7 +39,7 @@ class UsearchMergeStage(StageBuilder):
 
 
 def usearch_merge_demo(config, prefix, fastq_dir, save_dir):
-    stage = UsearchMergeStage(config, fastq_dir=fastq_dir, save_dir=save_dir)
+    stage = PairendMergeStage(config, fastq_dir=fastq_dir, save_dir=save_dir)
     stage.setup(prefix)
     is_complete = stage.run()
     return is_complete
