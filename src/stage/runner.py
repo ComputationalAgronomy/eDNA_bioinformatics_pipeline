@@ -1,6 +1,3 @@
-
-import os
-import subprocess
 from abc import ABC, abstractmethod
 
 from stage.stage_config import StageConfig
@@ -8,10 +5,22 @@ from stage.stage_config import StageConfig
 
 class Runner(ABC):
 
+    """
+    Abstract base class for defining a runner that executes a program.
+
+    Attributes:
+        prog_name (str): The name of the program to run.
+        message (str): Log message indicating the program being run.
+        capture_output (subprocess.CompletedProcess): Captures the output of the subprocess.
+        verbose (bool): Indicates if verbose logging is enabled.
+        dry (bool): Indicates if the runner should perform a dry run (no actual execution).
+        logger (Logger): Logger object for logging messages.
+    """
+
     MSG_LOG = "==LOG=="
     MSG_DEBUG = "===DEBUG==="
 
-    def __init__(self, prog_name, config: StageConfig):
+    def __init__(self, prog_name: str, config: StageConfig):
         self.prog_name = prog_name  # for debug/naming only
         self.message = f"{Runner.MSG_LOG} Program: {self.prog_name}."
         self.capture_output = None

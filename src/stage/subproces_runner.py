@@ -5,14 +5,27 @@ from stage.runner import Runner
 
 
 class SubprocessRunner(Runner):
-    def __init__(self, prog_name, command, config, shell=False):
+
+    """
+    Runner class for executing a command as a subprocess.
+
+    Attributes:
+        command (str): The command to execute.
+        shell (bool): Whether to execute the command through the shell.
+    """
+
+    def __init__(self, prog_name: str, command: str, config, shell: bool = False):
         super().__init__(prog_name, config)
 
         self.command = command
         self.shell = shell
 
-    def run(self):
+    def run(self) -> bool:
+        """
+        Executes the command as a subprocess.
 
+        :returns: True if the execution is successful, False otherwise.
+        """
         if self.verbose:
             print(self.message)
 
@@ -43,8 +56,14 @@ class SubprocessRunner(Runner):
 
 
 class RedirectOutputRunner(Runner):
+    """
+    Runner class for redirecting the output of a subprocess to a file.
 
-    def __init__(self, prog_name, runner, outfile, config):
+    Attributes:
+        runner (SubprocessRunner): The subprocess runner whose output to redirect.
+        outfile (str): The file to write the output to.
+    """
+    def __init__(self, prog_name: str, runner: SubprocessRunner, outfile: str, config):
         super().__init__(prog_name, config)
 
         if isinstance(runner, SubprocessRunner):
@@ -55,7 +74,12 @@ class RedirectOutputRunner(Runner):
             info = type(runner)
             raise TypeError(f"Invalid instance type: {info}.")
 
-    def run(self):
+    def run(self) -> bool:
+        """
+        Redirects the output of the runner to the specified file.
+
+        :returns: True if the output redirection is successful, False otherwise.
+        """
         if not self.dry:
             try:
                 with open(self.outfile, "w") as f:
