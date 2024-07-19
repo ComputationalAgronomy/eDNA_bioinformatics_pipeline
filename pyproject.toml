@@ -3,21 +3,32 @@ requires = ["setuptools >= 61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "edna_bioinfo_pipeline"
+name = "edna_bp"
 version = "0.0.1"
 authors = [
   { name="Shan-En Chen", email="shawn.for.office@gmail.com" },
+  { name="Steven Wu", email="stevenwu@ntu.edu.tw" },
 ]
-description = "eDNA bioinformatics pipeline"
+description = "Analysis metagenomic data from the ocean"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
 
+[project.urls]
+"Homepage" = "https://github.com/ComputationalAgronomy/eDNA_bioinformatics_pipeline.git"
+"Bug Tracker" = "https://github.com/ComputationalAgronomy/eDNA_bioinformatics_pipeline.git" 
+
 [tool.setuptools.packages.find]
 where = ["src"]  # ["."] by default
 include = ["*"]  # ["*"] by default
+addopts = [
+    "--import-mode=importlib",
+]
+
+[flake8]
+per-file-ignores = "tests/*: E501"  # E501 line too long
 
