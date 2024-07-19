@@ -1,23 +1,33 @@
 [build-system]
-requires = ["setuptools >= 61.0", "wheel"]
+requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "edna_bioinfo_pipeline"
-version = "0.0.1"
+name = "ocean_edna"
+version = "0.3"
 authors = [
-  { name="Shan-En Chen", email="shawn.for.office@gmail.com" },
+  {name="Shawn Chen", email="marcus910423@gmail.com"},
+  {name="Steven Wu", email="stevenwu@ntu.edu.tw"},
 ]
-description = "eDNA bioinformatics pipeline"
+description = "Analysis metagenomic data from the ocean"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
 
-[tool.setuptools.packages.find]
-where = ["src"]  # ["."] by default
-include = ["*"]  # ["*"] by default
+[project.urls]
+"Homepage" = "https://github.com/ComputationalAgronomy/OTU_analysis_pipeline.git "
+"Bug Tracker" = "https://github.com/ComputationalAgronomy/OTU_analysis_pipeline.git "
 
+
+[tool.pytest.ini_options]
+pythonpath = "src"
+addopts = [
+    "--import-mode=importlib",
+]
+
+[flake8]
+per-file-ignores = "tests/*: E501"  # E501 line too long
