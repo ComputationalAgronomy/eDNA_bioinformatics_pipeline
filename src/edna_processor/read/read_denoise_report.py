@@ -1,6 +1,7 @@
 import re
 
 from edna_processor.read.read_blast_csv import Reader
+from edna_processor.utils.base_logger import logger
 
 class DenoiseReportReader(Reader):
     RE_DENOISE_PATTERN = re.compile(r"(Uniq\d*)|size=(\d*)|(amp\d*)|top=(Uniq\d*)")
@@ -92,7 +93,7 @@ class DenoiseReportReader(Reader):
 
         :param denoise_report_path: path to the denoise report
         """
-        print(f"> Denoising Report:  {denoise_report_path}")
+        logger.info(f"Reading denoising Report:  {denoise_report_path}")
 
         zotu_count = 0
         chimera_count = 0
@@ -104,4 +105,4 @@ class DenoiseReportReader(Reader):
                 elif 'chfilter' in line:
                     zotu_count, chimera_count = self.process_chifilter_line(line, zotu_count, chimera_count)
 
-        print(f"Biological Haplotypes:  {zotu_count} kept\nPredicted Chimeras:  {chimera_count} removed")
+        logger.info(f"Read finished. Biological Haplotypes:  {zotu_count} kept; Predicted Chimeras:  {chimera_count} removed.")
