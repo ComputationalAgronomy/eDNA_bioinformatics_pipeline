@@ -13,6 +13,7 @@ Clone the GitHub repo:
 ```sh
 git clone https://github.com/ComputationalAgronomy/eDNA_bioinformatics_pipeline.git
 ```
+
 Build an image according to the Dockerfile.
 ```sh
 docker build -t [ImageName] .
@@ -24,6 +25,7 @@ Next, launch a new container from the Docker image that was just built:
 ```sh
 docker run -it [ImageName]
 ```
+
 If the launch is successful, your terminal should display something like the following, and **the container is ready to work**!
 ```sh
 (base) root@93f4d3cf355f:/#
@@ -34,15 +36,18 @@ File structure inside a new container:
 ```sh
 |-- usr/
 |   |-- local/bin/
+|   |   |-- bbmap/
+|   |   |   `-- reformat.sh
 |   |   |-- clustalo.exe
-|   |   |-- usearch.exe
+|   |   |-- cutadapt
 |   |   |-- iqtree-2.3.5-Linux-intel/
 |   |   |   |-- bin/
 |   |   |   |   `-- iqtree2
-|   |   `-- ncbi-blast-2.6.1+/
-|   |       `-- bin/
-|   |           |-- blastn
-|   |           `-- makeblastdb
+|   |   |-- ncbi-blast-2.6.1+/
+|   |   |   `-- bin/
+|   |   |       |-- blastn
+|   |   |       `-- makeblastdb
+|   |   `-- usearch.exe
 |   `-- src/app/
 |       |-- README.md
 |       |-- dockerfile
@@ -56,27 +61,30 @@ File structure inside a new container:
 
 (base) root@93f4d3cf355f:/# `exit`: Exit the container
 
-`docker container ls`: List all running containers
+`docker container ls -a`: List all containers
 
 `docker stop [container ID or Name]`: Stop a running container.
 
 `docker start [container ID or Name]`: Start a stopped container.
 
-`docker exec -it [container ID or Name] /bin/bash`:Access a running container's shell.
+`docker exec -it [container ID or Name] bash`: Enter a running container's shell.
 
 `docker rmi [ImageName]`: Remove a Docker image.
 
 `docker container rm [container ID or Name]`: Remove a container.
 
+`docker system prune (--force)`: Remove \<none> TAG images (be careful when using this command).
+
 ### Local version
 
 #### Dependency Installation
 Make sure you have installed all of the following prerequisites on your machine:
-* USEARCH - [Download](https://www.drive5.com/usearch/download.html)
-* Cutadapt - [Download](https://cutadapt.readthedocs.io/en/stable/installation.html)
-* NCBI-BLAST+ - [Download](https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/)
+* BBMap - [Download](https://sourceforge.net/projects/bbmap/)
 * Clustal Omega - [Download](http://www.clustal.org/omega/)
+* Cutadapt - [Download](https://cutadapt.readthedocs.io/en/stable/installation.html)
 * IQTREE2 - [Download](http://www.iqtree.org/)
+* NCBI-BLAST+ - [Download](https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/)
+* USEARCH - [Download](https://www.drive5.com/usearch/download.html)
 
 , and ensure the path of downloaded software is added to the "Path" variable in "Environmental Variables".
 
