@@ -4,8 +4,9 @@ from stage.stage_builder import StageBuilder
 
 class DereplicateStage(StageBuilder):
     def __init__(self, config, heading="usearch", fasta_dir="", save_dir="",
-                 annot_size: bool = True, seq_label: str = "Uniq"
-                 ):
+                 annot_size: bool = True,
+                 seq_label: str = "Uniq"
+        ):
         super().__init__(heading=heading, config=config)
         self.USEARCH_PROG = "usearch"
         self.fasta_dir = fasta_dir
@@ -19,26 +20,25 @@ class DereplicateStage(StageBuilder):
         )
 
     def setup(self, prefix):
-        infile = os.path.join(self.merge_dir, f"{prefix}_merge.fasta")
+        infile = os.path.join(self.fasta, f"{prefix}_cut.fasta")
         dereplicate_outfile = os.path.join(self.save_dir, f"{prefix}_derep.fasta")
         report = os.path.join(self.save_dir, f"{prefix}_report.txt")
         cmd = (
-            f"{self.USEARCH_PROG} -fastx_uniques {infile} "
+            f"{self.USEARCH_PROG} -fastx_uniques {infile}"
             f"{self.params}"
             f"-threads {self.config.n_cpu}"
             f"-fastaout {dereplicate_outfile}"
             f">{report} 2>&1"
         )
-        super().add_stage("dereplicate", cmd)
-        super().add_stage_output_to_file("Redirect dereplicate output", 0, dereplicate_outfile)
+        super().add_stage("usearch_dereplicate", cmd)
 
     def run(self):
         super().run()
         return all(self.output)
 
 
-def dereplicate_demo(config, prefix, merge_dir="", save_dir=""):
-    stage = DereplicateStage(config, merge_dir=merge_dir, save_dir=save_dir)
+def dereplicate_demo(config, prefix, fasta_dir="", save_dir=""):
+    stage = DereplicateStage(config, fasta_dir=fasta_dir, save_dir=save_dir)
     stage.setup(prefix)
     is_complete = stage.run()
     return is_complete

@@ -2,7 +2,7 @@ import os
 from stage.stage_builder import StageBuilder
 
 
-class CutadaptStage(StageBuilder):
+class CutPrimerStage(StageBuilder):
     def __init__(self, config, heading="cutadapt", merge_dir="", save_dir="",
                  rm_p_5="GTCGGTAAAACTCGTGCCAGC",
                  rm_p_3="CAAACTGGGATTAGATACCCCACTATG",
@@ -26,14 +26,16 @@ class CutadaptStage(StageBuilder):
 
     def setup(self, prefix):
         infile = os.path.join(self.merge_dir, f"{prefix}_merge.fastq")
-        cutadapt_outfile = os.path.join(self.save_dir, f"{prefix}_cut.fastq")
+        cutprimer_outfile = os.path.join(self.save_dir, f"{prefix}_cut.fastq")
+        report = os.path.join(self.save_dir, f"{prefix}_report.txt")
         cmd = (
-            f"{self.CUTADAPT_PROG} {infile} "
-            f" {self.params}"
-            f" --discard-untrimmed -j {self.config.n_cpu} "
+            f"{self.CUTADAPT_PROG} {infile}"
+            f"{self.params}"
+            f"--discard-untrimmed -j {self.config.n_cpu}"
+            f">{cutprimer_outfile} 2>{report}"
         )
-        super().add_stage("cutadapt", cmd)
-        super().add_stage_output_to_file("Redirect cutadapt output", 0, cutadapt_outfile)
+        super().add_stage("cutadapt_cutprimer", cmd)
+        # super().add_stage_output_to_file("Redirect cutadapt output", 0, cutprimer_outfile)
 
     def run(self):
         super().run()
@@ -41,7 +43,7 @@ class CutadaptStage(StageBuilder):
 
 
 def cutadapt_demo(config, prefix, merge_dir="", save_dir=""):
-    stage = CutadaptStage(config, merge_dir=merge_dir, save_dir=save_dir)
+    stage = CutPrimerStage(config, merge_dir=merge_dir, save_dir=save_dir)
     stage.setup(prefix)
     is_complete = stage.run()
     return is_complete
