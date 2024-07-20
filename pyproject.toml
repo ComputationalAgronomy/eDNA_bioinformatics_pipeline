@@ -3,11 +3,11 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ocean_edna"
-version = "0.3"
+name = "edna_bp"
+version = "0.0.1"
 authors = [
-  {name="Shawn Chen", email="marcus910423@gmail.com"},
-  {name="Steven Wu", email="stevenwu@ntu.edu.tw"},
+  { name="Shan-En Chen", email="shawn.for.office@gmail.com" },
+  { name="Steven Wu", email="stevenwu@ntu.edu.tw" },
 ]
 description = "Analysis metagenomic data from the ocean"
 readme = "README.md"
@@ -19,12 +19,12 @@ classifiers = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/ComputationalAgronomy/OTU_analysis_pipeline.git "
-"Bug Tracker" = "https://github.com/ComputationalAgronomy/OTU_analysis_pipeline.git "
+"Homepage" = "https://github.com/ComputationalAgronomy/eDNA_bioinformatics_pipeline.git"
+"Bug Tracker" = "https://github.com/ComputationalAgronomy/eDNA_bioinformatics_pipeline.git" 
 
-
-[tool.pytest.ini_options]
-pythonpath = "src"
+[tool.setuptools.packages.find]
+where = ["src"]  # ["."] by default
+include = ["*"]  # ["*"] by default
 addopts = [
     "--import-mode=importlib",
 ]
