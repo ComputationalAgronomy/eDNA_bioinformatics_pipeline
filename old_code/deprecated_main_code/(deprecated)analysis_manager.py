@@ -1,4 +1,5 @@
 from edna_processor.data_container import SamplesContainer
+from edna_processor.utils.base_logger import logger
 
 class AnalysisManager(SamplesContainer):
     def __init__(self, load_path=None):
@@ -12,9 +13,9 @@ class AnalysisManager(SamplesContainer):
     def load_sample_id_list(self, sample_id_list: str = []) -> list[str]:
         if sample_id_list == []:
             sample_id_list = self.sample_id_list
-            print(f"> No sample ID list specified. Using all {len(sample_id_list)} samples.")
+            logger.info(f"No sample ID list specified. Using all {len(sample_id_list)} samples.")
         else:
-            print(f"> Specified {len(sample_id_list)} samples.")
+            logger.info(f"Specified {len(sample_id_list)} samples.")
         self.sample_id_used = sample_id_list
         return sample_id_list
     
