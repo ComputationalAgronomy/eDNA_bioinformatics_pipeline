@@ -3,7 +3,7 @@ from stage.stage_builder import StageBuilder
 
 
 class FqToFaStage(StageBuilder):
-    def __init__(self, config, heading="bbmap", cutprimer_dir="", save_dir="",
+    def __init__(self, config, heading="fq_to_fa", cutprimer_dir="", save_dir="",
                  overwrite=True
         ):
         super().__init__(heading=heading, config=config)
@@ -23,11 +23,11 @@ class FqToFaStage(StageBuilder):
         report = os.path.join(self.save_dir, f"{prefix}_report.txt")
         cmd = (
             f"bash {self.BBMAP_PROG}"
-            f"in={infile} out={fasta_outfile}"
-            f"{self.params}"
-            f"2>{report}"
+            f" in={infile} out={fasta_outfile}"
+            f" {self.params}"
+            f" 2>{report}"
         )
-        super().add_stage("bbmap_fq_to_fa", cmd)
+        super().add_stage("bbmap_reformat.sh", cmd)
 
     def run(self):
         super().run()
