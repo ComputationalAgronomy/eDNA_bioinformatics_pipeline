@@ -4,6 +4,8 @@ import os
 import pandas as pd
 
 from stage.stage_builder import StageBuilder
+from edna_processor.utils.base_logger import logger
+from stage.stage_config import StageConfig
 
 
 class AssignTaxaStage(StageBuilder):
@@ -14,7 +16,7 @@ class AssignTaxaStage(StageBuilder):
         with open(lineage_path) as in_handle:
             reader = csv.DictReader(in_handle)
             for row in reader:
-                genus_name = [row['genus_name']]
+                genus_name = row['genus_name']
                 otherlv = [
                     row['family_name'],
                     row['order_name'],
@@ -38,6 +40,8 @@ class AssignTaxaStage(StageBuilder):
         ):
         super().__init__(heading=heading, config=config)
         self.BLAST_PROG = "blastn"
+        self.in_suffix = "denoise.fasta"
+        self.out_suffix = "blast.csv"
         self.denoise_dir = denoise_dir
         self.save_dir = save_dir
         self.blast_outfile = None
@@ -56,15 +60,16 @@ class AssignTaxaStage(StageBuilder):
         )
 
     def setup(self, prefix):
-        infile = os.path.join(self.denoise_dir, f"{prefix}_denoise.fasta")
-        self.blast_outfile = os.path.join(self.save_dir, f"{prefix}_blast.csv")
+        infile = os.path.join(self.denoise_dir, f"{prefix}_{self.in_suffix}")
+        self.blast_outfile = os.path.join(self.save_dir, f"{prefix}_{self.out_suffix}")
+        self.check_path(infile)
         cmd = (
             f"{self.BLAST_PROG} -query {infile}"
             f" {self.params}"
             f" -num_threads {self.config.n_cpu}"
             f" -out {self.blast_outfile}"
         )
-        super().add_stage("ncbi-blast+_blastn", cmd)
+        super().add_stage("Taxonomic assignment", cmd)
 
     def add_taxonomy(self):
         blast_result = pd.read_csv(self.blast_outfile, header=None)
@@ -74,14 +79,23 @@ class AssignTaxaStage(StageBuilder):
             genus = species.split('_')[0]
             if genus in self.genus2otherlv.keys():
                 taxonomy_levels = [species, genus] + self.genus2otherlv[genus]
+            elif genus.endswith("idae") or genus.endswith("inae"): # only identified to family level
+                for _, otherlv in self.genus2otherlv.items():
+                    if otherlv[0] == genus:
+                        taxonomy_levels = [species, ''] + otherlv
+                        break
+            elif genus.endswith("iformes") or genus.endswith("oidea"): # only identified to order level
+                for _, otherlv in self.genus2otherlv.items():
+                    if otherlv[1] == genus:
+                        taxonomy_levels = [species, '', ''] + otherlv[1:]
+                        break
             else:
                 print(f"genus {genus} not found in: {self.lineage_path}")
-                taxonomy_levels =[species, genus] + [''] * 5
             taxa_matrix.append(taxonomy_levels)
 
         taxa_matrix_trans = np.array(taxa_matrix).T
         for i, lv in enumerate(taxa_matrix_trans):
-            blast_result.insert(i+2, i+2, lv)
+            blast_result.insert(i+2, f"_{i}", lv)
 
         blast_result.to_csv(self.blast_outfile, index=False, header=None)
 
@@ -89,12 +103,13 @@ class AssignTaxaStage(StageBuilder):
 
     def run(self):
         super().run()
-        self.output.append(self.add_taxonomy())
+        if not self.config.dry:
+            self.output.append(self.add_taxonomy())
         return all(self.output)
 
 
-def assign_taxa_demo(config, prefix, denoise_dir="", save_dir=""):
-    stage = AssignTaxaStage(config, denoise_dir=denoise_dir, save_dir=save_dir)
+def assign_taxa_demo(config, prefix, denoise_dir="", save_dir="", db_path="", lineage_path=""):
+    stage = AssignTaxaStage(config, denoise_dir=denoise_dir, save_dir=save_dir, db_path=db_path, lineage_path=lineage_path)
     outfile = stage.setup(prefix)
     is_complete = stage.run()
     return is_complete

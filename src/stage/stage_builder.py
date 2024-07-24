@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import os
 
 from stage.runner import Runner
 from stage.stage_config import StageConfig
@@ -33,7 +34,7 @@ class StageBuilder(ABC):
         stage = SubprocessRunner(prog_name, command, self.config, shell=shell)
         self.runners.append(stage)
 
-    def add_stage_output_to_file(self, prog_name: str, stage: int, outfile_name: str):
+    def add_stage_output_to_file(self, prog_name: str, stage: int, outfile_name: str, errfile_name: str):
         """
         Adds a stage that redirects output to a file.
 
@@ -41,8 +42,13 @@ class StageBuilder(ABC):
         :param stage: The index of the stage whose output to redirect.
         :param outfile_name: The name of the file to write the output to.
         """
-        rd_stage = RedirectOutputRunner(prog_name, self.runners[stage], outfile_name, self.config)
+        rd_stage = RedirectOutputRunner(prog_name, self.runners[stage], outfile_name, errfile_name, self.config)
         self.runners.append(rd_stage)
+
+    def check_path(self, path: str):
+        os.makedirs(self.save_dir, exist_ok=True)
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"{path} not found")
 
     def summary(self) -> list[str]:
         """
@@ -62,14 +68,15 @@ class StageBuilder(ABC):
         Returns:
             list: The output from each stage.
         """
-        self.config.logger.write(f"{Runner.MSG_LOG} Running: {self.heading}\n")
+        self.config.logger.info(f"{Runner.MSG_LOG} Running: {self.heading}\n")
         self.output = []
         for i, runner in enumerate(self.runners):
             out = runner.run()
             self.output.append(out)
-        self.config.logger.flush()
+        # self.config.logger.flush()
+        self.runners = []
         return all(self.output)
-
+    
     @abstractmethod
     def setup(self):
         pass

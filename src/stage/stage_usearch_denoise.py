@@ -9,6 +9,8 @@ class DenoiseStage(StageBuilder):
         ):
         super().__init__(heading=heading, config=config)
         self.USEARCH_PROG = "usearch.exe"
+        self.in_suffix = "derep.fasta"
+        self.out_suffix = "denoise.fasta"
         self.derep_dir = derep_dir
         self.save_dir = save_dir
         self.parse_params(minsize, alpha)
@@ -19,18 +21,19 @@ class DenoiseStage(StageBuilder):
         )
 
     def setup(self, prefix):
-        infile = os.path.join(self.derep_dir, f"{prefix}_derep.fasta")
-        denoise_outfile = os.path.join(self.save_dir, f"{prefix}_denoise.fasta")
+        infile = os.path.join(self.derep_dir, f"{prefix}_{self.in_suffix}")
+        denoise_outfile = os.path.join(self.save_dir, f"{prefix}_{self.out_suffix}")
         denoise_report = os.path.join(self.save_dir, f"{prefix}_denoise_report.txt")
         report = os.path.join(self.save_dir, f"{prefix}_report.txt")
+        self.check_path(infile)
         cmd = (
             f"{self.USEARCH_PROG} -unoise3 {infile}"
             f" {self.params}"
             f" -threads {self.config.n_cpu}"
             f" -zotus {denoise_outfile} -tabbedout {denoise_report}"
-            f" >{report} 2>&1"
         )
-        super().add_stage("usearch.exe", cmd)
+        super().add_stage("Denoise unique sequences", cmd)
+        super().add_stage_output_to_file("Write usearch report", 0, report, report)
 
     def run(self):
         super().run()
