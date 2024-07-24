@@ -2,6 +2,7 @@ import os
 import pytest
 import sys
 
+from edna_processor.utils.base_logger import logger
 from stage.stage_config import StageConfig
 from stage.stage_cutadapt_cut_primer import CutPrimerStage
 
@@ -9,7 +10,7 @@ from stage.stage_cutadapt_cut_primer import CutPrimerStage
 
 @pytest.fixture
 def config():
-    config = StageConfig(verbose=True, dry=True, logger=sys.stdout)
+    config = StageConfig(verbose=True, dry=True, logger=logger)
     return config
 
 
@@ -28,7 +29,7 @@ def test_stage(stage):
     expected = "output_dir"
     assert stage.save_dir == expected
 
-    expected = """-g "GTCGGTAAAACTCGTGCCAGC;max_error_rate=0.15...CAAACTGGGATTAGATACCCCACTATG;max_error_rate=0.15" --minimum-length 156 --maximum-length 206"""
+    expected = "-g GTCGGTAAAACTCGTGCCAGC;max_error_rate=0.15...CAAACTGGGATTAGATACCCCACTATG;max_error_rate=0.15 --minimum-length 156 --maximum-length 206"
     assert stage.params == expected
 
 
@@ -36,16 +37,14 @@ def test_setup(stage):
     stage.setup("test")
 
     summary = stage.summary()
-    expected = ["Step 0: ==LOG== Program: cutadapt."]
+    expected = ['Step 0: ==LOG== Program: Cut primers for merged sequences.', 'Step 1: ==LOG== RedirectOutput: Write cutadapt output, report.']
                 # 'Step 1: ==LOG== RedirectOutput: Redirect cutadapt output.']
     assert summary == expected
 
     runner = stage.runners[0]
     command = runner.command
     infile = os.path.join("data_dir", "test_merge.fastq")
-    outfile = os.path.join("output_dir", "test_cut.fastq")
-    report = os.path.join("output_dir", "test_report.txt")
-    expected = f"""cutadapt {infile} -g "GTCGGTAAAACTCGTGCCAGC;max_error_rate=0.15...CAAACTGGGATTAGATACCCCACTATG;max_error_rate=0.15" --minimum-length 156 --maximum-length 206 --discard-untrimmed -j 1 >{outfile} 2>{report}"""
+    expected = f"cutadapt {infile} -g GTCGGTAAAACTCGTGCCAGC;max_error_rate=0.15...CAAACTGGGATTAGATACCCCACTATG;max_error_rate=0.15 --minimum-length 156 --maximum-length 206 --discard-untrimmed -j 1"
     assert command == expected
 
 
@@ -73,14 +72,12 @@ def test_params(config):
                           min_read_len = min_read_len,
                           max_read_len = max_read_len)
 
-    expected = """-g "AAA;max_error_rate=0.2...CCCC;max_error_rate=0.2" --minimum-length 93 --maximum-length 143"""
+    expected = "-g AAA;max_error_rate=0.2...CCCC;max_error_rate=0.2 --minimum-length 93 --maximum-length 143"
     assert stage.params == expected
 
     stage.setup("test2")
     runner = stage.runners[0]
     command = runner.command
     infile = os.path.join("data_dir", "test2_merge.fastq")
-    outfile = os.path.join("output_dir", "test2_cut.fastq")
-    report = os.path.join("output_dir", "test2_report.txt")
-    expected = f"""cutadapt {infile} -g "AAA;max_error_rate=0.2...CCCC;max_error_rate=0.2" --minimum-length 93 --maximum-length 143 --discard-untrimmed -j 1 >{outfile} 2>{report}"""
+    expected = f"cutadapt {infile} -g AAA;max_error_rate=0.2...CCCC;max_error_rate=0.2 --minimum-length 93 --maximum-length 143 --discard-untrimmed -j 1"
     assert command == expected

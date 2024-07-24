@@ -2,13 +2,14 @@ import pytest
 import os
 import sys
 
+from edna_processor.utils.base_logger import logger
 from stage.stage_config import StageConfig
 from stage.stage_usearch_merge import MergeStage
 
 
 @pytest.fixture
 def config():
-    config = StageConfig(verbose=True, dry=True, logger=sys.stdout)
+    config = StageConfig(verbose=True, dry=True, logger=logger)
     return config
 
 
@@ -35,13 +36,13 @@ def test_setup(stage):
     stage.setup("test")
 
     summary = stage.summary()
-    expected = ["Step 0: ==LOG== Program: usearch.exe."]
+    expected = ["Step 0: ==LOG== Program: Merge paired-end sequences."]
     assert summary == expected
 
     runner = stage.runners[0]
     command = runner.command
     infile = os.path.join("data_dir", "test_R1.fastq")
-    outfile = os.path.join("output_dir", "test_merged.fastq")
+    outfile = os.path.join("output_dir", "test_merge.fastq")
     report = os.path.join("output_dir", "test_report.txt")
     expected = f"usearch.exe -fastq_mergepairs {infile} -fastqout {outfile} -fastq_maxdiffs 5 -fastq_pctid 90 -threads 1 -report {report}"
     assert command == expected
@@ -70,7 +71,7 @@ def test_params(config):
     runner = stage.runners[0]
     command = runner.command
     infile = os.path.join(fastq_dir, "test2_R1.fastq")
-    outfile = os.path.join(save_dir, "test2_merged.fastq")
+    outfile = os.path.join(save_dir, "test2_merge.fastq")
     report = os.path.join(save_dir, "test2_report.txt")
     expected = f"usearch.exe -fastq_mergepairs {infile} -fastqout {outfile} -fastq_maxdiffs 10 -fastq_pctid 80 -threads 1 -report {report}"
     assert command == expected
