@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from stage.stage_config import StageConfig
+from fastq_processor.step_build.stage_config import StageConfig
 
 
 class Runner(ABC):

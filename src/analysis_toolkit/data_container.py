@@ -2,10 +2,10 @@ import os
 import pickle
 from datetime import date
 
-from edna_processor.read.read_blast_csv import BlastReader
-from edna_processor.read.read_denoise_report import DenoiseReportReader
-from edna_processor.read.read_fasta import FastaReader
-from edna_processor.utils.base_logger import logger
+from analysis_toolkit.read.read_blast_csv import BlastReader
+from analysis_toolkit.read.read_denoise_report import DenoiseReportReader
+from analysis_toolkit.read.read_fasta import FastaReader
+from analysis_toolkit.utils.base_logger import logger
 
 class OneSampleContainer():
     """
@@ -63,10 +63,10 @@ class SamplesContainer():
     # 
     # keys are data type, values are tuples of (child directory, file suffix).
     DATA_FILE_INFO = {
-        "uniq_fasta": ("4_derep", "_uniq.fasta"),
-        "zotu_fasta": ("5_denoise", "_zotu.fasta"),
-        "denoise_report": ("5_denoise", "_zotu_report.txt"),
-        "blast_table": ("6_blast", "_blast.csv")
+        "uniq_fasta": ("dereplicate", "_uniq.fasta"),
+        "denoise_fasta": ("denoise", "_denoise.fasta"),
+        "denoise_report": ("denoise", "_denoise_report.txt"),
+        "blast_table": ("blast", "_blast.csv")
     }
 
     @staticmethod

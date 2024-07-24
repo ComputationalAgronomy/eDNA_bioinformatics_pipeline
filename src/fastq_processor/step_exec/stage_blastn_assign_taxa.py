@@ -3,9 +3,7 @@ import numpy as np
 import os
 import pandas as pd
 
-from stage.stage_builder import StageBuilder
-from edna_processor.utils.base_logger import logger
-from stage.stage_config import StageConfig
+from fastq_processor.step_build.stage_builder import StageBuilder
 
 
 class AssignTaxaStage(StageBuilder):

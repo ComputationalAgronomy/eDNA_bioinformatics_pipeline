@@ -1,7 +1,6 @@
 import os
-from stage.stage_builder import StageBuilder
-from edna_processor.utils.base_logger import logger
-from stage.stage_config import StageConfig
+
+from fastq_processor.step_build.stage_builder import StageBuilder
 
 
 class DereplicateStage(StageBuilder):
@@ -12,7 +11,8 @@ class DereplicateStage(StageBuilder):
         super().__init__(heading=heading, config=config)
         self.USEARCH_PROG = "usearch.exe"
         self.in_suffix = "cut.fasta"
-        self.out_suffix = "derep.fasta"
+        self.out_suffix = "uniq.fasta"
+        self.report_suffix = "report.txt"
         self.fasta_dir = fasta_dir
         self.save_dir = save_dir
         self.parse_params(annot_size, seq_label)
@@ -26,7 +26,7 @@ class DereplicateStage(StageBuilder):
     def setup(self, prefix):
         infile = os.path.join(self.fasta_dir, f"{prefix}_{self.in_suffix}")
         dereplicate_outfile = os.path.join(self.save_dir, f"{prefix}_{self.out_suffix}")
-        report = os.path.join(self.save_dir, f"{prefix}_report.txt")
+        report = os.path.join(self.save_dir, f"{prefix}_{self.report_suffix}")
         self.check_path(infile)
         cmd = (
             f"{self.USEARCH_PROG} -fastx_uniques {infile}"

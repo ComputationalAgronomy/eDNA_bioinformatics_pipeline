@@ -1,10 +1,10 @@
 import os
 import tempfile
 
-from edna_processor.data_container import SamplesContainer
-from edna_processor.utils.base_logger import logger, get_file_handler
-from edna_processor.utils.utils_sequence import write_fasta, align_fasta
-from edna_processor.utils.utils_tree import run_iqtree2
+from analysis_toolkit.data_container import SamplesContainer
+from analysis_toolkit.utils.base_logger import logger, get_file_handler
+from analysis_toolkit.utils.utils_sequence import write_fasta, align_fasta
+from analysis_toolkit.utils.utils_tree import run_iqtree2
 
 class MLTreeGenerator(SamplesContainer):
 
