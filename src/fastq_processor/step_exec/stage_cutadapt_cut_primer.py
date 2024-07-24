@@ -1,5 +1,6 @@
 import os
-from stage.stage_builder import StageBuilder
+
+from fastq_processor.step_build.stage_builder import StageBuilder
 
 
 class CutPrimerStage(StageBuilder):

@@ -3,10 +3,10 @@ import os
 import pandas as pd
 import tempfile
 
-from edna_processor.data_container import SamplesContainer
-from edna_processor.utils.base_logger import logger, get_file_handler
-from edna_processor.utils.utils_hdbscan import fit_hdbscan
-from edna_processor.utils.utils_sequence import write_fasta, align_fasta, get_uniq_seq_freq
+from analysis_toolkit.data_container import SamplesContainer
+from analysis_toolkit.utils.base_logger import logger, get_file_handler
+from analysis_toolkit.utils.utils_hdbscan import fit_hdbscan
+from analysis_toolkit.utils.utils_sequence import write_fasta, align_fasta, get_uniq_seq_freq
 
 class HapNetNexusGenerator(SamplesContainer):
  

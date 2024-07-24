@@ -1,10 +1,10 @@
 import os
 import pandas as pd
 
-from edna_processor.data_container import SamplesContainer
-from edna_processor.utils.base_logger import logger, get_file_handler
-from edna_processor.utils.utils_hdbscan import run_hdbscan_by_category
-from edna_processor.utils.utils_umap import run_umap, plot_umap_by_category, filter_index_by_unit_occurrence
+from analysis_toolkit.data_container import SamplesContainer
+from analysis_toolkit.utils.base_logger import logger, get_file_handler
+from analysis_toolkit.utils.utils_hdbscan import run_hdbscan_by_category
+from analysis_toolkit.utils.utils_umap import run_umap, plot_umap_by_category, filter_index_by_unit_occurrence
 
 class UmapGenerator(SamplesContainer):
     """

@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
 import os
 
-from stage.runner import Runner
-from stage.stage_config import StageConfig
-from stage.subproces_runner import RedirectOutputRunner, SubprocessRunner
+from fastq_processor.step_build.runner import Runner
+from fastq_processor.step_build.stage_config import StageConfig
+from fastq_processor.step_build.subproces_runner import RedirectOutputRunner, SubprocessRunner
 
 
 class StageBuilder(ABC):

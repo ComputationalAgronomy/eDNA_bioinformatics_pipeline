@@ -1,5 +1,6 @@
 import os
-from stage.stage_builder import StageBuilder
+
+from fastq_processor.step_build.stage_builder import StageBuilder
 
 
 class DenoiseStage(StageBuilder):
@@ -11,6 +12,8 @@ class DenoiseStage(StageBuilder):
         self.USEARCH_PROG = "usearch.exe"
         self.in_suffix = "derep.fasta"
         self.out_suffix = "denoise.fasta"
+        self.denoise_report_suffix = "denoise_report.txt"
+        self.report_suffix = "report.txt"
         self.derep_dir = derep_dir
         self.save_dir = save_dir
         self.parse_params(minsize, alpha)
@@ -23,8 +26,8 @@ class DenoiseStage(StageBuilder):
     def setup(self, prefix):
         infile = os.path.join(self.derep_dir, f"{prefix}_{self.in_suffix}")
         denoise_outfile = os.path.join(self.save_dir, f"{prefix}_{self.out_suffix}")
-        denoise_report = os.path.join(self.save_dir, f"{prefix}_denoise_report.txt")
-        report = os.path.join(self.save_dir, f"{prefix}_report.txt")
+        denoise_report = os.path.join(self.save_dir, f"{prefix}_{self.denoise_report_suffix}")
+        report = os.path.join(self.save_dir, f"{prefix}_{self.report_suffix}")
         self.check_path(infile)
         cmd = (
             f"{self.USEARCH_PROG} -unoise3 {infile}"

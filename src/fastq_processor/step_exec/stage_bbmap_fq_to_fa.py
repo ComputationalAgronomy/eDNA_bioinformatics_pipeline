@@ -1,7 +1,7 @@
 import os
-from edna_processor.utils.base_logger import logger
-from stage.stage_builder import StageBuilder
-from stage.stage_config import StageConfig
+
+from fastq_processor.step_build.stage_builder import StageBuilder
+
 
 class FqToFaStage(StageBuilder):
     def __init__(self, config, heading="fq_to_fa", cutprimer_dir="", save_dir="",
@@ -11,6 +11,7 @@ class FqToFaStage(StageBuilder):
         self.BBMAP_PROG = "reformat.sh"
         self.in_suffix = "cut.fastq"
         self.out_suffix = "cut.fasta"
+        self.report_suffix = "report.txt"
         self.cutprimer_dir = cutprimer_dir
         self.save_dir = save_dir
         self.parse_params(overwrite)
@@ -23,7 +24,7 @@ class FqToFaStage(StageBuilder):
     def setup(self, prefix):
         infile = os.path.join(self.cutprimer_dir, f"{prefix}_{self.in_suffix}").replace("\\", "/")
         fasta_outfile = os.path.join(self.save_dir, f"{prefix}_{self.out_suffix}").replace("\\", "/")
-        report = os.path.join(self.save_dir, f"{prefix}_report.txt").replace("\\", "/")
+        report = os.path.join(self.save_dir, f"{prefix}_{self.report_suffix}")
         self.check_path(infile)
         cmd = (
             f"bash {self.BBMAP_PROG}"

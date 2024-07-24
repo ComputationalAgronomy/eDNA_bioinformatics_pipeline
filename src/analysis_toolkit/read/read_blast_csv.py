@@ -1,4 +1,4 @@
-from edna_processor.utils.base_logger import logger
+from analysis_toolkit.utils.base_logger import logger
 
 class Reader:
     def __init__(self):
