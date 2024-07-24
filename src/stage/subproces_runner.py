@@ -1,5 +1,6 @@
 import shlex
 import subprocess
+import sys
 
 from stage.runner import Runner
 
@@ -32,26 +33,27 @@ class SubprocessRunner(Runner):
         if self.shell:
             args = self.command
         else:
-            args = shlex.split(self.command)
+            args = shlex.split(self.command, posix="win" not in sys.platform)
+            args = [arg.replace("\"", "") for arg in args]
 
         if not self.dry:
-            self.logger.write(self.message)
+            self.logger.info(self.message)
             try:
                 self.capture_output = subprocess.run(args,
                                                    capture_output=True,
                                                    shell=self.shell,
                                                    check=True,
                                                    text=True)
-                self.logger.write(f"{Runner.MSG_LOG} COMPLETE: {self.prog_name}.\n")
+                self.logger.info(f"{Runner.MSG_LOG} COMPLETE: {self.prog_name}.\n")
                 return True
             except subprocess.CalledProcessError as e:
-                self.logger.write(f"{Runner.MSG_LOG} FAIL: {self.prog_name}. SubprocessError: {e}.\n")
+                self.logger.error(f"{Runner.MSG_LOG} FAIL: {self.prog_name}. SubprocessError: {e}.\n")
                 return False
             except FileNotFoundError as e:
-                self.logger.write(f"{Runner.MSG_LOG} FAIL: {self.prog_name}. FileNotFoundError: {e}.\n")
+                self.logger.error(f"{Runner.MSG_LOG} FAIL: {self.prog_name}. FileNotFoundError: {e}.\n")
                 return False
             except Exception as e:
-                self.logger.write(f"{Runner.MSG_LOG} FAIL: {self.prog_name}. Other Exception: {e}.\n")
+                self.logger.error(f"{Runner.MSG_LOG} FAIL: {self.prog_name}. Other Exception: {e}.\n")
                 return False
 
 
@@ -63,12 +65,13 @@ class RedirectOutputRunner(Runner):
         runner (SubprocessRunner): The subprocess runner whose output to redirect.
         outfile (str): The file to write the output to.
     """
-    def __init__(self, prog_name: str, runner: SubprocessRunner, outfile: str, config):
+    def __init__(self, prog_name: str, runner: SubprocessRunner, stdout_file: str, stderr_file: str, config):
         super().__init__(prog_name, config)
 
         if isinstance(runner, SubprocessRunner):
             self.runner = runner
-            self.outfile = outfile
+            self.stdout_file = stdout_file
+            self.stderr_file = stderr_file
             self.message = f"{Runner.MSG_LOG} RedirectOutput: {self.prog_name}."
         else:
             info = type(runner)
@@ -82,10 +85,16 @@ class RedirectOutputRunner(Runner):
         """
         if not self.dry:
             try:
-                with open(self.outfile, "w") as f:
-                    output = self.runner.capture_output.stdout
-                    f.write(output)
+                with open(self.stdout_file, "w") as out_f, open(self.stderr_file, "w") as err_f:
+                    pass
+                if self.runner.capture_output.stdout:
+                    with open(self.stdout_file, "a") as out_f:
+                        out_f.write(self.runner.capture_output.stdout)
+                if self.runner.capture_output.stderr:
+                    with open(self.stderr_file, "a") as err_f:
+                        err_f.write(self.runner.capture_output.stderr)
+
                     return True
             except AttributeError as e:
-                self.logger.write(f"{Runner.MSG_LOG} FAIL: {self.prog_name}. Error: {e}.\n")
+                self.logger.error(f"{Runner.MSG_LOG} FAIL: {self.prog_name}. Error: {e}.\n")
             return False

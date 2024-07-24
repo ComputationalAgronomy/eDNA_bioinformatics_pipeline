@@ -12,6 +12,9 @@ class CutPrimerStage(StageBuilder):
                  ):
         super().__init__(heading=heading, config=config)
         self.CUTADAPT_PROG = "cutadapt"
+        self.in_suffix = "merge.fastq"
+        self.out_suffix = "cut.fastq"
+        self.report_suffix = "report.txt"
         self.merge_dir = merge_dir
         self.save_dir = save_dir
         self.parse_params(rm_p_5, rm_p_3, min_read_len, max_read_len, error_rate)
@@ -19,23 +22,23 @@ class CutPrimerStage(StageBuilder):
     def parse_params(self, rm_p_5, rm_p_3, min_read_len, max_read_len, error_rate):
         adapter_length = len(rm_p_5) + len(rm_p_3)
         self.params = (
-            f'-g "{rm_p_5};max_error_rate={error_rate}...{rm_p_3};max_error_rate={error_rate}"'
+            f"-g {rm_p_5};max_error_rate={error_rate}...{rm_p_3};max_error_rate={error_rate}"
             f" --minimum-length {min_read_len - adapter_length}"
             f" --maximum-length {max_read_len - adapter_length}"
         )
 
     def setup(self, prefix):
-        infile = os.path.join(self.merge_dir, f"{prefix}_merge.fastq")
-        cutprimer_outfile = os.path.join(self.save_dir, f"{prefix}_cut.fastq")
-        report = os.path.join(self.save_dir, f"{prefix}_report.txt")
+        infile = os.path.join(self.merge_dir, f"{prefix}_{self.in_suffix}")
+        cutprimer_outfile = os.path.join(self.save_dir, f"{prefix}_{self.out_suffix}")
+        report = os.path.join(self.save_dir, f"{prefix}_{self.report_suffix}")
+        self.check_path(infile)
         cmd = (
             f"{self.CUTADAPT_PROG} {infile}"
             f" {self.params}"
             f" --discard-untrimmed -j {self.config.n_cpu}"
-            f" >{cutprimer_outfile} 2>{report}"
         )
-        super().add_stage("cutadapt", cmd)
-        # super().add_stage_output_to_file("Redirect cutadapt output", 0, cutprimer_outfile)
+        super().add_stage("Cut primers for merged sequences", cmd)
+        super().add_stage_output_to_file("Write cutadapt output, report", 0, cutprimer_outfile, report)
 
     def run(self):
         super().run()

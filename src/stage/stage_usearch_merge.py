@@ -10,7 +10,9 @@ class MergeStage(StageBuilder):
         ):
         super().__init__(heading=heading, config=config)
         self.USEARCH_PROG = "usearch.exe"
-        self.suffix = "R1.fastq"
+        self.in_suffix = "R1.fastq"
+        self.out_suffix = "merge.fastq"
+        self.report_suffix = "report.txt"
         self.fastq_dir = fastq_dir
         self.save_dir = save_dir
         self.parse_params(maxdiff, pctid)
@@ -22,17 +24,17 @@ class MergeStage(StageBuilder):
         )
 
     def setup(self, prefix):
-
-        mergepair = os.path.join(self.fastq_dir, f"{prefix}_{self.suffix}")
-        merge_outfile = os.path.join(self.save_dir, f"{prefix}_merged.fastq")
-        report = os.path.join(self.save_dir, f"{prefix}_report.txt")
+        infile = os.path.join(self.fastq_dir, f"{prefix}_{self.in_suffix}")
+        merge_outfile = os.path.join(self.save_dir, f"{prefix}_{self.out_suffix}")
+        report = os.path.join(self.save_dir, f"{prefix}_{self.report_suffix}")
+        self.check_path(infile)
         cmd = (
             f"{self.USEARCH_PROG}"
-            f" -fastq_mergepairs {mergepair} -fastqout {merge_outfile}"
+            f" -fastq_mergepairs {infile} -fastqout {merge_outfile}"
             f" {self.params}"
             f" -report {report}"
         )
-        super().add_stage("usearch.exe", cmd, shell=False)
+        super().add_stage("Merge paired-end sequences", cmd)
 
     def run(self):
         super().run()
@@ -44,4 +46,3 @@ def usearch_merge_demo(config, prefix, fastq_dir, save_dir):
     stage.setup(prefix)
     is_complete = stage.run()
     return is_complete
-
