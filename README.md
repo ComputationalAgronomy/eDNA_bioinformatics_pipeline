@@ -34,27 +34,27 @@ If the launch is successful, your terminal should display something like the fol
 
 File structure inside a new container:
 ```sh
-|-- usr/
-|   |-- local/bin/
-|   |   |-- bbmap/
-|   |   |   `-- reformat.sh
-|   |   |-- clustalo.exe
-|   |   |-- cutadapt
-|   |   |-- iqtree-2.3.5-Linux-intel/
-|   |   |   |-- bin/
-|   |   |   |   `-- iqtree2
-|   |   |-- ncbi-blast-2.6.1+/
-|   |   |   `-- bin/
-|   |   |       |-- blastn
-|   |   |       `-- makeblastdb
-|   |   `-- usearch.exe
-|   `-- src/app/
-|       |-- README.md
-|       |-- dockerfile
-|       |-- requirements.txt
-|       |-- src/edna_processor/
-|       `-- tests/
-`-- workplace/ # <- By default, you will start here.
+├── usr/
+|   ├── local/bin/
+|   |   ├── bbmap/
+|   |   |   └── reformat.sh
+|   |   ├── clustalo.exe
+|   |   ├── cutadapt
+|   |   ├── iqtree-2.3.5-Linux-intel/
+|   |   |   ├── bin/
+|   |   |   |   └── iqtree2
+|   |   ├── ncbi-blast-2.6.1+/
+|   |   |   └── bin/
+|   |   |       ├── blastn
+|   |   |       └── makeblastdb
+|   |   └── usearch.exe
+|   └── src/app/
+|       ├── README.md
+|       ├── dockerfile
+|       ├── requirements.txt
+|       ├── src/edna_processor/
+|       └── tests/
+└── workplace/ # <- By default, you will start here.
 ```
 
 **Other useful commands when you are working with Docker :**
@@ -108,12 +108,44 @@ pytest tests
 
 ## Usage
 
-### Python Interface
+### `fastq_processor` module
+This module processes raw FASTQ data through several stages including paired-end merging, primer cutting, reformatting, dereplication, denoising, and taxonomic assignment.
+
+#### Simplist example
 ```python
-from import
+from fastq_processor import FastqProcessor
+
+FastqProcessor(
+    stages_parent_dir="stages",
+    fastq_dir_name="fastq",
+    db_path="/db/path/MiFish"
+    lineage_path="/lineage/path/lineage.csv"
+)
 ```
 
-### Command Line Interface
+Ensure that `stages_parent_dir` exists and contains a subdirectory named `fastq_dir_name` with your raw FASTQ files.
 ```sh
-
+stages/
+└── fastq/
+    ├── sample1_R1.fastq
+    └── sample1_R2.fastq
 ```
+
+
+The `db_path` should be set to the folder path containing the indexed files, with the prefix string added. For example, using the MiFish index files provided in the `example` folder, the `db_path` would be:
+
+```python
+db_path="/example/fastq_processor/database/MiFish"
+```
+These MiFish index files are built using the [complete + partial mtDNA sequence file](https://mitofish.aori.u-tokyo.ac.jp/species/detail/download/?filename=download%2F/complete_partial_mitogenomes.zip) downloaded from the MiFish Pipeline.
+
+If you want to use a custom FASTA file as the reference database, you need to create the index using the makeblastdb command from ncbi-blast+. Here is the command:
+```sh
+makeblastdb -in ref.fasta -dbtype nucl -out db_prefix
+```
+
+#### Other parameters:
+
+`n_cpu`: Number of CPU cores to be used for processing. Default is `1`.
+
+`verbose`: Set to True to enable detailed logging output. Default is `True`.
