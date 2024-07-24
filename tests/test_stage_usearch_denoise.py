@@ -2,13 +2,14 @@ import pytest
 import os
 import sys
 
+from edna_processor.utils.base_logger import logger
 from stage.stage_config import StageConfig
 from stage.stage_usearch_denoise import DenoiseStage
 
 
 @pytest.fixture
 def config():
-    config = StageConfig(verbose=True, dry=True, logger=sys.stdout)
+    config = StageConfig(verbose=True, dry=True, logger=logger)
     return config
 
 
@@ -35,7 +36,7 @@ def test_setup(stage):
     stage.setup("test")
 
     summary = stage.summary()
-    expected = ["Step 0: ==LOG== Program: usearch.exe."]
+    expected = ['Step 0: ==LOG== Program: Denoise unique sequences.', 'Step 1: ==LOG== RedirectOutput: Write usearch report.']
     assert summary == expected
 
     runner = stage.runners[0]
@@ -43,8 +44,7 @@ def test_setup(stage):
     infile = os.path.join("data_dir", "test_derep.fasta")
     outfile = os.path.join("output_dir", "test_denoise.fasta")
     denoise_report = os.path.join("output_dir", "test_denoise_report.txt")
-    report = os.path.join("output_dir", "test_report.txt")
-    expected = f"usearch.exe -unoise3 {infile} -minsize 8 -unoise_alpha 2 -threads 1 -zotus {outfile} -tabbedout {denoise_report} >{report} 2>&1"
+    expected = f"usearch.exe -unoise3 {infile} -minsize 8 -unoise_alpha 2 -threads 1 -zotus {outfile} -tabbedout {denoise_report}"
     assert command == expected
 
 
@@ -73,6 +73,5 @@ def test_params(config):
     infile = os.path.join(derep_dir, "test2_derep.fasta")
     outfile = os.path.join(save_dir, "test2_denoise.fasta")
     denoise_report = os.path.join(save_dir, "test2_denoise_report.txt")
-    report = os.path.join(save_dir, "test2_report.txt")
-    expected = f"usearch.exe -unoise3 {infile} -minsize 4 -unoise_alpha 4 -threads 1 -zotus {outfile} -tabbedout {denoise_report} >{report} 2>&1"
+    expected = f"usearch.exe -unoise3 {infile} -minsize 4 -unoise_alpha 4 -threads 1 -zotus {outfile} -tabbedout {denoise_report}"
     assert command == expected

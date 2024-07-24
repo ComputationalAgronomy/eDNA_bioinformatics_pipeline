@@ -2,13 +2,14 @@ import pytest
 import os
 import sys
 
+from edna_processor.utils.base_logger import logger
 from stage.stage_config import StageConfig
 from stage.stage_blastn_assign_taxa import AssignTaxaStage
 
 
 @pytest.fixture
 def config():
-    config = StageConfig(verbose=True, dry=True, logger=sys.stdout)
+    config = StageConfig(verbose=True, dry=True, logger=logger)
     return config
 
 
@@ -17,7 +18,8 @@ def stage(config):
     denoise_dir = "data_dir"
     save_dir = "output_dir"
     db_path = "db_path"
-    stage = AssignTaxaStage(config, denoise_dir=denoise_dir, save_dir=save_dir, db_path=db_path)
+    lineage_path = "data_dir\\lineage.csv"
+    stage = AssignTaxaStage(config, denoise_dir=denoise_dir, save_dir=save_dir, db_path=db_path, lineage_path=lineage_path)
     return stage
 
 
@@ -36,7 +38,7 @@ def test_setup(stage):
     stage.setup("test")
 
     summary = stage.summary()
-    expected = ["Step 0: ==LOG== Program: ncbi-blast+_blastn."]
+    expected = ["Step 0: ==LOG== Program: Taxonomic assignment."]
     assert summary == expected
 
     runner = stage.runners[0]
@@ -58,6 +60,7 @@ def test_params(config):
     denoise_dir = "data_dir"
     save_dir = "output_dir"
     db_path = "db_path_test"
+    lineage_path = "data_dir\\lineage.csv"
     maxhitnum = 5
     evalue = 1e-30
     qcov_hsp_perc = 85
@@ -66,7 +69,7 @@ def test_params(config):
     specifiers = "qseqid staxids"
 
     stage = AssignTaxaStage(config, denoise_dir=denoise_dir, save_dir=save_dir,
-                            db_path=db_path, maxhitnum=maxhitnum, evalue=evalue,
+                            db_path=db_path, lineage_path=lineage_path, maxhitnum=maxhitnum, evalue=evalue,
                             qcov_hsp_perc=qcov_hsp_perc, perc_identity=perc_identity,
                             outfmt=outfmt, specifiers=specifiers)
 

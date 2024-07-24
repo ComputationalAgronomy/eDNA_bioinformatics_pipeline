@@ -2,13 +2,14 @@ import pytest
 import os
 import sys
 
+from edna_processor.utils.base_logger import logger
 from stage.stage_config import StageConfig
 from stage.stage_bbmap_fq_to_fa import FqToFaStage
 
 
 @pytest.fixture
 def config():
-    config = StageConfig(verbose=True, dry=True, logger=sys.stdout)
+    config = StageConfig(verbose=True, dry=True, logger=logger)
     return config
 
 
@@ -35,15 +36,14 @@ def test_setup(stage):
     stage.setup("test")
 
     summary = stage.summary()
-    expected = ["Step 0: ==LOG== Program: bbmap_reformat.sh."]
+    expected = ['Step 0: ==LOG== Program: Reformat FASTQ to FASTA.', 'Step 1: ==LOG== RedirectOutput: Write reformat.sh report.']
     assert summary == expected
 
     runner = stage.runners[0]
     command = runner.command
-    infile = os.path.join("data_dir", "test_cut.fastq")
-    outfile = os.path.join("output_dir", "test_cut.fasta")
-    report = os.path.join("output_dir", "test_report.txt")
-    expected = f"bash reformat.sh in={infile} out={outfile} overwrite=True 2>{report}"
+    infile = os.path.join("data_dir", "test_cut.fastq").replace("\\", "/")
+    outfile = os.path.join("output_dir", "test_cut.fasta").replace("\\", "/")
+    expected = f"bash reformat.sh in={infile} out={outfile} overwrite=True"
     assert command == expected
 
 
@@ -68,8 +68,7 @@ def test_params(config):
     stage.setup("test2")
     runner = stage.runners[0]
     command = runner.command
-    infile = os.path.join("data_dir", "test2_cut.fastq")
-    outfile = os.path.join("output_dir", "test2_cut.fasta")
-    report = os.path.join("output_dir", "test2_report.txt")
-    expected = f"bash reformat.sh in={infile} out={outfile} overwrite=False 2>{report}"
+    infile = os.path.join("data_dir", "test2_cut.fastq").replace("\\", "/")
+    outfile = os.path.join("output_dir", "test2_cut.fasta").replace("\\", "/")
+    expected = f"bash reformat.sh in={infile} out={outfile} overwrite=False"
     assert command == expected
