@@ -116,10 +116,10 @@ This module processes raw FASTQ data through several stages including paired-end
 from fastq_processor import FastqProcessor
 
 FastqProcessor(
-    stages_parent_dir="stages",
+    stages_parent_dir="./example/fastq_processor/stages",
     fastq_dir_name="fastq",
-    db_path="/db/path/MiFish"
-    lineage_path="/lineage/path/lineage.csv"
+    db_path="./example/fastq_processor/database/MiFish"
+    lineage_path="./example/fastq_processor/lineage/lineage.csv"
 )
 ```
 
@@ -131,18 +131,14 @@ stages/
     └── sample1_R2.fastq
 ```
 
+The `db_path` should be set to the folder path containing the indexed files, with the prefix string added. The MiFish index files provided in the *example* folder are built using the [complete+partial mtDNA sequence file](https://mitofish.aori.u-tokyo.ac.jp/species/detail/download/?filename=download%2F/complete_partial_mitogenomes.zip) downloaded from the MiFish Pipeline.
 
-The `db_path` should be set to the folder path containing the indexed files, with the prefix string added. For example, using the MiFish index files provided in the `example` folder, the `db_path` would be:
-
-```python
-db_path="/example/fastq_processor/database/MiFish"
-```
-These MiFish index files are built using the [complete + partial mtDNA sequence file](https://mitofish.aori.u-tokyo.ac.jp/species/detail/download/?filename=download%2F/complete_partial_mitogenomes.zip) downloaded from the MiFish Pipeline.
-
-If you want to use a custom FASTA file as the reference database, you need to create the index using the makeblastdb command from ncbi-blast+. Here is the command:
+If you want to use a custom FASTA file as the reference database, you need to create the index using the `makeblastdb` command from ncbi-blast+. Here is the command:
 ```sh
 makeblastdb -in ref.fasta -dbtype nucl -out db_prefix
 ```
+
+The `lineage_path` should be set to the path of the lineage file. The [lineage.csv](https://github.com/billzt/MiFish/blob/main/mifish/data/lineage.csv) provided in the *example* folder is downloaded from the MiFish GitHub repository. If you want to use another lineage file, please ensure it includes taxonomic information from the domain to genus level and maintains the same format.
 
 #### Other parameters:
 
