@@ -37,15 +37,76 @@ def create_barchart_fig(data: pd.DataFrame) -> go.Figure:
         labels={'value': 'Percentage (%)'},
         color_discrete_sequence=px.colors.qualitative.Pastel
     )
-    fig.update_xaxes(tickmode='linear')
+    fig.update_xaxes(
+        tickmode='linear',
+        title=dict(
+            text="Sample ID",
+            font=dict(size=20)
+            ),
+        tickfont=dict(size=18)
+    )
+    fig.update_yaxes(
+        title=dict(
+            text="Percentage (%)",
+            font=dict(size=20)
+        ),
+        tickfont=dict(size=18)
+    )
     fig.update_layout(
-        xaxis_title="Sample ID",
-        yaxis_title="Percentage (%)",
         legend={
             "x": 1.05,
             "y": 1,
             "traceorder": 'normal',
-            "orientation": 'h'
-        }
+            "orientation": 'h',
+            "font": dict(size=15)
+        },
     )
     return fig
+
+    # a way to sort stacked BarChart
+    # plotdata = plotdata.transpose()
+    # fig, ax = plt.subplots()
+    # x = plotdata.index
+    # indexes = np.argsort(plotdata.values).T
+    # heights = np.sort(plotdata.values).T
+    # order = -1
+    # bottoms = heights[::order].cumsum(axis=0)
+    # bottoms = np.insert(bottoms, 0, np.zeros(len(bottoms[0])), axis=0)
+    # colormap = plt.get_cmap('rainbow')
+    # colors = px.colors.qualitative.Pastel
+    # num_colors = len(colors)
+    # mpp_colors = {col: colors[i % num_colors] for i, col in enumerate(plotdata.columns)}
+
+    # fig = go.Figure()
+    
+    # # # Plot each segment of the stacked bar
+    # for i, (idxs, vals) in enumerate(list(zip(indexes, heights))[::order]):
+    #     mps = np.take(np.array(plotdata.columns), idxs)
+    #     for j, m in enumerate(mps):
+
+    #         fig.add_trace(go.Bar(
+    #             x=x,
+    #             y=[vals[j]] * len(x),
+    #             name=m,
+    #             marker=dict(color=mpp_colors[m]),
+    #             offsetgroup=i,
+    #             base=bottoms[i][j]
+    #         ))
+
+    # # Update layout
+    # fig.update_layout(
+    #     barmode='stack',
+    #     xaxis_title="Sample ID",
+    #     yaxis_title="Percentage (%)",
+    #     legend=dict(
+    #         x=1.05,
+    #         y=1,
+    #         traceorder='normal',
+    #         orientation='h',
+    #         font=dict(size=15)
+    #     ),
+    # )
+    # fig.update_xaxes(tickmode='linear', title=dict(font=dict(size=20)), tickfont=dict(size=18))
+    # fig.update_yaxes(title=dict(font=dict(size=20)), tickfont=dict(size=18))
+    # fig.show()
+

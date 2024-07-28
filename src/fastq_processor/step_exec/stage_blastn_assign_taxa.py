@@ -44,10 +44,13 @@ class AssignTaxaStage(StageBuilder):
         self.save_dir = save_dir
         self.blast_outfile = None
         self.lineage_path = lineage_path
-        self.genus2otherlv = self.parse_genus2otherlv(lineage_path)
         self.parse_params(db_path, maxhitnum, evalue, qcov_hsp_perc, perc_identity, outfmt, specifiers)
+        if os.path.isfile(lineage_path):
+            self.genus2otherlv = self.parse_genus2otherlv(lineage_path)
 
     def parse_params(self, db_path, maxhitnum, evalue, qcov_hsp_perc, perc_identity, outfmt, specifiers):
+        if db_path == "nt":
+            db_path = "nt -remote"
         self.params = (
             f"-db {db_path}"
             f" -max_target_seqs {maxhitnum}"
@@ -56,6 +59,8 @@ class AssignTaxaStage(StageBuilder):
             f" -perc_identity {perc_identity}" 
             f' -outfmt "{outfmt} {specifiers}"'
         )
+        if "remote" not in self.params:
+            self.params += f" -num_threads {self.config.n_cpu}"
 
     def setup(self, prefix):
         infile = os.path.join(self.denoise_dir, f"{prefix}_{self.in_suffix}")
@@ -64,7 +69,6 @@ class AssignTaxaStage(StageBuilder):
         cmd = (
             f"{self.BLAST_PROG} -query {infile}"
             f" {self.params}"
-            f" -num_threads {self.config.n_cpu}"
             f" -out {self.blast_outfile}"
         )
         super().add_stage("Taxonomic assignment", cmd)
@@ -101,13 +105,13 @@ class AssignTaxaStage(StageBuilder):
 
     def run(self):
         super().run()
-        if not self.config.dry:
+        if not self.config.dry and hasattr(self, 'genus2otherlv'):
             self.output.append(self.add_taxonomy())
         return all(self.output)
 
 
-def assign_taxa_demo(config, prefix, denoise_dir="", save_dir="", db_path="", lineage_path=""):
-    stage = AssignTaxaStage(config, denoise_dir=denoise_dir, save_dir=save_dir, db_path=db_path, lineage_path=lineage_path)
+def assign_taxa_demo(config, prefix, denoise_dir="", save_dir="", db_path="", lineage_path="", specifiers="qseqid sscinames sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore"):
+    stage = AssignTaxaStage(config, denoise_dir=denoise_dir, save_dir=save_dir, db_path=db_path, lineage_path=lineage_path, specifiers=specifiers)
     outfile = stage.setup(prefix)
     is_complete = stage.run()
     return is_complete

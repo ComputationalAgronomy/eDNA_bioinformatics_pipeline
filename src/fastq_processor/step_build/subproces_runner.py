@@ -87,10 +87,10 @@ class RedirectOutputRunner(Runner):
             try:
                 with open(self.stdout_file, "w") as out_f, open(self.stderr_file, "w") as err_f:
                     pass
-                if self.runner.capture_output.stdout:
+                if self.runner.capture_output and self.runner.capture_output.stdout:
                     with open(self.stdout_file, "a") as out_f:
                         out_f.write(self.runner.capture_output.stdout)
-                if self.runner.capture_output.stderr:
+                if self.runner.capture_output and self.runner.capture_output.stderr:
                     with open(self.stderr_file, "a") as err_f:
                         err_f.write(self.runner.capture_output.stderr)
 

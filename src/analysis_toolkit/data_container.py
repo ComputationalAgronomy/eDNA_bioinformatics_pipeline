@@ -28,7 +28,7 @@ class OneSampleContainer():
     """
     def __init__(self,
             uniq_fasta_path: str,
-            zotu_fasta_path: str,
+            denoise_fasta_path: str,
             denoise_report_path: str,
             blast_table_path: str
         ):
@@ -36,9 +36,9 @@ class OneSampleContainer():
         ufr.read_fasta(seq_path=uniq_fasta_path, seq_type="Amplicon")
         self.amp_seq = ufr.seq_dict
 
-        zfr = FastaReader()
-        zfr.read_fasta(seq_path=zotu_fasta_path, seq_type="Haplotype")
-        self.hap_seq = zfr.seq_dict
+        dfr = FastaReader()
+        dfr.read_fasta(seq_path=denoise_fasta_path, seq_type="Haplotype")
+        self.hap_seq = dfr.seq_dict
 
         drr = DenoiseReportReader()
         drr.read_denoise_report(denoise_report_path=denoise_report_path)
@@ -169,7 +169,7 @@ class SamplesContainer():
         if load_path:
             self.load_sample_data(load_path)
 
-    def import_samples(self, parent_dir: str, sample_id_list: list[str] = None) -> None:
+    def import_samples(self, parent_dir: str, sample_id_list: list[str] = []) -> None:
         """
         Import sample data from the specified parent directory.
         The parent directory is expected to contain four data types recorded in 'DATA_FILE_INFO'.
@@ -181,7 +181,7 @@ class SamplesContainer():
         logger.info(f"Reading samples from: {parent_dir}.")
         SamplesContainer.check_dir(parent_dir)
 
-        if sample_id_list is None:
+        if sample_id_list == []:
             logger.info(f"No sample id list provided.")
             sample_id_list = SamplesContainer.get_sample_id_list(parent_dir)
             SamplesContainer.check_file(parent_dir, sample_id_list)
@@ -196,11 +196,11 @@ class SamplesContainer():
             file_paths = SamplesContainer.get_file_paths(sample_id, parent_dir)
 
             uniq_fasta_path = file_paths["uniq_fasta"]
-            zotu_fasta_path = file_paths["zotu_fasta"]
-            zotu_report_path = file_paths["denoise_report"]
+            denoise_fasta_path = file_paths["denoise_fasta"]
+            denoise_report_path = file_paths["denoise_report"]
             blast_table_path = file_paths["blast_table"]
 
-            self.sample_data[sample_id] = OneSampleContainer(uniq_fasta_path=uniq_fasta_path, zotu_fasta_path=zotu_fasta_path, denoise_report_path=zotu_report_path, blast_table_path=blast_table_path)
+            self.sample_data[sample_id] = OneSampleContainer(uniq_fasta_path=uniq_fasta_path, denoise_fasta_path=denoise_fasta_path, denoise_report_path=denoise_report_path, blast_table_path=blast_table_path)
 
         logger.info(f"{len(sample_id_list)} Samples read.")
 
