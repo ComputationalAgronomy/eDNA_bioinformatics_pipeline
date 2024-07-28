@@ -52,14 +52,21 @@ File structure inside a new container:
 |       ├── README.md
 |       ├── dockerfile
 |       ├── requirements.txt
-|       ├── src/edna_processor/
+|       ├── src/
+|       |   ├── analysis_toolkit/
+|       |   └── fastq_processor/
 |       └── tests/
 └── workplace/ # <- By default, you will start here.
+    └── example/ 
 ```
 
 **Other useful commands when you are working with Docker :**
 
-(base) root@93f4d3cf355f:/# `exit`: Exit the container
+(base) root@93f4d3cf355f:/# `exit`: Exit the container.
+
+`docker cp [container ID]:/path/to/file /host/destination/folder`: Copying files from Docker container to host.
+
+`docker cp /path/to/file [container ID]:/container/destination/folder`: Copying files from host to Docker container.
 
 `docker container ls -a`: List all containers
 

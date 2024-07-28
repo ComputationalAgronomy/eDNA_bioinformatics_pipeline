@@ -5,8 +5,10 @@ FROM ubuntu:latest
 ########## Install utilized tools
 
 RUN apt-get update && \
-    apt-get install -y wget gzip tar sudo python3 python3-pip udev tree&& \
-    apt-get clean
+    DEBIAN_FRONTEND=noninteractive && \
+    apt-get install -y wget gzip tar sudo python3 python3-pip udev tree default-jre-headless&& \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 ########## Install prerequisites
 
@@ -72,5 +74,7 @@ WORKDIR /
 RUN mkdir workplace
 
 WORKDIR /workplace
+
+COPY example .
 
 CMD ["bash"]
