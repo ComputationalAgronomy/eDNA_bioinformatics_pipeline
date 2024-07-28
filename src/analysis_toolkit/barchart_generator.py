@@ -1,5 +1,9 @@
 import os
 import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+import plotly.graph_objects as go
+import plotly.express as px
 
 from analysis_toolkit.data_container import SamplesContainer
 from analysis_toolkit.utils.base_logger import logger, get_file_handler
@@ -42,7 +46,7 @@ class BarchartGenerator(SamplesContainer):
             level: str,
             save_html_dir: str = '.',
             save_html_name: str = None,
-            sample_id_list: list[str] = None
+            sample_id_list: list[str] = []
         ) -> None:
         """
         Plot a barchart to visualize the abundance of a level across samples.
@@ -66,6 +70,7 @@ class BarchartGenerator(SamplesContainer):
         uniq_level_name = list_union(all_level_name)
 
         for sample_id in sample_id_list:
+            self.sample_id_list
             self.samples_abundance[sample_id] = [self.samples_abundance[sample_id].get(level_name, 0) for level_name in uniq_level_name]
 
         plotdata = pd.DataFrame(self.samples_abundance, index=uniq_level_name)
@@ -74,7 +79,7 @@ class BarchartGenerator(SamplesContainer):
         logger.info("Barchart generated.")
 
         if save_html_dir is not None:
-            save_name = save_name or f"{level}_bar_chart"
+            save_html_name = save_html_name or f"{level}_barchart"
             bar_chart_path = os.path.join(save_html_dir, f'{save_html_name}.html')
             fig.write_html(bar_chart_path)
             logger.info(f"Barchart saved to:  {bar_chart_path}")

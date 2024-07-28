@@ -10,7 +10,7 @@ class DenoiseStage(StageBuilder):
         ):
         super().__init__(heading=heading, config=config)
         self.USEARCH_PROG = "usearch.exe"
-        self.in_suffix = "derep.fasta"
+        self.in_suffix = "uniq.fasta"
         self.out_suffix = "denoise.fasta"
         self.denoise_report_suffix = "denoise_report.txt"
         self.report_suffix = "report.txt"

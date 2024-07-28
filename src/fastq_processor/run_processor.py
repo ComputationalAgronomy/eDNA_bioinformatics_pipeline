@@ -1,7 +1,7 @@
 import os
 import sys
 
-from edna_processor.utils.base_logger import logger
+from analysis_toolkit.utils.base_logger import logger
 from fastq_processor.step_exec.stage_bbmap_fq_to_fa import FqToFaStage
 from fastq_processor.step_exec.stage_blastn_assign_taxa import AssignTaxaStage
 from fastq_processor.step_build.stage_config import StageConfig
