@@ -33,7 +33,7 @@ If the launch is successful, your terminal should display something like the fol
 `(base)` indicates the conda environment you are using, where all dependent Python packages are installed (don't deactivate this!). `93f4d3cf355f` indicates the ID of this container.
 
 File structure inside a new container:
-```sh
+```
 ├── usr/
 |   ├── local/bin/
 |   |   ├── bbmap/
@@ -79,7 +79,7 @@ File structure inside a new container:
 
 #### Dependency Installation
 Make sure you have installed all of the following prerequisites on your machine:
-* BBMap - [Download](https://sourceforge.net/projects/bbmap/)
+* BBMap - [Download](https://sourceforge.net/projects/bbmap/) (You may also need to install java if you haven't already)
 * Clustal Omega - [Download](http://www.clustal.org/omega/)
 * Cutadapt - [Download](https://cutadapt.readthedocs.io/en/stable/installation.html)
 * IQTREE2 - [Download](http://www.iqtree.org/)
@@ -116,15 +116,15 @@ This module processes raw FASTQ data through several stages including paired-end
 from fastq_processor import FastqProcessor
 
 FastqProcessor(
-    stages_parent_dir="./example/fastq_processor/stages",
+    stages_parent_dir="./fastq_processor/stages",
     fastq_dir_name="fastq",
-    db_path="./example/fastq_processor/database/MiFish"
-    lineage_path="./example/fastq_processor/lineage/lineage.csv"
+    db_path="./fastq_processor/db/MiFish",
+    lineage_path="./fastq_processor/lineage/lineage.csv",
 )
 ```
 
 Ensure that `stages_parent_dir` exists and contains a subdirectory named `fastq_dir_name` with your raw FASTQ files.
-```sh
+```
 stages/
 └── fastq/
     ├── sample1_R1.fastq
