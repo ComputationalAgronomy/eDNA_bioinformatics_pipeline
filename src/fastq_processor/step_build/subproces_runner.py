@@ -40,10 +40,12 @@ class SubprocessRunner(Runner):
             self.logger.info(self.message)
             try:
                 self.capture_output = subprocess.run(args,
-                                                   capture_output=True,
+                                                   capture_output=False,
                                                    shell=self.shell,
                                                    check=True,
-                                                   text=True)
+                                                   text=True,
+                                                   stdout=subprocess.PIPE,
+                                                   stderr=subprocess.PIPE)
                 self.logger.info(f"{Runner.MSG_LOG} COMPLETE: {self.prog_name}.\n")
                 return True
             except subprocess.CalledProcessError as e:
@@ -87,10 +89,10 @@ class RedirectOutputRunner(Runner):
             try:
                 with open(self.stdout_file, "w") as out_f, open(self.stderr_file, "w") as err_f:
                     pass
-                if self.runner.capture_output and self.runner.capture_output.stdout:
+                if self.runner.capture_output.stdout:
                     with open(self.stdout_file, "a") as out_f:
                         out_f.write(self.runner.capture_output.stdout)
-                if self.runner.capture_output and self.runner.capture_output.stderr:
+                if self.runner.capture_output.stderr:
                     with open(self.stderr_file, "a") as err_f:
                         err_f.write(self.runner.capture_output.stderr)
 

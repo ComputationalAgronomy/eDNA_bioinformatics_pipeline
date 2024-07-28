@@ -63,6 +63,7 @@ def create_barchart_fig(data: pd.DataFrame) -> go.Figure:
     )
     return fig
 
+    ## https://stackoverflow.com/questions/44309507/stacked-bar-plot-using-matplotlib
     # a way to sort stacked BarChart
     # plotdata = plotdata.transpose()
     # fig, ax = plt.subplots()
