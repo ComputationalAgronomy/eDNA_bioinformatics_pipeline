@@ -1,6 +1,16 @@
 # eDNA_Bioinformatics_Pipeline
 The purpose of this project is to implement eDNA bioinformatics processing and to explore taxonomic delimitation from various perspectives using eDNA sequences.
 
+## Contents
+
+- [Getting Started](#getting-started)
+  - [Docker Version](#docker-version)
+  - [Local Version](#local-version)
+- [Pytest](#pytest)
+- [Usage](#usage)
+  - [`fastq_processor`](#fastq_processor-module)
+  - [`analysis_toolkit`](#analysis_toolkit-module)
+
 ## Getting Started
 
 ### Docker Version
@@ -26,7 +36,7 @@ Next, launch a new container from the Docker image that was just built:
 docker run -it [ImageName]
 ```
 
-If the launch is successful, your terminal should display something like the following, and **the container is ready to work**!
+If the launch is successful, your terminal should display something like the following, and **The Container is Ready to Work!**
 ```sh
 (base) root@93f4d3cf355f:/#
 ```
@@ -60,7 +70,7 @@ File structure inside a new container:
     └── example/ 
 ```
 
-**Other useful commands when you are working with Docker :**
+#### Other useful commands when you are working with Docker:
 
 (base) root@93f4d3cf355f:/# `exit`: Exit the container.
 
@@ -85,6 +95,7 @@ File structure inside a new container:
 ### Local version
 
 #### Dependency Installation
+
 Make sure you have installed all of the following prerequisites on your machine:
 * BBMap - [Download](https://sourceforge.net/projects/bbmap/) (You may also need to install java if you haven't already)
 * Clustal Omega - [Download](http://www.clustal.org/omega/)
@@ -118,7 +129,7 @@ pytest tests
 ### `fastq_processor` module
 This module processes raw FASTQ data through several stages including paired-end merging, primer cutting, reformatting, dereplication, denoising, and taxonomic assignment.
 
-#### Simplist example
+**Simplist example**
 ```python
 from fastq_processor import FastqProcessor
 
@@ -138,17 +149,57 @@ stages/
     └── sample1_R2.fastq
 ```
 
-The `db_path` should be set to the folder path containing the indexed files, with the prefix string added. The MiFish index files provided in the *example* folder are built using the [complete+partial mtDNA sequence file](https://mitofish.aori.u-tokyo.ac.jp/species/detail/download/?filename=download%2F/complete_partial_mitogenomes.zip) downloaded from the MiFish Pipeline.
+The `db_path` serves as the reference data for assigning denoised sequences to species. It should be set to the folder path containing the indexed files, with the prefix string added. The MiFish index files provided in the *example* folder are built using the [complete+partial mtDNA sequence file](https://mitofish.aori.u-tokyo.ac.jp/species/detail/download/?filename=download%2F/complete_partial_mitogenomes.zip) downloaded from the MiFish Pipeline.
 
 If you want to use a custom FASTA file as the reference database, you need to create the index using the `makeblastdb` command from ncbi-blast+. Here is the command:
 ```sh
 makeblastdb -in ref.fasta -dbtype nucl -out db_prefix
 ```
 
-The `lineage_path` should be set to the path of the lineage file. The [lineage.csv](https://github.com/billzt/MiFish/blob/main/mifish/data/lineage.csv) provided in the *example* folder is downloaded from the MiFish GitHub repository. If you want to use another lineage file, please ensure it includes taxonomic information from the domain to genus level and maintains the same format.
+The `lineage_path` serves as a reference for labeled species at the taxonomic level above the species. It should be set to the path of the lineage file. The [lineage.csv](https://github.com/billzt/MiFish/blob/main/mifish/data/lineage.csv) provided in the *example* folder is downloaded from the MiFish GitHub repository. If you want to use another lineage file, please ensure it includes taxonomic information from the domain to genus level and maintains the same format.
 
-#### Other parameters:
+#### Other optional parameters:
+
+`enabled_stages`:
 
 `n_cpu`: Number of CPU cores to be used for processing. Default is `1`.
 
 `verbose`: Set to True to enable detailed logging output. Default is `True`.
+
+Paired-end merging related:
+
+`maxdiff`
+
+`pctid`
+
+Primer cutting related:
+
+`rm_p_5`
+
+`rm_p_3`
+
+`error_rate`
+
+`min_read_len`
+
+`max_read_len`
+
+Denoising related:
+
+`minsize`
+
+`alpha`
+
+Taxonomic assignment related:
+
+`evalue`
+
+`qcov_hsp_perc`
+
+`perc_identity`
+
+`outfmt`
+
+`specifiers`
+
+### `Analysis_toolkit` module
