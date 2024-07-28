@@ -1,9 +1,5 @@
 import os
 import pandas as pd
-import matplotlib.pyplot as plt
-import numpy as np
-import plotly.graph_objects as go
-import plotly.express as px
 
 from analysis_toolkit.data_container import SamplesContainer
 from analysis_toolkit.utils.base_logger import logger, get_file_handler
@@ -70,7 +66,6 @@ class BarchartGenerator(SamplesContainer):
         uniq_level_name = list_union(all_level_name)
 
         for sample_id in sample_id_list:
-            self.sample_id_list
             self.samples_abundance[sample_id] = [self.samples_abundance[sample_id].get(level_name, 0) for level_name in uniq_level_name]
 
         plotdata = pd.DataFrame(self.samples_abundance, index=uniq_level_name)
