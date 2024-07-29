@@ -22,7 +22,7 @@ class Runner(ABC):
 
     def __init__(self, prog_name: str, config: StageConfig):
         self.prog_name = prog_name  # for debug/naming only
-        self.message = f"{Runner.MSG_LOG} Program: {self.prog_name}."
+        self.message = f"Program: {self.prog_name}."
         self.capture_output = None
         try:
             self.verbose = config.verbose

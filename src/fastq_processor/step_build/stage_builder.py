@@ -68,7 +68,7 @@ class StageBuilder(ABC):
         Returns:
             list: The output from each stage.
         """
-        self.config.logger.info(f"{Runner.MSG_LOG} Running: {self.heading}\n")
+        self.config.logger.info(f"Running: {self.heading}")
         self.output = []
         for i, runner in enumerate(self.runners):
             out = runner.run()

@@ -4,7 +4,7 @@ from fastq_processor.step_build.stage_builder import StageBuilder
 
 
 class MergeStage(StageBuilder):
-    def __init__(self, config, heading="merge", fastq_dir="", save_dir="",
+    def __init__(self, config, heading="stage_usearch_merge.py", fastq_dir="", save_dir="",
                  maxdiff=5,
                  pctid=90
         ):

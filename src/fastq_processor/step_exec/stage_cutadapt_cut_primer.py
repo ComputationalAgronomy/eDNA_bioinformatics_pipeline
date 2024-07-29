@@ -4,7 +4,7 @@ from fastq_processor.step_build.stage_builder import StageBuilder
 
 
 class CutPrimerStage(StageBuilder):
-    def __init__(self, config, heading="cut_primer", merge_dir="", save_dir="",
+    def __init__(self, config, heading="stage_cutadapt_cut_primer.py", merge_dir="", save_dir="",
                  rm_p_5="GTCGGTAAAACTCGTGCCAGC",
                  rm_p_3="CAAACTGGGATTAGATACCCCACTATG",
                  error_rate=0.15,

@@ -4,7 +4,7 @@ from fastq_processor.step_build.stage_builder import StageBuilder
 
 
 class FqToFaStage(StageBuilder):
-    def __init__(self, config, heading="fq_to_fa", cutprimer_dir="", save_dir="",
+    def __init__(self, config, heading="stage_bbmap_fq_to_fa.py", cutprimer_dir="", save_dir="",
                  overwrite=True
         ):
         super().__init__(heading=heading, config=config)
