@@ -33,7 +33,7 @@ class BlastReader(Reader):
     def process_line(self, line: str) -> tuple[str, dict[str, str]]:
         """
         Process a single line from the BLAST CSV table.
-        The line list should be in the format: 
+        The line list should be in the format:
         0: Haplotype_id
         (not used)1: Subject accession
         2-8: species, genus, family, order, class, phylum, kingdom
@@ -43,7 +43,7 @@ class BlastReader(Reader):
         :return: A tuple containing the haplotype_id (e.g. "Zotu1") and a dictionary of taxonomic levels (e.g. {"species": "spcA", ...}).
         """
         line_list = line.split(',')
-        haplotype = line_list[0]
+
         level_list = [str(line_list[i]) for i in range(2, 9)]
         # identity = line_list[9]
         # length = line_list[14]
@@ -54,8 +54,12 @@ class BlastReader(Reader):
         if level_list[2] in self.TAX_REPLACMENT:
             level_list[2] = self.TAX_REPLACMENT[level_list[2]]
         hap2level_entry = dict(zip(self.DESIRED_LEVEL, level_list))
+        haplotype = line_list[0]
+        self.update_hap2level(self, haplotype, hap2level_entry)
+        # return haplotype, hap2level_entry
 
-        return haplotype, hap2level_entry
+    def update_hap2level(self, haplotype, hap2level_entry) -> None:
+        self.hap2level[haplotype] = hap2level_entry
 
     def read_blast_table(self, blast_table_path: str) -> None:
         """
@@ -68,8 +72,7 @@ class BlastReader(Reader):
 
         with open(blast_table_path, 'r') as file:
             for line in file.readlines():
-                haplotype, hap2level_entry = self.process_line(line)
-                self.hap2level[haplotype] = hap2level_entry
+                self.process_line(line) # NOTE(SW): If you don't need the variable, to return it
 
         hap_count = len(self.hap2level)
         logger.info(f"Read finished. Assigned {hap_count} haplotypes to species.")
