@@ -24,13 +24,12 @@ classifiers = [
 
 [tool.setuptools.packages.find]
 where = ["src"]  # ["."] by default
-include = ["*"]  # ["*"] by default
-addopts = [
-    "--import-mode=importlib",
-]
-
-[flake8]
-per-file-ignores = "tests/*: E501"  # E501 line too long
+include = ["*"]  # ["*"] by defaultgit 
+## cause it trigger error, i disable it before i fixed it.
+## Getting requirements to build editable ... error ...
+# addopts = [
+#     "--import-mode=importlib",
+# ]
 
 [flake8]
 per-file-ignores = "tests/*: E501"  # E501 line too long
