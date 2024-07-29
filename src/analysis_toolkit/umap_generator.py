@@ -14,6 +14,7 @@ class UmapGenerator(SamplesContainer):
     def __init__(self, load_path=None):
         super().__init__(load_path)
 
+    # TODO(SW): Use @override to simplify these classes
     @override
     def load_units2fasta(self,
             target_list: list[str],
