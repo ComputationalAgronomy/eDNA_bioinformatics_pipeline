@@ -7,12 +7,14 @@ from analysis_toolkit.data_container import SamplesContainer
 from analysis_toolkit.utils.base_logger import logger, get_file_handler
 from analysis_toolkit.utils.utils_hdbscan import fit_hdbscan
 from analysis_toolkit.utils.utils_sequence import write_fasta, align_fasta, get_uniq_seq_freq
+# TODO(SW): Read https://google.github.io/styleguide/pyguide.html#22-imports
 
 class HapNetNexusGenerator(SamplesContainer):
- 
+
     def __init__(self, load_path=None):
         super().__init__(load_path)
 
+    # TODO(SW): @staticmethod ? no self
     def load_points_labels(self,
             index_path: str,
             species_name: str,
@@ -25,7 +27,7 @@ class HapNetNexusGenerator(SamplesContainer):
         subindex = index[index["unit"] == species_name]
         if label_type == 'hdbscan':
             points = subindex[["umap1", "umap2"]].to_numpy()
-            labels, _, _, _ = fit_hdbscan(points=points, min_samples=10, min_cluster_size=5)
+            labels, _, _, _ = fit_hdbscan(points=points, min_samples=10, min_cluster_size=5) # TODO(SW): FIX THIS
         elif label_type == 'site':
             labels = ["taoyuan" if "taoyuan" in i else "keelung" for i in subindex["seq_id"]]
         else:
@@ -53,7 +55,7 @@ class HapNetNexusGenerator(SamplesContainer):
 
             sample_id_list = self.load_sample_id_list(sample_id_list)
 
-            units2fasta = self.load_units2fasta(
+            units2fasta = super.load_units2fasta(
                 target_name=species_name,
                 target_level='species',
                 unit_level='species',
@@ -69,7 +71,7 @@ class HapNetNexusGenerator(SamplesContainer):
                 seq_labels=labels
             )
 
-            align_fasta(seq_file=uniq_unit_fasta_path, aln_file=aln_fasta_path)
+            align_fasta(seq_file=uniq_unit_fasta_path, aln_file=aln_fasta_path) # TODO(SW): This is a logic issuse. This function should be outside write_nexus_file()
 
             AlignIO.convert(aln_fasta_path, "fasta", nex_path, "nexus", molecule_type="DNA")
             with open(nex_path, 'a') as file:
