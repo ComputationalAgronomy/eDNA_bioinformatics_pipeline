@@ -4,7 +4,7 @@ import os
 import subprocess
 import tempfile
 
-from edna_processor.utils.base_logger import logger
+from analysis_toolkit.utils.base_logger import logger
 
 def derep_fasta(seq_path: str, uniq_path: str, relabel: str, threads: int = 12, sizeout: bool = False) -> None:
     """

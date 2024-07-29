@@ -1,7 +1,7 @@
 import os
 import subprocess
 
-from edna_processor.utils.base_logger import logger
+from analysis_toolkit.utils.base_logger import logger
 
 def check_mltree_overwrite(save_dir: str, prefix: str) -> str:
     # TODO(SW): Eventually, replace with argparse.
