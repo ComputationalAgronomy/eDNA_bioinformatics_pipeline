@@ -48,7 +48,7 @@ File structure inside a new container:
 |   ├── local/bin/
 |   |   ├── bbmap/
 |   |   |   └── reformat.sh
-|   |   ├── clustalo.exe
+|   |   ├── clustalo
 |   |   ├── cutadapt
 |   |   ├── iqtree-2.3.5-Linux-intel/
 |   |   |   ├── bin/
@@ -57,7 +57,7 @@ File structure inside a new container:
 |   |   |   └── bin/
 |   |   |       ├── blastn
 |   |   |       └── makeblastdb
-|   |   └── usearch.exe
+|   |   └── usearch
 |   └── src/app/
 |       ├── README.md
 |       ├── dockerfile
@@ -67,7 +67,7 @@ File structure inside a new container:
 |       |   └── fastq_processor/
 |       └── tests/
 └── workplace/ # <- By default, you will start here.
-    └── example/ 
+    └── example/
 ```
 
 #### Other useful commands when you are working with Docker:
@@ -107,7 +107,7 @@ Make sure you have installed all of the following prerequisites on your machine:
 , and ensure the path of downloaded software is added to the "Path" variable in "Environmental Variables".
 
 #### Installation
-1. Required Python Package Installation 
+1. Required Python Package Installation
 ```sh
 python -m pip install -r requirements.txt
 ```
