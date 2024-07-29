@@ -1,7 +1,7 @@
 import os
 import re
 
-folder = './data/keelung/test/6_blast'
+folder = './data/all_site/denoise'
 filename_list = os.listdir(folder)
 
 # for filename in filename_list:
@@ -13,5 +13,5 @@ filename_list = os.listdir(folder)
         # os.rename(folder+filename, folder+new_filename)
 
 for filename in filename_list:
-    new_filename = filename.replace('_zotu', '')
+    new_filename = filename.replace('_zotu', '_denoise')
     os.rename(f'{folder}/{filename}', f'{folder}/{new_filename}')
