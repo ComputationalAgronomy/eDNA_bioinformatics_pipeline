@@ -26,7 +26,7 @@ class AssignTaxaStage(StageBuilder):
 
         return genus2otherlv
 
-    def __init__(self, config, heading="assign_taxa", denoise_dir="", save_dir="",
+    def __init__(self, config, heading="stage_blastn_assign_taxa.py", denoise_dir="", save_dir="",
                  db_path: str = "",
                  lineage_path: str = "",
                  maxhitnum: int = 1,

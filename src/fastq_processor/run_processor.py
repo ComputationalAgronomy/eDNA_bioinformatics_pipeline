@@ -1,7 +1,7 @@
 import os
 import sys
 
-from analysis_toolkit.utils.base_logger import logger
+from analysis_toolkit.utils.base_logger import logger, get_file_handler
 from fastq_processor.step_exec.stage_bbmap_fq_to_fa import FqToFaStage
 from fastq_processor.step_exec.stage_blastn_assign_taxa import AssignTaxaStage
 from fastq_processor.step_build.stage_config import StageConfig
@@ -92,14 +92,15 @@ class FastqProcessor:
 
     @staticmethod
     def run_each_data(prefix, stages):
+        print(f"Sample ID: {prefix}")
         for k, s in stages.items():
-            print(prefix)
             s.setup(prefix)
             # print(s.runners[0].command)
             is_complete = s.run()
             if not is_complete:
                 print(f"Error: process errors at stage: {k}\n")
                 break
+            print()
 
     def __init__(self,
         stages_parent_dir: str,
@@ -130,6 +131,8 @@ class FastqProcessor:
         n_cpu: int = 1,
         memory: int = 8,
         ):
+        fp_fh = get_file_handler(os.path.join(stages_parent_dir, "stages.log"))
+        logger.addHandler(fp_fh)
         self.config = StageConfig(verbose=verbose, logger=logger, n_cpu=n_cpu, memory=memory)
         self.parent_dir = stages_parent_dir
         self.input_dir = os.path.join(stages_parent_dir, fastq_dir_name)
@@ -161,6 +164,7 @@ class FastqProcessor:
             specifiers
         )
         self.data_prefix = FastqProcessor.get_prefix_with_suffix(self.input_dir, "_R1.fastq")
+
         for prefix in self.data_prefix:
             FastqProcessor.run_each_data(prefix, self.stages)
 

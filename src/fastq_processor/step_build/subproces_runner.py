@@ -28,7 +28,7 @@ class SubprocessRunner(Runner):
         :returns: True if the execution is successful, False otherwise.
         """
         if self.verbose:
-            print(self.message)
+            self.logger.info(self.message)
 
         if self.shell:
             args = self.command
@@ -37,7 +37,6 @@ class SubprocessRunner(Runner):
             args = [arg.replace("\"", "") for arg in args]
 
         if not self.dry:
-            self.logger.info(self.message)
             try:
                 self.capture_output = subprocess.run(args,
                                                    capture_output=False,
@@ -46,16 +45,16 @@ class SubprocessRunner(Runner):
                                                    text=True,
                                                    stdout=subprocess.PIPE,
                                                    stderr=subprocess.PIPE)
-                self.logger.info(f"{Runner.MSG_LOG} COMPLETE: {self.prog_name}.\n")
+                self.logger.info(f"COMPLETE: {self.prog_name}.")
                 return True
             except subprocess.CalledProcessError as e:
-                self.logger.error(f"{Runner.MSG_LOG} FAIL: {self.prog_name}. SubprocessError: {e.stderr}.\n.")
+                self.logger.error(f"FAIL: {self.prog_name}. SubprocessError: {e.stderr}.")
                 return False
             except FileNotFoundError as e:
-                self.logger.error(f"{Runner.MSG_LOG} FAIL: {self.prog_name}. FileNotFoundError: {e.stderr}.\n")
+                self.logger.error(f"FAIL: {self.prog_name}. FileNotFoundError: {e.stderr}.")
                 return False
             except Exception as e:
-                self.logger.error(f"{Runner.MSG_LOG} FAIL: {self.prog_name}. Other Exception: {e.stderr}.\n")
+                self.logger.error(f"FAIL: {self.prog_name}. Other Exception: {e.stderr}.")
                 return False
 
 
@@ -74,7 +73,7 @@ class RedirectOutputRunner(Runner):
             self.runner = runner
             self.stdout_file = stdout_file
             self.stderr_file = stderr_file
-            self.message = f"{Runner.MSG_LOG} RedirectOutput: {self.prog_name}."
+            self.message = f"RedirectOutput: {self.prog_name}."
         else:
             info = type(runner)
             raise TypeError(f"Invalid instance type: {info}.")
@@ -85,6 +84,9 @@ class RedirectOutputRunner(Runner):
 
         :returns: True if the output redirection is successful, False otherwise.
         """
+        if self.verbose:
+            self.logger.info(self.message)
+
         if not self.dry:
             try:
                 with open(self.stdout_file, "w") as out_f, open(self.stderr_file, "w") as err_f:
@@ -95,8 +97,8 @@ class RedirectOutputRunner(Runner):
                 if self.runner.capture_output.stderr:
                     with open(self.stderr_file, "a") as err_f:
                         err_f.write(self.runner.capture_output.stderr)
-
-                    return True
+                self.logger.info(f"COMPLETE: {self.prog_name}.")
+                return True
             except AttributeError as e:
-                self.logger.error(f"{Runner.MSG_LOG} FAIL: {self.prog_name}. Error: {e}.\n")
-            return False
+                self.logger.error(f"FAIL: {self.prog_name}. Error: {e}.")
+                return False

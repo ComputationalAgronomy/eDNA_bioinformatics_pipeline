@@ -4,7 +4,7 @@ from fastq_processor.step_build.stage_builder import StageBuilder
 
 
 class DenoiseStage(StageBuilder):
-    def __init__(self, config, heading="denoise", derep_dir="", save_dir="",
+    def __init__(self, config, heading="stage_usearch_denoise.py", derep_dir="", save_dir="",
                  minsize=8,
                  alpha=2
         ):
