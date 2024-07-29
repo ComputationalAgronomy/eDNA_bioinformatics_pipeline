@@ -6,7 +6,7 @@ FROM ubuntu:latest
 
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive && \
-    apt-get install -y wget gzip tar sudo python3 python3-pip udev tree default-jre-headless&& \
+    apt-get install -y wget gzip tar sudo python3 python3-pip udev tree default-jre-headless vim nano && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
