@@ -9,7 +9,7 @@ class DenoiseStage(StageBuilder):
                  alpha=2
         ):
         super().__init__(heading=heading, config=config)
-        self.USEARCH_PROG = "usearch.exe"
+        self.USEARCH_PROG = "usearch" # TODO(SW): Don't use `.exe`, doesn't make sense in docker/ubuntu
         self.in_suffix = "uniq.fasta"
         self.out_suffix = "denoise.fasta"
         self.denoise_report_suffix = "denoise_report.txt"

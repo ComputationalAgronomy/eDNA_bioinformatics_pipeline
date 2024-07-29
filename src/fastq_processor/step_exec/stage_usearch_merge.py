@@ -9,7 +9,7 @@ class MergeStage(StageBuilder):
                  pctid=90
         ):
         super().__init__(heading=heading, config=config)
-        self.USEARCH_PROG = "usearch.exe"
+        self.USEARCH_PROG = "usearch" # TODO(SW): Don't use `.exe`, doesn't make sense in docker/ubuntu
         self.in_suffix = "R1.fastq"
         self.out_suffix = "merge.fastq"
         self.report_suffix = "report.txt"
