@@ -5,10 +5,13 @@ The purpose of this project is to implement eDNA bioinformatics processing and t
 
 - [Getting Started](#getting-started)
   - [Docker Version](#docker-version)
+    - [Useful Docker Commands](#other-useful-commands-when-you-are-working-with-docker)
   - [Local Version](#local-version)
 - [Pytest](#pytest)
 - [Usage](#usage)
   - [`fastq_processor`](#fastq_processor-module)
+    - [Simplist Example](#simplist-example)
+    - [Optional Parameters](#other-optional-parameters)
   - [`analysis_toolkit`](#analysis_toolkit-module)
 
 ## Getting Started
@@ -36,47 +39,23 @@ Next, launch a new container from the Docker image that was just built:
 docker run -it [ImageName]
 ```
 
-If the launch is successful, your terminal should display something like the following, and **The Container is Ready to Work!**
+If the launch is successful, your terminal should display something like the following: 
 ```sh
 (base) root@93f4d3cf355f:/#
 ```
 `(base)` indicates the conda environment you are using, where all dependent Python packages are installed (don't deactivate this!). `93f4d3cf355f` indicates the ID of this container.
 
-File structure inside a new container:
-```
-├── usr/
-|   ├── local/bin/
-|   |   ├── bbmap/
-|   |   |   └── reformat.sh
-|   |   ├── clustalo.exe
-|   |   ├── cutadapt
-|   |   ├── iqtree-2.3.5-Linux-intel/
-|   |   |   ├── bin/
-|   |   |   |   └── iqtree2
-|   |   ├── ncbi-blast-2.6.1+/
-|   |   |   └── bin/
-|   |   |       ├── blastn
-|   |   |       └── makeblastdb
-|   |   └── usearch.exe
-|   └── src/app/
-|       ├── README.md
-|       ├── dockerfile
-|       ├── requirements.txt
-|       ├── src/
-|       |   ├── analysis_toolkit/
-|       |   └── fastq_processor/
-|       └── tests/
-└── workplace/ # <- By default, you will start here.
-    └── example/ 
-```
+**The Container is Ready to Work! Let's try [the first example](#simplist-example)!**
 
-#### Other useful commands when you are working with Docker:
+#### Other Useful Commands When You Are Working With Docker:
 
-(base) root@93f4d3cf355f:/# `exit`: Exit the container.
+(base) root@93f4d3cf355f:/# `exit` or `Ctrl+Z`: Exit the container.
 
 `docker cp [container ID]:/path/to/file /host/destination/folder`: Copying files from Docker container to host.
 
 `docker cp /path/to/file [container ID]:/container/destination/folder`: Copying files from host to Docker container.
+
+`docker exec -it [container ID or Name] bash`: Enter a running container's shell.
 
 `docker container ls -a`: List all containers
 
@@ -84,15 +63,13 @@ File structure inside a new container:
 
 `docker start [container ID or Name]`: Start a stopped container.
 
-`docker exec -it [container ID or Name] bash`: Enter a running container's shell.
-
 `docker rmi [ImageName]`: Remove a Docker image.
 
 `docker container rm [container ID or Name]`: Remove a container.
 
 `docker system prune (--force)`: Remove \<none> TAG images (be careful when using this command).
 
-### Local version
+### Local Version
 
 #### Dependency Installation
 
@@ -126,10 +103,18 @@ pytest tests
 
 ## Usage
 
-### `fastq_processor` module
+### `fastq_processor` Module
 This module processes raw FASTQ data through several stages including paired-end merging, primer cutting, reformatting, dereplication, denoising, and taxonomic assignment.
 
-**Simplist example**
+#### Simplist Example
+**Step 0.** By default, your container will start in the `/workplace` folder. Use the `tree` command to check the prepared materials for this practice!
+
+**Step 1.** Use a text editor to create a Python script.
+```sh
+nano [FileName].py
+```
+
+**Step 2.** Write the following code, then save and exit the text editor.
 ```python
 from fastq_processor import FastqProcessor
 
@@ -141,7 +126,7 @@ FastqProcessor(
 )
 ```
 
-Ensure that `stages_parent_dir` exists and contains a subdirectory named `fastq_dir_name` with your raw FASTQ files.
+**Ensure that `stages_parent_dir` exists and contains a subdirectory named `fastq_dir_name` with your raw FASTQ files.**
 ```
 stages/
 └── fastq/
@@ -149,18 +134,53 @@ stages/
     └── sample1_R2.fastq
 ```
 
-The `db_path` serves as the reference data for assigning denoised sequences to species. It should be set to the folder path containing the indexed files, with the prefix string added. The MiFish index files provided in the *example* folder are built using the [complete+partial mtDNA sequence file](https://mitofish.aori.u-tokyo.ac.jp/species/detail/download/?filename=download%2F/complete_partial_mitogenomes.zip) downloaded from the MiFish Pipeline.
+The **`db_path`** serves as the reference data for assigning denoised sequences to species. **It should be set to the folder path containing the indexed files, with the prefix string added.** The MiFish index files provided in the *example* folder are built using the [complete+partial mtDNA sequence file](https://mitofish.aori.u-tokyo.ac.jp/species/detail/download/?filename=download%2F/complete_partial_mitogenomes.zip) downloaded from the MiFish Pipeline. If you want to use a custom FASTA file as the reference database, you need to create the index using the `makeblastdb` command from ncbi-blast+. Here is the command: `makeblastdb -in ref.fasta -dbtype nucl -out db_prefix`
 
-If you want to use a custom FASTA file as the reference database, you need to create the index using the `makeblastdb` command from ncbi-blast+. Here is the command:
+The **`lineage_path`** serves as a reference for labeled species at the taxonomic level above the species. **It should be set to the path of the lineage file.** The [lineage.csv](https://github.com/billzt/MiFish/blob/main/mifish/data/lineage.csv) provided in the *example* folder is downloaded from the MiFish GitHub repository. If you want to use another lineage file, please ensure it includes taxonomic information from the domain to genus level and maintains the same format.
+
+**Step 3.** Run the Python script you just wrote in your container.
 ```sh
-makeblastdb -in ref.fasta -dbtype nucl -out db_prefix
+python [FileName].py
 ```
 
-The `lineage_path` serves as a reference for labeled species at the taxonomic level above the species. It should be set to the path of the lineage file. The [lineage.csv](https://github.com/billzt/MiFish/blob/main/mifish/data/lineage.csv) provided in the *example* folder is downloaded from the MiFish GitHub repository. If you want to use another lineage file, please ensure it includes taxonomic information from the domain to genus level and maintains the same format.
+**Step 4.** Use the `tree` command again to check the results. It should look something like this:
+```
+stages/
+├── fastq/
+|   ├── sample1_R1.fastq
+|   └── sample1_R2.fastq
+├── merge/
+|   ├── sample1_merge.fastq
+|   └── sample1_report.txt
+├── cut_primer/
+|   ├── sample1_cut.fastq
+|   └── sample1_report.txt
+├── fq_to_fa/
+|   ├── sample1_cut.fasta
+|   └── sample1_report.txt
+├── dereplicate/
+|   ├── sample1_uniq.fasta
+|   └── sample1_report.txt
+├── denoise/
+|   ├── sample1_denoise.fasta
+|   ├── sample1_denoise_report.txt
+|   └── sample1_report.txt
+└── denoise/
+    └── sample1_blast.csv
+```
 
-#### Other optional parameters:
+**Step 5.** Copy the result files from the Docker container back to the host. 
 
-`enabled_stages`:
+**In the host terminal**, use the following command:
+```sh
+docker cp [container ID]:/path/to/stages/folder /host/destination/folder
+```
+**You have successfully run the process and obtained the processed data!**
+
+#### Other Optional Parameters:
+
+`enabled_stages`: The list of stages to run.
+ Default is `["merge", "cutprimer", "fqtofa", "dereplicate", "denoise", "assigntaxa"]`.
 
 `n_cpu`: Number of CPU cores to be used for processing. Default is `1`.
 
@@ -168,21 +188,21 @@ The `lineage_path` serves as a reference for labeled species at the taxonomic le
 
 Paired-end merging related:
 
-`maxdiff`
+`maxdiff`: Maximum number of mismatches in the alignment. Default is `5`.
 
-`pctid`
+`pctid`: Minimum %id of alignment. Default is `90`.
 
 Primer cutting related:
 
-`rm_p_5`
+`rm_p_5`: Non-internal 5’ primer. Default is `"GTCGGTAAAACTCGTGCCAGC"` (MiFish-UF).
 
-`rm_p_3`
+`rm_p_3`: Non-internal 3’ primer. Default is `"CAAACTGGGATTAGATACCCCACTATG"` (reverse-complement MiFish-UR).
 
-`error_rate`
+`error_rate`: The maximum rate of error could be tolerated. The actual error rate is computed as the number of errors in the match divided by the length of the matching part of the primer. Default is `0.15`.
 
-`min_read_len`
+`min_read_len`: Discard processed reads that are shorter than this parameter. Default is `204`.
 
-`max_read_len`
+`max_read_len`: Discard processed reads that are longer than this parameter. Default is `254`.
 
 Denoising related:
 
@@ -202,4 +222,4 @@ Taxonomic assignment related:
 
 `specifiers`
 
-### `Analysis_toolkit` module
+### `Analysis_toolkit` Module
