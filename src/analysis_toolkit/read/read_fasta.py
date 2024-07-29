@@ -21,14 +21,14 @@ class FastaReader(Reader):
         """
         seq_dict = {}
         with open(seq_path) as handle:
-            for record in SeqIO.parse(handle, 'fasta'):
+            for record in SeqIO.parse(handle, "fasta"):
                 name, seq = record.description, str(record.seq)
                 if seq_type == "Amplicon":
-                    name = name.split(';')[0]
+                    name = name.split(";")[0]
                 seq_dict[name] = seq
         return seq_dict
 
-    def read_fasta(self, seq_path: str, seq_type: str ="Haplotype") -> None:
+    def read_fasta(self, seq_path: str, seq_type: str = "Haplotype") -> None:
         """
         Read a fasta file and update the dictionary 'seq_dict' with sequence names and sequences.
 
