@@ -1,4 +1,5 @@
 import os
+from typing import override
 import pandas as pd
 
 from analysis_toolkit.data_container import SamplesContainer
@@ -13,7 +14,8 @@ class UmapGenerator(SamplesContainer):
     def __init__(self, load_path=None):
         super().__init__(load_path)
 
-    def load_umap_units2fasta(self,
+    @override
+    def load_units2fasta(self,
             target_list: list[str],
             target_level: str,
             unit_level: str,
@@ -25,10 +27,10 @@ class UmapGenerator(SamplesContainer):
         """
         all_targets_units2fasta = {}
         unitlabel2targetlabel = {}
-        sample_id_list = self.load_sample_id_list(sample_id_list)
+        self.load_sample_id_list(sample_id_list)
 
         for target_name in target_list:
-            units2fasta = self.load_units2fasta(target_name, target_level, unit_level, sample_id_list)
+            units2fasta = self.load_units2fasta(target_name, target_level, unit_level, self.sample_id_used)
             all_targets_units2fasta.update(units2fasta)
             unitlabel2targetlabel.update(dict.fromkeys(list(units2fasta.keys()), target_name))
 
@@ -36,20 +38,20 @@ class UmapGenerator(SamplesContainer):
 
     def write_umap_index(self,
             target_list: list[str],
-            target_level: str, 
-            unit_level: str, 
-            sample_id_list: list[str], 
-            dereplicate_sequence: bool, 
+            target_level: str,
+            unit_level: str,
+            sample_id_list: list[str],
+            dereplicate_sequence: bool,
             save_dir: str,
-            neighbors: int, 
-            min_dist: float, 
-            random_state: int, 
+            neighbors: int,
+            min_dist: float,
+            random_state: int,
             calc_dist: bool
         ) -> pd.DataFrame:
         """
         Write UMAP index to a file and return the index DataFrame.
         """
-        units2fasta, unit2target = self.load_umap_units2fasta(
+        units2fasta, unit2target = self.load_units2fasta(
             target_list=target_list,
             target_level=target_level,
             unit_level=unit_level,
@@ -261,7 +263,7 @@ class UmapGenerator(SamplesContainer):
                 save_dir=save_dir,
                 cmap=cmap
             )
-        
+
         self.analysis_type = "UMAP"
         self.results_dir = save_dir
         self.parameters.update(
