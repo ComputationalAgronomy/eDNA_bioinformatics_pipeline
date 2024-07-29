@@ -15,6 +15,13 @@ from umap.plot import _datashade_points, _themes
 from analysis_toolkit.utils.base_logger import logger
 from analysis_toolkit.utils.utils_sequence import write_fasta, align_fasta
 
+# TODO(SW): This is not utilities anymore. It is a pipeline/analysis.
+'''
+By LLM:
+In programming, a utility function is a reusable piece of code that performs a specific task or provides a useful functionality. These functions are usually standalone and independent of the main program logic. They are designed to be modular, self-contained, and can be called from different parts of the program whenever their functionality is needed.
+
+Utility functions are often used to encapsulate common operations, calculations, or tasks that are frequently required in a program. They help to promote code reuse, improve code readability, and reduce duplication by providing a centralized location for commonly used functionalities.
+'''
 def fasta2index(seq_path: str, index_fasta_path: str) -> pd.DataFrame:
     """
     Read in a FASTA file and output an index FASTA file replacing the sequence IDs with indexes.
@@ -45,8 +52,8 @@ def fasta2index(seq_path: str, index_fasta_path: str) -> pd.DataFrame:
 
 def get_index_source_label(seq_id: list[str]) -> list[str]:
     """
-    Take a list of sequence IDs and return a list of source labels. 
-    It identifies if the sequence ID contains the substring recorded in the 'sources' variable and assigns the corresponding label. 
+    Take a list of sequence IDs and return a list of source labels.
+    It identifies if the sequence ID contains the substring recorded in the 'sources' variable and assigns the corresponding label.
     If neither substring is found, it assigns the label "unknown".
 
     :param seq_id: A list of sequence IDs.
@@ -68,7 +75,7 @@ def get_index_source_label(seq_id: list[str]) -> list[str]:
 def get_index_target_label(unit_labels: list[str], unit2target: dict[str, str]) -> list[str]:
     """
     Take a list of unit labels and return a list of target labels.
-    It uses the 'unit2target' dictionary to map unit labels to target labels. 
+    It uses the 'unit2target' dictionary to map unit labels to target labels.
     If a unit label is not found in the dictionary, it assigns the label "unknown".
 
     :param unit_labels: A list of unit labels.
@@ -120,7 +127,7 @@ def load_sparse_dist_matrix(dist_path: str) -> np.ndarray:
     """
     dist_matrix = pd.read_csv(dist_path, header=None, sep='\t')
     logger.info(f"Loading sparse {max(dist_matrix[0])+1} x {max(dist_matrix[0])+1} distance matrix from: {dist_path}")
-    
+
     diagonal = dist_matrix[0] == dist_matrix[1]
     row = np.concatenate([dist_matrix[0], dist_matrix[1][~diagonal]])
     col = np.concatenate([dist_matrix[1], dist_matrix[0][~diagonal]])
@@ -137,9 +144,9 @@ def sequence_to_one_hot(sequence: str) -> list[int]:
     :param sequence: DNA sequence.
     :return: One-hot encoded vector.
     """
-    base_map = {'A':[1, 0, 0, 0], 
-                'C':[0, 1, 0, 0], 
-                'G':[0, 0, 1, 0], 
+    base_map = {'A':[1, 0, 0, 0],
+                'C':[0, 1, 0, 0],
+                'G':[0, 0, 1, 0],
                 'T':[0, 0, 0, 1]}
 
     one_hot_encoded = []
@@ -175,10 +182,10 @@ def fit_umap(
     Fit UMAP and return the UMAP object and the embedding.
 
     :param matrix: distance matrix or one-hot encoded matrix
-    :param neighbors: Number of neighbors for umap. 
-    :param min_dist: Minimum distance for umap. 
-    :param random_state: Random state for umap. 
-    :param precomputed: Whether the elements of the matrix are distances or not. 
+    :param neighbors: Number of neighbors for umap.
+    :param min_dist: Minimum distance for umap.
+    :param random_state: Random state for umap.
+    :param precomputed: Whether the elements of the matrix are distances or not.
     :return: UMAP object and embedding
     """
     logger.info(f'Creating UMAP embedding with {neighbors} neighbors...')
@@ -451,7 +458,7 @@ def run_umap(
 
 def plot_umap(
         index: pd.DataFrame,
-        png_path: str = 'umap.png', 
+        png_path: str = 'umap.png',
         cmap: str = 'rainbow',
         show_legend: bool = True
     ) -> None:
@@ -485,7 +492,7 @@ def plot_umap_by_category(
     ) -> None:
     """
     Plot the UMAP embedding and save the plot as a PNG file, grouped by the specified category.
-    
+
     :param index: The index DataFrame containing the UMAP coordinates and category labels.
     :param category: Column name to group the units by, restricted to 'unit', 'target', or 'all'.
     :param prefix: The prefix for the output file names.
