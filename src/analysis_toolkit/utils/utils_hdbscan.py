@@ -4,7 +4,7 @@ import numpy as np
 import os
 import pandas as pd
 
-from edna_processor.utils.base_logger import logger
+from analysis_toolkit.utils.base_logger import logger
 
 def fit_hdbscan(
         points: np.ndarray,

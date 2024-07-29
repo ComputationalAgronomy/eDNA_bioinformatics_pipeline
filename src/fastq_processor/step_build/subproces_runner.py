@@ -49,13 +49,13 @@ class SubprocessRunner(Runner):
                 self.logger.info(f"{Runner.MSG_LOG} COMPLETE: {self.prog_name}.\n")
                 return True
             except subprocess.CalledProcessError as e:
-                self.logger.error(f"{Runner.MSG_LOG} FAIL: {self.prog_name}. SubprocessError: {e}.\n")
+                self.logger.error(f"{Runner.MSG_LOG} FAIL: {self.prog_name}. SubprocessError: {e.stderr}.\n.")
                 return False
             except FileNotFoundError as e:
-                self.logger.error(f"{Runner.MSG_LOG} FAIL: {self.prog_name}. FileNotFoundError: {e}.\n")
+                self.logger.error(f"{Runner.MSG_LOG} FAIL: {self.prog_name}. FileNotFoundError: {e.stderr}.\n")
                 return False
             except Exception as e:
-                self.logger.error(f"{Runner.MSG_LOG} FAIL: {self.prog_name}. Other Exception: {e}.\n")
+                self.logger.error(f"{Runner.MSG_LOG} FAIL: {self.prog_name}. Other Exception: {e.stderr}.\n")
                 return False
 
 
