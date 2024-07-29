@@ -33,7 +33,7 @@ def fit_hdbscan(
     n_c = max(labels) + 1
     noise = sum(1 for i in labels if i < 0)
     c_p = (1 - noise / len(labels)) * 100
-    return labels, clustered, n_c, round(c_p, 2)
+    return labels, clustered, n_c, round(c_p, 2) # TODO(SW): Why return 4 elements while 3 of them are never used?
 
 def plot_hdbscan(
         points: np.ndarray,
@@ -52,7 +52,7 @@ def plot_hdbscan(
     fig = plt.figure(figsize=(width / dpi, height / dpi))
     ax = fig.add_subplot(111)
     ax.set_facecolor(background)
-    
+
     point_size = 300.0 / np.sqrt(points.shape[0])
 
     ax.scatter(
@@ -168,6 +168,6 @@ def run_hdbscan_by_category(
         )
         cluster_report.append([value, numb_unit, numb_clus, clus_perc])
 
-    write_cluster_report(cluster_report, prefix, save_dir)    
+    write_cluster_report(cluster_report, prefix, save_dir)
 
     return

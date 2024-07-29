@@ -2,11 +2,11 @@ import os
 import subprocess
 
 from analysis_toolkit.utils.base_logger import logger
-
+#TODO(SW): If you only use these functions in ml_tree, put these there.
 def check_mltree_overwrite(save_dir: str, prefix: str) -> str:
     # TODO(SW): Eventually, replace with argparse.
     """
-    Check if an MLTree run with the given prefix already exists in the specified directory. 
+    Check if an MLTree run with the given prefix already exists in the specified directory.
     If it does, prompt the user to decide whether to redo the run or not.
 
     :param save_dir: Directory where the output files are saved.
