@@ -1,1 +1,9 @@
-pytest
+Bio==1.7.1
+biopython==1.83
+hdbscan==0.8.36
+matplotlib==3.9.1
+numpy==2.0.0
+pandas==2.2.2
+plotly==5.22.0
+scipy==1.14.0
+umap_learn==0.5.6
