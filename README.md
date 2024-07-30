@@ -5,7 +5,7 @@ The purpose of this project is to implement eDNA bioinformatics processing and t
 
 - [Getting Started](#getting-started)
   - [Docker Version](#docker-version)
-    - [Useful Docker Commands](#other-useful-commands-when-you-are-working-with-docker)
+    - [Useful Docker Commands](#useful-docker-commands)
   - [Local Version](#local-version)
 - [Pytest](#pytest)
 - [Usage](#usage)
@@ -18,36 +18,34 @@ The purpose of this project is to implement eDNA bioinformatics processing and t
 
 ### Docker Version
 
-Download [Docker Desktop](https://docs.docker.com/get-docker/) on your own machine.
+**Step 1.** Download [Docker Desktop](https://docs.docker.com/get-docker/) on your own machine.
 
 After installation, run `docker version` in terminal. If the version is displayed, it means the installation was successful.
 
-Clone the GitHub repo:
+**Step 2.** Clone the GitHub repo:
 ```sh
 git clone https://github.com/ComputationalAgronomy/eDNA_bioinformatics_pipeline.git
 ```
 
-Build an image according to the Dockerfile.
+**Step 3.** Build an image according to the Dockerfile.
 ```sh
 docker build -t [ImageName] .
 ```
 
 After the Dockerfile is successfully exported to an image, the [ImageName] should appear in the repo list if you use `docker image ls` to check.
 
-Next, launch a new container from the Docker image that was just built:
+**Step 4.** launch a new container from the Docker image that was just built:
 ```sh
 docker run -it [ImageName]
 ```
 
-If the launch is successful, your terminal should display something like the following: 
-```sh
-(base) root@93f4d3cf355f:/#
-```
+If the launch is successful, your terminal should display something like `(base) root@93f4d3cf355f:/#`.
+
 `(base)` indicates the conda environment you are using, where all dependent Python packages are installed (don't deactivate this!). `93f4d3cf355f` indicates the ID of this container.
 
-**The Container is Ready to Work! Let's try [the first example](#simplist-example)!**
+**Step fin.** The Container is Ready to Work! Let's try [the first example](#simplist-example)!
 
-#### Other Useful Commands When You Are Working With Docker:
+#### Useful Docker Commands
 
 (base) root@93f4d3cf355f:/# `exit` or `Ctrl+Z`: Exit the container.
 
@@ -177,7 +175,7 @@ docker cp [container ID]:/path/to/stages/folder /host/destination/folder
 ```
 **You have successfully run the process and obtained the processed data!**
 
-#### Other Optional Parameters:
+#### Optional Parameters:
 
 `enabled_stages`: The list of stages to run.
  Default is `["merge", "cutprimer", "fqtofa", "dereplicate", "denoise", "assigntaxa"]`.
@@ -206,20 +204,18 @@ Primer cutting related:
 
 Denoising related:
 
-`minsize`
+`minsize`: Discard sequences with abundance that are smaller than this parameter. Default is `8`.
 
-`alpha`
+`alpha`: See [UNOISE2 paper](https://www.biorxiv.org/content/10.1101/081257v1.full) for definition. Default is `2`.
 
 Taxonomic assignment related:
 
-`evalue`
+`evalue`: Expectation value (E) threshold for saving hits. Default is `0.00001`.
 
-`qcov_hsp_perc`
+`qcov_hsp_perc`: The percent threshold of the query sequence that has to form an alignment against the reference to be retained. Default is `90`.
 
-`perc_identity`
+`perc_identity`: Percent identity cutoff. Default is `90`.
 
-`outfmt`
-
-`specifiers`
+`specifiers`: Use to customize format specifiers. Default is `"qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore"`
 
 ### `Analysis_toolkit` Module
