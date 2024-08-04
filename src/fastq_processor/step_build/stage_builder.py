@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 import os
 
-from fastq_processor.step_build.runner import Runner
 from fastq_processor.step_build.stage_config import StageConfig
 from fastq_processor.step_build.subproces_runner import RedirectOutputRunner, SubprocessRunner
 
@@ -45,10 +44,12 @@ class StageBuilder(ABC):
         rd_stage = RedirectOutputRunner(prog_name, self.runners[stage], outfile_name, errfile_name, self.config)
         self.runners.append(rd_stage)
 
-    def check_path(self, path: str):
+    def check_infile(self):
+        if not os.path.exists(self.infile):
+            raise FileNotFoundError(f"{self.infile} not found")
+
+    def check_savedir(self):
         os.makedirs(self.save_dir, exist_ok=True)
-        if not os.path.exists(path):
-            raise FileNotFoundError(f"{path} not found")
 
     def summary(self) -> list[str]:
         """

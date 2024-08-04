@@ -24,12 +24,13 @@ class DereplicateStage(StageBuilder):
         )
 
     def setup(self, prefix):
-        infile = os.path.join(self.fasta_dir, f"{prefix}_{self.in_suffix}")
+        self.infile = os.path.join(self.fasta_dir, f"{prefix}_{self.in_suffix}")
         dereplicate_outfile = os.path.join(self.save_dir, f"{prefix}_{self.out_suffix}")
         report = os.path.join(self.save_dir, f"{prefix}_{self.report_suffix}")
-        self.check_path(infile)
+        self.check_infile()
+        self.check_savedir()
         cmd = (
-            f"{self.USEARCH_PROG} -fastx_uniques {infile}"
+            f"{self.USEARCH_PROG} -fastx_uniques {self.infile}"
             f" {self.params}"
             f" -threads {self.config.n_cpu}"
             f" -fastaout {dereplicate_outfile}"

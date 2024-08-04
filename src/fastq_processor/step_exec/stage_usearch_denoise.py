@@ -24,13 +24,14 @@ class DenoiseStage(StageBuilder):
         )
 
     def setup(self, prefix):
-        infile = os.path.join(self.derep_dir, f"{prefix}_{self.in_suffix}")
+        self.infile = os.path.join(self.derep_dir, f"{prefix}_{self.in_suffix}")
         denoise_outfile = os.path.join(self.save_dir, f"{prefix}_{self.out_suffix}")
         denoise_report = os.path.join(self.save_dir, f"{prefix}_{self.denoise_report_suffix}")
         report = os.path.join(self.save_dir, f"{prefix}_{self.report_suffix}")
-        self.check_path(infile)
+        self.check_infile()
+        self.check_savedir()
         cmd = (
-            f"{self.USEARCH_PROG} -unoise3 {infile}"
+            f"{self.USEARCH_PROG} -unoise3 {self.infile}"
             f" {self.params}"
             f" -threads {self.config.n_cpu}"
             f" -zotus {denoise_outfile} -tabbedout {denoise_report}"

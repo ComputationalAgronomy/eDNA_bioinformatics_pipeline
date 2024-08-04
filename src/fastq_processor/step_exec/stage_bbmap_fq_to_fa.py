@@ -22,13 +22,14 @@ class FqToFaStage(StageBuilder):
         )
 
     def setup(self, prefix):
-        infile = os.path.join(self.cutprimer_dir, f"{prefix}_{self.in_suffix}").replace("\\", "/")
+        self.infile = os.path.join(self.cutprimer_dir, f"{prefix}_{self.in_suffix}").replace("\\", "/")
         fasta_outfile = os.path.join(self.save_dir, f"{prefix}_{self.out_suffix}").replace("\\", "/")
         report = os.path.join(self.save_dir, f"{prefix}_{self.report_suffix}")
-        self.check_path(infile)
+        self.check_infile()
+        self.check_savedir()
         cmd = (
             f"bash {self.BBMAP_PROG}"
-            f" in={infile} out={fasta_outfile}"
+            f" in={self.infile} out={fasta_outfile}"
             f" {self.params}"
         )
         super().add_stage("Reformat FASTQ to FASTA", cmd)

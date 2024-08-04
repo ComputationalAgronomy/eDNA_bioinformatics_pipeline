@@ -29,12 +29,13 @@ class CutPrimerStage(StageBuilder):
         )
 
     def setup(self, prefix):
-        infile = os.path.join(self.merge_dir, f"{prefix}_{self.in_suffix}")
+        self.infile = os.path.join(self.merge_dir, f"{prefix}_{self.in_suffix}")
         cutprimer_outfile = os.path.join(self.save_dir, f"{prefix}_{self.out_suffix}")
         report = os.path.join(self.save_dir, f"{prefix}_{self.report_suffix}")
-        self.check_path(infile)
+        self.check_infile()
+        self.check_savedir()
         cmd = (
-            f"{self.CUTADAPT_PROG} {infile}"
+            f"{self.CUTADAPT_PROG} {self.infile}"
             f" {self.params}"
             f" --discard-untrimmed -j {self.config.n_cpu}"
         )
