@@ -1,5 +1,6 @@
 import os
 import tempfile
+from typing import override
 
 from analysis_toolkit.data_container import SamplesContainer
 from analysis_toolkit.utils.base_logger import logger, get_file_handler
@@ -11,7 +12,9 @@ class MLTreeGenerator(SamplesContainer):
     def __init__(self, load_path=None):
         super().__init__(load_path)
 
-    def load_mltree_units2fasta(self,
+    # TODO(SW): Use @override to simplify these classes
+    @override
+    def load_units2fasta(self,
             target_list: list[str],
             target_level: str,
             unit_level: str,
@@ -46,14 +49,14 @@ class MLTreeGenerator(SamplesContainer):
         """
         Write an aligned FASTA file for a list of targets.
         """
-        unit2fasta = self.load_mltree_units2fasta(
+        unit2fasta = self.load_units2fasta(
             target_list = target_list,
             target_level=target_level,
             unit_level=unit_level,
-            n_unit_threshold=n_unit_threshold,
-            sample_id_list=sample_id_list
+            sample_id_list=sample_id_list,
+            n_unit_threshold=n_unit_threshold
         )
-        
+
         temp_dir = tempfile.TemporaryDirectory()
 
         unit_fasta_path = os.path.join(temp_dir.name, 'mltree.fa')
@@ -62,6 +65,7 @@ class MLTreeGenerator(SamplesContainer):
         align_fasta(seq_file=unit_fasta_path, aln_file=save_path)
 
         temp_dir.cleanup()
+
 
     def mltree_target(self,
             target_list: list[str],
@@ -95,7 +99,7 @@ class MLTreeGenerator(SamplesContainer):
         logger.addHandler(mtg_fh)
 
         logger.info(f"Plotting MLTree for {" ".join(target_list)}...")
- 
+
         ml_fasta_path = os.path.join(save_dir, f'{prefix}.aln')
 
         sample_id_list = self.load_sample_id_list(sample_id_list)

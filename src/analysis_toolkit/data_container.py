@@ -1,3 +1,4 @@
+from abc import abstractmethod
 import os
 import pickle
 from datetime import date
@@ -50,7 +51,7 @@ class OneSampleContainer():
         br.read_blast_table(blast_table_path=blast_table_path)
         self.hap2level = br.hap2level
 
-class SamplesContainer():
+class SamplesContainer(): # TODO(SW): Is this abstract class?
     """
     A class to manage sample data files.
 
@@ -60,7 +61,7 @@ class SamplesContainer():
     :attribute data_parent_dir: The parent directory path where the data files are located.
     :attribute instance_path: The file path where the instance of SamplesContainer is saved or loaded.
     """
-    # 
+    #
     # keys are data type, values are tuples of (child directory, file suffix).
     DATA_FILE_INFO = {
         "uniq_fasta": ("dereplicate", "_uniq.fasta"),
@@ -93,12 +94,12 @@ class SamplesContainer():
         child_dir_path = os.path.join(parent_dir, child_dir)
 
         logger.info(f"Searching files with the suffix '{suffix}' from the directory: {child_dir_path}.")
-    
+
         file_list = os.listdir(child_dir_path)
         sample_id_list = [file.replace(suffix, '') for file in file_list if file.endswith(suffix)]
 
         logger.info(f"Found {len(sample_id_list)} samples.")
-    
+
         return sample_id_list
 
     @staticmethod
@@ -195,13 +196,14 @@ class SamplesContainer():
         for sample_id in sample_id_list:
             file_paths = SamplesContainer.get_file_paths(sample_id, parent_dir)
 
-            uniq_fasta_path = file_paths["uniq_fasta"]
-            denoise_fasta_path = file_paths["denoise_fasta"]
-            denoise_report_path = file_paths["denoise_report"]
-            blast_table_path = file_paths["blast_table"]
+            # uniq_fasta_path = file_paths["uniq_fasta"]
+            # denoise_fasta_path = file_paths["denoise_fasta"]
+            # denoise_report_path = file_paths["denoise_report"]
+            # blast_table_path = file_paths["blast_table"]
+            # TODO(SW): Defeat the purpose of using a dictionary
 
-            self.sample_data[sample_id] = OneSampleContainer(uniq_fasta_path=uniq_fasta_path, denoise_fasta_path=denoise_fasta_path, denoise_report_path=denoise_report_path, blast_table_path=blast_table_path)
-
+            self.sample_data[sample_id] = OneSampleContainer(uniq_fasta_path=file_paths["uniq_fasta"], denoise_fasta_path=file_paths["denoise_fasta"], denoise_report_path=file_paths["denoise_report"], blast_table_path=file_paths["blast_table"]) # TODO(SM): basic
+            # TODO(SW): hacky way, changy the key and use unpack **.  OneSampleContainer(**file_paths)
         logger.info(f"{len(sample_id_list)} Samples read.")
 
     def save_sample_data(self, save_dir: str, save_name: str = f"eDNA_samples_{date.today()}") -> None:
@@ -217,6 +219,7 @@ class SamplesContainer():
         logger.info(f"Saving sample data to: {save_path}.")
 
         # overwrite_y_n
+        # TODO(SW): Personally, I prefer non-interactive way. This will hang on the server for ever and get no response.
         if os.path.exists(save_path):
             while True:
                 user_input = input("> File already exists, Do you want to overwrite it? (y/n)")
@@ -251,14 +254,15 @@ class SamplesContainer():
             logger.info(f"No sample ID list specified. Using all {len(sample_id_list)} samples.")
         else:
             logger.info(f"Specified {len(sample_id_list)} samples.")
-        self.sample_id_used = sample_id_list
-        return sample_id_list
-    
+        self.sample_id_used = sample_id_list # TODO(SW): You got this, don't need to return
+        # return sample_id_list
+
     def load_units2fasta(self,
             target_name: str,
             target_level: str,
             unit_level: str,
-            sample_id_list: list[str]
+            sample_id_list: list[str],
+            n_unit_threshold: int = -1 # TODO(SW): OR *args
         ) -> dict[str, str]:
         units2fasta = {}
         for sample_id in sample_id_list:
@@ -273,3 +277,12 @@ class SamplesContainer():
                     units2fasta[unit_name] = ""
                 units2fasta[unit_name] += f'>{title}\n{seq}\n'
         return units2fasta
+
+    # TODO(SW): Refactor **_target() and **write_output() with the following
+    @abstractmethod
+    def target(self, *args):
+        pass
+
+    @abstractmethod
+    def write_output(self, *args):
+        pass

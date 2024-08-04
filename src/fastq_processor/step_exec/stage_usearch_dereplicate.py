@@ -9,7 +9,7 @@ class DereplicateStage(StageBuilder):
                  seq_label: str = "Uniq"
         ):
         super().__init__(heading=heading, config=config)
-        self.USEARCH_PROG = "usearch.exe"
+        self.USEARCH_PROG = "usearch" # TODO(SW): Don't use `.exe`, doesn't make sense in docker/ubuntu
         self.in_suffix = "cut.fasta"
         self.out_suffix = "uniq.fasta"
         self.report_suffix = "report.txt"

@@ -12,7 +12,7 @@ from fastq_processor.step_exec.stage_usearch_merge import MergeStage
 
 
 class FastqProcessor:
-    
+
     @staticmethod
     def get_prefix_with_suffix(in_dir, suffix):
         files = os.listdir(in_dir)
@@ -133,7 +133,7 @@ class FastqProcessor:
         ):
         fp_fh = get_file_handler(os.path.join(stages_parent_dir, "stages.log"))
         logger.addHandler(fp_fh)
-        self.config = StageConfig(verbose=verbose, logger=logger, n_cpu=n_cpu, memory=memory)
+        self.config = StageConfig(verbose=verbose, logger=logger, n_cpu=n_cpu, memory=memory) # TODO(SW): Expand this class, so you only need to pass one parameters.
         self.parent_dir = stages_parent_dir
         self.input_dir = os.path.join(stages_parent_dir, fastq_dir_name)
         self.stages = FastqProcessor.setup_stages(

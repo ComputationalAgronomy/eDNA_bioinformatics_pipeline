@@ -56,16 +56,16 @@ class BarchartGenerator(SamplesContainer):
         logger.addHandler(bg_fh)
 
         logger.info(f"Plotting barchart for {level}...")
-        sample_id_list = self.load_sample_id_list(sample_id_list)
+        self.load_sample_id_list(sample_id_list)
 
-        for sample_id in sample_id_list:
+        for sample_id in self.sample_id_used:
             abundance = self.load_levelname2abundance_dict(sample_id, level)
             self.samples_abundance[sample_id] = normalize_abundance(abundance)
 
-        all_level_name = [list(self.samples_abundance[sample_id].keys()) for sample_id in sample_id_list]
+        all_level_name = [list(self.samples_abundance[sample_id].keys()) for sample_id in self.sample_id_used]
         uniq_level_name = list_union(all_level_name)
 
-        for sample_id in sample_id_list:
+        for sample_id in self.sample_id_used:
             self.samples_abundance[sample_id] = [self.samples_abundance[sample_id].get(level_name, 0) for level_name in uniq_level_name]
 
         plotdata = pd.DataFrame(self.samples_abundance, index=uniq_level_name)
