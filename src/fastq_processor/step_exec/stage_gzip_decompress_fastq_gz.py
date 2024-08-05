@@ -1,9 +1,9 @@
 import os
 
-from fastq_processor.step_build.stage_builder import StageBuilder
+from fastq_processor.step_build import stage_builder
 
 
-class DecompressStage(StageBuilder):
+class DecompressStage(stage_builder.StageBuilder):
     def __init__(self, config, heading="stage_gzip_decompress_fastq_gz.py", fastq_dir="", save_dir="",
         ):
         super().__init__(heading=heading, config=config)

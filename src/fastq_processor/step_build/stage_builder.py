@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 import os
 
-from fastq_processor.step_build.stage_config import StageConfig
-from fastq_processor.step_build.subproces_runner import RedirectOutputRunner, SubprocessRunner
+from fastq_processor.step_build import stage_config
+from fastq_processor.step_build import subproces_runner
 
 
 class StageBuilder(ABC):
@@ -16,7 +16,7 @@ class StageBuilder(ABC):
         output (list): List of outputs from the executed runners.
     """
 
-    def __init__(self, heading: str, config: StageConfig):
+    def __init__(self, heading: str, config: stage_config.StageConfig):
         self.heading = heading
         self.config = config
         self.runners = []
@@ -30,7 +30,7 @@ class StageBuilder(ABC):
         :param command: The command to execute.
         :param shell: Whether to execute the command through the shell.
         """
-        stage = SubprocessRunner(prog_name, command, self.config, shell=shell)
+        stage = subproces_runner.SubprocessRunner(prog_name, command, self.config, shell=shell)
         self.runners.append(stage)
 
     def add_stage_output_to_file(self, prog_name: str, stage: int, outfile_name: str, errfile_name: str):
@@ -41,7 +41,7 @@ class StageBuilder(ABC):
         :param stage: The index of the stage whose output to redirect.
         :param outfile_name: The name of the file to write the output to.
         """
-        rd_stage = RedirectOutputRunner(prog_name, self.runners[stage], outfile_name, errfile_name, self.config)
+        rd_stage = subproces_runner.RedirectOutputRunner(prog_name, self.runners[stage], outfile_name, errfile_name, self.config)
         self.runners.append(rd_stage)
 
     def check_infile(self):

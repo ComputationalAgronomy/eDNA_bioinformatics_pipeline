@@ -1,9 +1,9 @@
 import os
 
-from fastq_processor.step_build.stage_builder import StageBuilder
+from fastq_processor.step_build import stage_builder
 
 
-class CutPrimerStage(StageBuilder):
+class CutPrimerStage(stage_builder.StageBuilder):
     def __init__(self, config, heading="stage_cutadapt_cut_primer.py", merge_dir="", save_dir="",
                  rm_p_5="GTCGGTAAAACTCGTGCCAGC",
                  rm_p_3="CAAACTGGGATTAGATACCCCACTATG",

@@ -1,9 +1,9 @@
 import os
 
-from fastq_processor.step_build.stage_builder import StageBuilder
+from fastq_processor.step_build import stage_builder
 
 
-class DenoiseStage(StageBuilder):
+class DenoiseStage(stage_builder.StageBuilder):
     def __init__(self, config, heading="stage_usearch_denoise.py", derep_dir="", save_dir="",
                  minsize=8,
                  alpha=2

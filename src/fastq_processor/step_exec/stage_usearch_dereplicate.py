@@ -1,9 +1,9 @@
 import os
 
-from fastq_processor.step_build.stage_builder import StageBuilder
+from fastq_processor.step_build import stage_builder
 
 
-class DereplicateStage(StageBuilder):
+class DereplicateStage(stage_builder.StageBuilder):
     def __init__(self, config, heading="stage_usearch_dereplicate.py", fasta_dir="", save_dir="",
                  annot_size: bool = True,
                  seq_label: str = "Uniq"

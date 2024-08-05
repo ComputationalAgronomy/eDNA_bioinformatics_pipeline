@@ -1,9 +1,9 @@
 import os
 
-from fastq_processor.step_build.stage_builder import StageBuilder
+from fastq_processor.step_build import stage_builder
 
 
-class MergeStage(StageBuilder):
+class MergeStage(stage_builder.StageBuilder):
     def __init__(self, config, heading="stage_usearch_merge.py", decompress_dir="", save_dir="",
                  maxdiff=5,
                  pctid=90

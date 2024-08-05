@@ -1,9 +1,9 @@
 import os
 
-from fastq_processor.step_build.stage_builder import StageBuilder
+from fastq_processor.step_build import stage_builder
 
 
-class FqToFaStage(StageBuilder):
+class FqToFaStage(stage_builder.StageBuilder):
     def __init__(self, config, heading="stage_bbmap_fq_to_fa.py", cutprimer_dir="", save_dir="",
                  overwrite=True
         ):

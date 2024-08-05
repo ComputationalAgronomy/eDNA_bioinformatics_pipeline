@@ -3,10 +3,10 @@ import numpy as np
 import os
 import pandas as pd
 
-from fastq_processor.step_build.stage_builder import StageBuilder
+from fastq_processor.step_build import stage_builder
 
 
-class AssignTaxaStage(StageBuilder):
+class AssignTaxaStage(stage_builder.StageBuilder):
 
     def __init__(self, config, heading="stage_blastn_assign_taxa.py", denoise_dir="", save_dir="",
                  db_path: str = "",
