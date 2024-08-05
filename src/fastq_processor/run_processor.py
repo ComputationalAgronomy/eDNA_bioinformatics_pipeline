@@ -1,16 +1,14 @@
 import os
-import sys
 
-from analysis_toolkit.utils.base_logger import logger, get_file_handler
-from fastq_processor.step_exec.stage_bbmap_fq_to_fa import FqToFaStage
-from fastq_processor.step_exec.stage_blastn_assign_taxa import AssignTaxaStage
-from fastq_processor.step_build.stage_config import StageConfig
-from fastq_processor.step_exec.stage_cutadapt_cut_primer import CutPrimerStage
-from fastq_processor.step_exec.stage_gzip_decompress_fastq_gz import DecompressStage
-from fastq_processor.step_exec.stage_usearch_dereplicate import DereplicateStage
-from fastq_processor.step_exec.stage_usearch_denoise import DenoiseStage
-from fastq_processor.step_exec.stage_usearch_merge import MergeStage
-
+from analysis_toolkit.utils import base_logger
+from fastq_processor.step_build import stage_config
+from fastq_processor.step_exec import stage_gzip_decompress_fastq_gz as decompress
+from fastq_processor.step_exec import stage_usearch_merge as merge
+from fastq_processor.step_exec import stage_cutadapt_cut_primer as cutprimer
+from fastq_processor.step_exec import stage_bbmap_fq_to_fa as fqtofa
+from fastq_processor.step_exec import stage_usearch_dereplicate as dereplicate
+from fastq_processor.step_exec import stage_usearch_denoise as denoise
+from fastq_processor.step_exec import stage_blastn_assign_taxa as assigntaxa
 
 class FastqProcessor:
 
@@ -60,14 +58,14 @@ class FastqProcessor:
 
         stages = dict()
         if "decompress" in enabled_stages:
-            stages["decompress"] = DecompressStage(config, fastq_dir=fastq_dir, save_dir=decompress_dir)
+            stages["decompress"] = decompress.DecompressStage(config, fastq_dir=fastq_dir, save_dir=decompress_dir)
         if "merge" in enabled_stages:
-            stages["merge"] = MergeStage(config, decompress_dir=decompress_dir, save_dir=merge_dir,
+            stages["merge"] = merge.MergeStage(config, decompress_dir=decompress_dir, save_dir=merge_dir,
                 maxdiff=maxdiff,
                 pctid=pctid
             )
         if "cutprimer" in enabled_stages:
-            stages["cutprimer"] = CutPrimerStage(config, merge_dir=merge_dir, save_dir=cutprimer_dir,
+            stages["cutprimer"] = cutprimer.CutPrimerStage(config, merge_dir=merge_dir, save_dir=cutprimer_dir,
                 rm_p_5=rm_p_5,
                 rm_p_3=rm_p_3,
                 error_rate=error_rate,
@@ -75,16 +73,16 @@ class FastqProcessor:
                 max_read_len=max_read_len
             )
         if "fqtofa" in enabled_stages:
-            stages["fqtofa"] = FqToFaStage(config, cutprimer_dir=cutprimer_dir, save_dir=fqtofa_dir)
+            stages["fqtofa"] = fqtofa.FqToFaStage(config, cutprimer_dir=cutprimer_dir, save_dir=fqtofa_dir)
         if "dereplicate" in enabled_stages:
-            stages["dereplicate"] = DereplicateStage(config, fasta_dir=fqtofa_dir, save_dir=derep_dir)
+            stages["dereplicate"] = dereplicate.DereplicateStage(config, fasta_dir=fqtofa_dir, save_dir=derep_dir)
         if "denoise" in enabled_stages:
-            stages["denoise"] = DenoiseStage(config, derep_dir=derep_dir, save_dir=denoise_dir,
+            stages["denoise"] = denoise.DenoiseStage(config, derep_dir=derep_dir, save_dir=denoise_dir,
                 minsize=minsize,
                 alpha=alpha
             )
         if "assigntaxa" in enabled_stages:
-            stages["assigntaxa"] = AssignTaxaStage(config, denoise_dir=denoise_dir, save_dir=blast_dir,
+            stages["assigntaxa"] = assigntaxa.AssignTaxaStage(config, denoise_dir=denoise_dir, save_dir=blast_dir,
                 db_path=db_path,
                 lineage_path=lineage_path,
                 evalue=evalue,
@@ -137,9 +135,9 @@ class FastqProcessor:
         n_cpu: int = 1,
         memory: int = 8,
         ):
-        fp_fh = get_file_handler(os.path.join(stages_parent_dir, "stages.log"))
-        logger.addHandler(fp_fh)
-        self.config = StageConfig(verbose=verbose, logger=logger, n_cpu=n_cpu, memory=memory) # TODO(SW): Expand this class, so you only need to pass one parameters.
+        fp_fh = base_logger.get_file_handler(os.path.join(stages_parent_dir, "stages.log"))
+        base_logger.logger.addHandler(fp_fh)
+        self.config = stage_config.StageConfig(verbose=verbose, logger=base_logger.logger, n_cpu=n_cpu, memory=memory) # TODO(SW): Expand this class, so you only need to pass one parameters.
         self.parent_dir = stages_parent_dir
         self.input_dir = os.path.join(stages_parent_dir, fastq_dir_name)
         self.stages = FastqProcessor.setup_stages(
