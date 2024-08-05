@@ -3,12 +3,12 @@ import os
 import pickle
 from datetime import date
 
-from analysis_toolkit.read.read_blast_csv import BlastReader
-from analysis_toolkit.read.read_denoise_report import DenoiseReportReader
-from analysis_toolkit.read.read_fasta import FastaReader
-from analysis_toolkit.utils.base_logger import logger
+from analysis_toolkit.read import read_blast_csv
+from analysis_toolkit.read import read_denoise_report
+from analysis_toolkit.read import read_fasta
+from analysis_toolkit.utils import base_logger
 
-class OneSampleContainer():
+class OneSampleData():
     """
     Container for handling and processing data from various bioinformatics files.
     This class initializes by reading data from given FASTA, denoise report, and BLAST table files,
@@ -28,40 +28,39 @@ class OneSampleContainer():
 
     """
     def __init__(self,
-            uniq_fasta_path: str,
-            denoise_fasta_path: str,
-            denoise_report_path: str,
-            blast_table_path: str
+            uniq_fasta: str,
+            denoise_fasta: str,
+            denoise_report: str,
+            blast_table: str
         ):
-        ufr = FastaReader()
-        ufr.read_fasta(seq_path=uniq_fasta_path, seq_type="Amplicon")
+        ufr = read_fasta.FastaReader()
+        ufr.read_fasta(seq_path=uniq_fasta, seq_type="Amplicon")
         self.amp_seq = ufr.seq_dict
 
-        dfr = FastaReader()
-        dfr.read_fasta(seq_path=denoise_fasta_path, seq_type="Haplotype")
+        dfr = read_fasta.FastaReader()
+        dfr.read_fasta(seq_path=denoise_fasta, seq_type="Haplotype")
         self.hap_seq = dfr.seq_dict
 
-        drr = DenoiseReportReader()
-        drr.read_denoise_report(denoise_report_path=denoise_report_path)
+        drr = read_denoise_report.DenoiseReportReader()
+        drr.read_denoise_report(denoise_report=denoise_report)
         self.amp_size = drr.amp_size
         self.hap2amp = drr.hap2amp
         self.hap_size = drr.hap_size
 
-        br = BlastReader()
-        br.read_blast_table(blast_table_path=blast_table_path)
+        br = read_blast_csv.BlastReader()
+        br.read_blast_table(blast_table=blast_table)
         self.hap2level = br.hap2level
 
-class SamplesContainer(): # TODO(SW): Is this abstract class?
+class SamplesData():
     """
-    A class to manage sample data files.
+    A class for managing sample data storage.
+    It provides methods for importing, saving, loading.
 
-    :attribute DATA_FILE_INFO: A dictionary mapping input data types to tuples containing the corresponding child directory and file suffix.
-    :attribute sample_data: A dictionary to store sample data.
+    :attribute DATA_FILE_INFO: A dictionary mapping import data types to tuples containing the corresponding child directory and file suffix.
+    :attribute sample_data: A dictionary to store sample data, the key is sample ID, and the value is a OneSampleData instance.
     :attribute sample_id_list: A list to store sample IDs.
-    :attribute data_parent_dir: The parent directory path where the data files are located.
-    :attribute instance_path: The file path where the instance of SamplesContainer is saved or loaded.
+    :attribute verbose: A boolean flag to control logging verbosity. Default is True.
     """
-    #
     # keys are data type, values are tuples of (child directory, file suffix).
     DATA_FILE_INFO = {
         "uniq_fasta": ("dereplicate", "_uniq.fasta"),
@@ -70,219 +69,132 @@ class SamplesContainer(): # TODO(SW): Is this abstract class?
         "blast_table": ("blast", "_blast.csv")
     }
 
-    @staticmethod
-    def save_instance(instance: 'SamplesContainer', path: str) -> None:
-        """
-        Save an instance of SamplesContainer to a specified path.
+    def __init__(self,
+        verbose = True
+        ):
+        self.sample_data = {}
+        self.sample_id_list = []
+        self.verbose = verbose
 
-        :param instance: The SamplesContainer instance to save.
-        :param path: The file path where the instance will be saved.
-        """
-        with open(path, 'wb') as f:
-            pickle.dump(instance, f)
+        if not self.verbose:
+            base_logger.logger.setLevel("WARNING")
 
-    @staticmethod
-    def get_sample_id_list(parent_dir: str) -> list[str]:
+    def check_dir(self) -> None:
+        """
+        Check if all necessary child directories exist within the specified parent directory.
+        """
+        base_logger.logger.info("Start checking whether directories exist...")
+        for child_dir_name, _ in SamplesData.DATA_FILE_INFO.values():
+            child_dir = os.path.join(self.import_dir, child_dir_name)
+
+            if not os.path.isdir(child_dir):
+                raise FileNotFoundError(f"Directory does not exist: {child_dir}.")
+
+        base_logger.logger.info("All directories exist.")
+
+    def get_sample_id_list(self):
         """
         Retrieve a list of sample IDs from the specified parent directory.
 
         :param parent_dir: Path to the parent directory containing sample data.
         :return: A list of sample IDs.
         """
-        child_dir, suffix = tuple(SamplesContainer.DATA_FILE_INFO.values())[0]
+        child_dir, suffix = tuple(SamplesData.DATA_FILE_INFO.values())[0]
 
-        child_dir_path = os.path.join(parent_dir, child_dir)
+        child_dir_path = os.path.join(self.import_dir, child_dir)
 
-        logger.info(f"Searching files with the suffix '{suffix}' from the directory: {child_dir_path}.")
+        base_logger.logger.info(f"Searching sample IDs: prefix with the suffix '{suffix}' in the directory: {child_dir_path}.")
 
         file_list = os.listdir(child_dir_path)
         sample_id_list = [file.replace(suffix, '') for file in file_list if file.endswith(suffix)]
+        self.sample_id_list.extend(sample_id_list)
 
-        logger.info(f"Found {len(sample_id_list)} samples.")
-
-        return sample_id_list
-
-    @staticmethod
-    def check_dir(parent_dir: str) -> None:
-        """
-        Check if all necessary child directories exist within the specified parent directory.
-
-        :param parent_dir: Path to the parent directory to check.
-        """
-        for child_dir, _ in SamplesContainer.DATA_FILE_INFO.values():
-            child_dir_path = os.path.join(parent_dir, child_dir)
-
-            if not os.path.isdir(child_dir_path):
-                raise FileNotFoundError(f"Directory does not exist: {child_dir_path}.")
-
-        logger.info("All directories exist.")
-
-    @staticmethod
-    def check_file(parent_dir: str, sample_id_list: list[str]) -> None:
-        """
-        Check if all necessary files for the given sample IDs exist within the specified parent directory.
-
-        :param parent_dir: Path to the parent directory to check.
-        :param sample_id_list: List of sample IDs to check.
-        """
-        logger.info("Start checking whether files exist...")
-
-        for child_dir, suffix in SamplesContainer.DATA_FILE_INFO.values():
-            for sample_id in sample_id_list:
-                file_path = os.path.join(parent_dir, child_dir, f"{sample_id}{suffix}")
-
-                if not os.path.isfile(file_path):
-                    raise FileNotFoundError(f"File does not exist: {file_path}.")
-
-        logger.info("All files exist.")
-
-    @staticmethod
-    def get_file_paths(sample_id: str, parent_dir: str) -> dict[str, str]:
+    def get_file_paths(self, sample_id: str) -> dict[str, str]:
         """
         Retrieve the file paths for all data types for a given sample ID.
 
         :param sample_id: The sample ID to retrieve file paths for.
-        :param parent_dir: Path to the parent directory containing sample data.
-        :return: A dictionary mapping data types to their respective file paths.
         """
-        file_paths = {}
-        for file_key, (child_dir, suffix) in SamplesContainer.DATA_FILE_INFO.items():
-            file_path = os.path.join(parent_dir, child_dir, f"{sample_id}{suffix}")
-            file_paths[file_key] = file_path
+        self.file_paths = {}
+        for file_key, (child_dir, suffix) in SamplesData.DATA_FILE_INFO.items():
+            file_path = os.path.join(self.import_dir, child_dir, f"{sample_id}{suffix}")
 
-        return file_paths
+            if not os.path.isfile(file_path):
+                raise FileNotFoundError(f"File does not exist: {file_path}.")
 
-    def __init__(self, load_path: str = None):
+            self.file_paths[file_key] = file_path
+
+    def save_instance(self) -> None:
         """
-        Initialize a SamplesContainer instance.
-
-        :param load_path: If provided, load a pre-existing SamplesContainer instance from the path. Defaults is None.
+        Save an instance of SamplesContainer to a specified path.
         """
-        self.sample_data = {}
-        self.sample_id_list = []
-        self.data_imported_dir = None
-        self.instance_path = None
-        self.analysis_type = None
-        self.sample_id_used = None
-        self.parameters = {}
-        self.results_dir = None
+        with open(self.save_instance_path, 'wb') as f:
+            pickle.dump(self, f)
 
-        if load_path:
-            self.load_sample_data(load_path)
-
-    def import_samples(self, parent_dir: str, sample_id_list: list[str] = []) -> None:
+    def import_sample_data(self, import_dir: str, sample_id_list: list[str] = []) -> None:
         """
         Import sample data from the specified parent directory.
         The parent directory is expected to contain four data types recorded in 'DATA_FILE_INFO'.
         Data should be organized in child directories with specific suffixes as defined in 'DATA_FILE_INFO'.
 
-        :param parent_dir: Path to the parent directory containing the sample data.
+        :param import_dir: Path to the parent directory containing the sample data.
         :param sample_id_list: List of sample IDs to import. If not provided, all available sample IDs will be imported. The sample IDs are extracted from the file names using the provided suffix.
         """
-        logger.info(f"Reading samples from: {parent_dir}.")
-        SamplesContainer.check_dir(parent_dir)
+        self.import_dir = import_dir
 
+        base_logger.logger.info(f"Reading samples from: {self.import_dir}.")
+        self.check_dir()
+
+        old_sample_num = len(self.sample_id_list)
         if sample_id_list == []:
-            logger.info(f"No sample id list provided.")
-            sample_id_list = SamplesContainer.get_sample_id_list(parent_dir)
-            SamplesContainer.check_file(parent_dir, sample_id_list)
+            base_logger.logger.info("No sample id list provided.")
+            self.get_sample_id_list()
         else:
-            logger.info("Specified sample id list.")
-            SamplesContainer.check_file(parent_dir, sample_id_list)
+            base_logger.logger.info("Specified sample id list.")
+            self.sample_id_list.extend(sample_id_list)
 
-        self.data_imported_dir = parent_dir
-        self.sample_id_list.extend(sample_id_list)
+        self.sample_id_list = list(set(self.sample_id_list))
+        new_sample_num = len(self.sample_id_list)
 
-        for sample_id in sample_id_list:
-            file_paths = SamplesContainer.get_file_paths(sample_id, parent_dir)
+        for sample_id in self.sample_id_list:
+            self.get_file_paths(sample_id)
+            self.sample_data[sample_id] = OneSampleData(**self.file_paths)
 
-            # uniq_fasta_path = file_paths["uniq_fasta"]
-            # denoise_fasta_path = file_paths["denoise_fasta"]
-            # denoise_report_path = file_paths["denoise_report"]
-            # blast_table_path = file_paths["blast_table"]
-            # TODO(SW): Defeat the purpose of using a dictionary
+        base_logger.logger.info(f"Total {new_sample_num - old_sample_num} new samples read.")
 
-            self.sample_data[sample_id] = OneSampleContainer(uniq_fasta_path=file_paths["uniq_fasta"], denoise_fasta_path=file_paths["denoise_fasta"], denoise_report_path=file_paths["denoise_report"], blast_table_path=file_paths["blast_table"]) # TODO(SM): basic
-            # TODO(SW): hacky way, changy the key and use unpack **.  OneSampleContainer(**file_paths)
-        logger.info(f"{len(sample_id_list)} Samples read.")
-
-    def save_sample_data(self, save_dir: str, save_name: str = f"eDNA_samples_{date.today()}") -> None:
+    def save_sample_data(
+            self, save_instance_dir: str,
+            save_prefix: str = f"eDNA_samples_{date.today()}",
+            overwrite: bool = False
+        ):
         """
         Save the current sample data to a specified directory.
 
-        :param save_dir: The directory where the sample data will be saved.
-        :param save_name: The name of the save file. Defaults to 'eDNA_samples_<current_date>'.
+        :param save_instance_dir: If provided, save the SamplesContainer instance to the specified directory. Defaults to None.
+        :param save_prefix: The prefix for the save .pkl file. Defaults is 'eDNA_samples_<current_date>'.
+        :param overwrite: If True, overwrite the existing file. Defaults to False.
         """
-        os.makedirs(save_dir, exist_ok=True)
+        os.makedirs(save_instance_dir, exist_ok=True)
 
-        save_path = os.path.join(save_dir, f"{save_name}.pkl")
-        logger.info(f"Saving sample data to: {save_path}.")
+        self.save_instance_path = os.path.join(save_instance_dir, f"{save_prefix}.pkl")
+        base_logger.logger.info(f"Saving sample data to: {self.save_instance_path}.")
 
-        # overwrite_y_n
-        # TODO(SW): Personally, I prefer non-interactive way. This will hang on the server for ever and get no response.
-        if os.path.exists(save_path):
-            while True:
-                user_input = input("> File already exists, Do you want to overwrite it? (y/n)")
-                if user_input in ['y', 'Y', 'Yes', 'yes']:
-                    os.remove(save_path)
-                    print("> File overwritten.")
-                    break
-                elif user_input in ['n', 'N', 'No', 'no']:
-                    print("> File not saved.\n")
-                    return
-                else:
-                    print("> Invalid input.")
+        if os.path.exists(self.save_instance_path) and overwrite == False:
+            base_logger.logger.info(f"File already exists: {self.save_instance_path}. Data didn't saved.")
+            return
+        else:
+            pass
 
-        SamplesContainer.save_instance(self, save_path)
-        self.instance_path = save_path
-        logger.info(f"Sample data saved to: {save_path}\n")
+        self.save_instance()
+        base_logger.logger.info(f"Sample data saved to: {self.save_instance_path}.")
 
-    def load_sample_data(self, load_path: str) -> None:
+    def load_sample_data(self, load_instance_path) -> None:
         """
         Load sample data from a specified path.
-
-        :param load_path: The file path to load the sample data from.
+    
+        :param load_instance_path: If provided, load a pre-existing SamplesContainer instance from the path. Defaults is None.
         """
-        with open(load_path,'rb') as file:
+        self.load_instance_path = load_instance_path
+        with open(self.load_instance_path,'rb') as file:
             self.__dict__ = pickle.load(file).__dict__
-        self.instance_path = load_path
-        logger.info(f"Sample data loaded from: {load_path}\n")
-
-    def load_sample_id_list(self, sample_id_list: str = []) -> list[str]:
-        if sample_id_list == []:
-            sample_id_list = self.sample_id_list
-            logger.info(f"No sample ID list specified. Using all {len(sample_id_list)} samples.")
-        else:
-            logger.info(f"Specified {len(sample_id_list)} samples.")
-        self.sample_id_used = sample_id_list # TODO(SW): You got this, don't need to return
-        # return sample_id_list
-
-    def load_units2fasta(self,
-            target_name: str,
-            target_level: str,
-            unit_level: str,
-            sample_id_list: list[str],
-            n_unit_threshold: int = -1 # TODO(SW): OR *args
-        ) -> dict[str, str]:
-        units2fasta = {}
-        for sample_id in sample_id_list:
-            for hap, level_dict in self.sample_data[sample_id].hap2level.items():
-                if target_name not in level_dict[target_level]:
-                    continue
-                unit_name = level_dict[unit_level]
-                title = f"{unit_name}-{sample_id}_{hap}"
-                seq = self.sample_data[sample_id].hap_seq[hap]
-
-                if unit_name not in units2fasta:
-                    units2fasta[unit_name] = ""
-                units2fasta[unit_name] += f'>{title}\n{seq}\n'
-        return units2fasta
-
-    # TODO(SW): Refactor **_target() and **write_output() with the following
-    @abstractmethod
-    def target(self, *args):
-        pass
-
-    @abstractmethod
-    def write_output(self, *args):
-        pass
+        base_logger.logger.info(f"Sample data loaded from: {self.load_instance_path}.")
