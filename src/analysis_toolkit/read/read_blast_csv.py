@@ -1,4 +1,4 @@
-from analysis_toolkit.utils.base_logger import logger
+from analysis_toolkit.utils import base_logger
 
 class Reader:
     def __init__(self):
@@ -30,7 +30,7 @@ class BlastReader(Reader):
         self.error_table = BlastReader.generate_error_table()
         self.hap2level = {}
 
-    def process_line(self, line: str) -> tuple[str, dict[str, str]]:
+    def process_line(self, line: str):
         """
         Process a single line from the BLAST CSV table.
         The line list should be in the format:
@@ -55,24 +55,23 @@ class BlastReader(Reader):
             level_list[2] = self.TAX_REPLACMENT[level_list[2]]
         hap2level_entry = dict(zip(self.DESIRED_LEVEL, level_list))
         haplotype = line_list[0]
-        self.update_hap2level(self, haplotype, hap2level_entry)
-        # return haplotype, hap2level_entry
+        self.update_hap2level(haplotype, hap2level_entry)
 
-    def update_hap2level(self, haplotype, hap2level_entry) -> None:
+    def update_hap2level(self, haplotype, hap2level_entry):
         self.hap2level[haplotype] = hap2level_entry
 
-    def read_blast_table(self, blast_table_path: str) -> None:
+    def read_blast_table(self, blast_table: str):
         """
         Read the BLAST CSV table and update the dictionary 'self.hap2level' with the corresponding taxonomic names at each level for every haplotype (ZOTU).
         Seven levels are used: species, genus, family, order, class, phylum, kingdom.
 
         :param blast_table_path: Path to the BLAST CSV table.
         """
-        logger.info(f"Reading Blast CSV Table: {blast_table_path}")
+        base_logger.logger.info(f"Reading Blast CSV Table: {blast_table}.")
 
-        with open(blast_table_path, 'r') as file:
+        with open(blast_table, 'r') as file:
             for line in file.readlines():
-                self.process_line(line) # NOTE(SW): If you don't need the variable, to return it
+                self.process_line(line)
 
         hap_count = len(self.hap2level)
-        logger.info(f"Read finished. Assigned {hap_count} haplotypes to species.")
+        base_logger.logger.info(f"COMPLETE: Assigned {hap_count} haplotypes to species.")
