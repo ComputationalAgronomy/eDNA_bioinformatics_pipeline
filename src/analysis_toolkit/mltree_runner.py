@@ -44,14 +44,14 @@ class MLTreeRunner(base_runner.SequenceRunner):
         """
         os.makedirs(save_dir, exist_ok=True)
 
-        mtg_fh = base_logger.get_file_handler(os.path.join(save_dir, "mltree_runner.log"))
+        mtg_fh = base_logger._get_file_handler(os.path.join(save_dir, "mltree_runner.log"))
         base_logger.logger.addHandler(mtg_fh)
 
         base_logger.logger.info(f"Plotting MLTree for {" ".join(target_list)}...")
 
         ml_fasta_path = os.path.join(save_dir, f'{save_prefix}.aln')
 
-        self.load_sample_id_list(sample_id_list)
+        self._load_sample_id_list(sample_id_list)
 
         self._write_mltree_fasta(
             target_list=target_list,
@@ -71,7 +71,7 @@ class MLTreeRunner(base_runner.SequenceRunner):
             threads=threads
         )
 
-        self.analysis_type = "ml_tree"
+        self.analysis_type = "mltree_run"
         self.results_dir = save_dir
         self.parameters.update(
             {
@@ -133,7 +133,7 @@ class MLTreeRunner(base_runner.SequenceRunner):
             fasta_path = os.path.join(temp_dir.name, 'mltree.fa')
 
             for target_name in target_list:
-                self.load_units2fasta_dict(
+                self._load_units2fasta_dict(
                     target_name=target_name,
                     target_level=target_level,
                     unit_level=unit_level,

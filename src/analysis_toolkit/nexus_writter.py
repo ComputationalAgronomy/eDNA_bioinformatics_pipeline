@@ -35,13 +35,13 @@ class NexusWritter(base_runner.SequenceRunner):
         :param save_dir: Directory where the NEXUS file will be saved. Default is the current directory.
         :param sample_id_list: List of sample IDs to include in the NEXUS file. The list should be same as that specified by the index file. Default is None (plot all samples).
         """
-        nw = base_logger.get_file_handler(os.path.join(save_dir, "hapnet_nex_generator.log"))
+        nw = base_logger._get_file_handler(os.path.join(save_dir, "hapnet_nex_generator.log"))
         base_logger.logger.addHandler(nw)
 
         base_logger.logger.info(f"Generating NEXUS file for {species_name}...")
 
         try:
-            self.load_sample_id_list(sample_id_list)
+            self._load_sample_id_list(sample_id_list)
 
             self._load_points_labels(
                 index_path=index_path,

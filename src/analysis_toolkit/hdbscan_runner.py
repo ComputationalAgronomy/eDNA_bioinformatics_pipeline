@@ -45,7 +45,7 @@ class HdbscanRunner(base_runner.Runner):
 
         os.makedirs(save_dir, exist_ok=True)
 
-        hr_fh = base_logger.get_file_handler(os.path.join(save_dir, 'hdbscan_runner.log'))
+        hr_fh = base_logger._get_file_handler(os.path.join(save_dir, 'hdbscan_runner.log'))
         base_logger.logger.addHandler(hr_fh)
 
         index = pd.read_csv(index_file, sep='\t')

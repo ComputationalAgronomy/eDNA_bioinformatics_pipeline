@@ -64,12 +64,12 @@ class UmapRunner(base_runner.SequenceRunner):
         index_path = os.path.join(save_dir, "umap_index.tsv")
         aln_index_fasta_path = os.path.join(save_dir, "input.aln")
 
-        ur_fh = base_logger.get_file_handler(os.path.join(save_dir, 'write_umap_index_file.log'))
+        ur_fh = base_logger._get_file_handler(os.path.join(save_dir, 'write_umap_index_file.log'))
         base_logger.logger.addHandler(ur_fh)
 
         base_logger.logger.info(f"Writing index TSV: {index_path} for {" ".join(target_list)}...")
 
-        self.load_sample_id_list(sample_id_list)
+        self._load_sample_id_list(sample_id_list)
 
         self._load_units2fasta_units2targets(
             target_list=target_list,
@@ -97,7 +97,7 @@ class UmapRunner(base_runner.SequenceRunner):
 
         base_logger.logger.info(f'Saved index TSV to: {index_path}')
 
-        self.analysis_type = "UMAP"
+        self.analysis_type = "umap_write"
         self.results_dir = save_dir
         self.parameters.update(
             {
@@ -113,11 +113,10 @@ class UmapRunner(base_runner.SequenceRunner):
         )
 
     def plot(self,
-        index_path,
+        index_path: str,
+        n_unit_threshold: int,
         category: str,
-        prefix: str,
         save_dir: str = ".",
-        n_unit_threshold: int = 15,
         cmap: str = "rainbow",
         show_legend: bool = True
     ):
@@ -125,10 +124,9 @@ class UmapRunner(base_runner.SequenceRunner):
         Plot UMAP results based on the specified category (unit, target, or all).
 
         :param index_path: Path to the pre-created UMAP index file.
+        :param n_unit_threshold: Minimum number of sequences for an unit to be included in the analysis. The value should be set equal to UMAP n_neighbors.
         :param category: Column name to group the units by, restricted to 'unit', 'target', or 'all'.
-        :param prefix: The prefix for the output file names. It is recommended to use the taxonomic level correspond to the specified category.
         :param save_dir: The directory to save the PNG files in. Default is the current directory.
-        :param n_unit_threshold: Minimum number of sequences for an unit to be included in the analysis. The value should be set equal to UMAP n_neighbors. Default is 15.
         :param cmap: The colormap to use for the plots. Default is "rainbow".
         :param show_legend: Whether to show the legend in the plots. Default is True.
         """
@@ -137,30 +135,28 @@ class UmapRunner(base_runner.SequenceRunner):
 
         os.makedirs(save_dir, exist_ok=True)
 
-        ur_fh = base_logger.get_file_handler(os.path.join(save_dir, 'plot_umap.log'))
+        ur_fh = base_logger._get_file_handler(os.path.join(save_dir, 'plot_umap.log'))
         base_logger.logger.addHandler(ur_fh)
 
         base_logger.logger.info("Plotting UMAP...")
 
         self.index = pd.read_csv(index_path, sep='\t')
 
-        self._filter_index_by_unit_occurrence(n_unit_threshold)
+        self.filtered_index = UmapRunner._filter_index_by_unit_occurrence(self.index, n_unit_threshold)
 
         self._plot_umap_by_category(
             category=category,
-            prefix=prefix,
             save_dir=save_dir,
             cmap=cmap,
             show_legend=show_legend
         )
 
-        self.analysis_type = "UMAP"
+        self.analysis_type = "umap_plot"
         self.results_dir = save_dir
         self.parameters.update(
             {
                 "index_path": index_path,
                 "category": category,
-                "prefix": prefix,
                 "save_dir": save_dir,
                 "n_unit_threshold": n_unit_threshold,
                 "cmap": cmap,
@@ -179,7 +175,7 @@ class UmapRunner(base_runner.SequenceRunner):
         It also updates a dictionary linking unit labels to their corresponding target labels.
         """
         for target_name in target_list:
-            self.load_units2fasta_dict(
+            self._load_units2fasta_dict(
                 target_name=target_name,
                 target_level=target_level,
                 unit_level=unit_level
@@ -304,7 +300,7 @@ class UmapRunner(base_runner.SequenceRunner):
         self.matrix = []
         with open(fasta_path, 'r') as handle:
             for record in SeqIO.parse(handle, 'fasta'):
-                self.matrix.append(UmapPlotter._sequence_to_one_hot(record.seq))
+                self.matrix.append(UmapRunner._sequence_to_one_hot(record.seq))
 
     def _fit_umap(self,
             neighbors: int,
@@ -341,7 +337,7 @@ class UmapRunner(base_runner.SequenceRunner):
         ):
         if calc_dist:
             dist_path = os.path.join(save_dir, "distance.txt")
-            UmapPlotter._calc_distmx(fasta_path, dist_path)
+            UmapRunner._calc_distmx(fasta_path, dist_path)
             self._load_sparse_dist_matrix(dist_path)
         else:
             self._load_one_hot_matrix(fasta_path)
@@ -402,7 +398,8 @@ class UmapRunner(base_runner.SequenceRunner):
         self._update_index_source_column()
         self._updata_index_embedding_columns()
 
-    def _filter_index_by_unit_occurrence(self, n: int = 1) -> pd.DataFrame:
+    @staticmethod
+    def _filter_index_by_unit_occurrence(index, n: int = 1) -> pd.DataFrame:
         """
         Filter out units that occur less than n times in the index DataFrame.
         The value of 'n' should be set equal to the value of the UMAP 'neighbor'.
@@ -412,11 +409,12 @@ class UmapRunner(base_runner.SequenceRunner):
         :return: Filtered index DataFrame.
         """
         if n <= 1:
-            self.filtered_index = self.index.copy()
-        counts = self.index["unit"].value_counts()
-        units_to_remove = counts[counts < n].self.index
-        self.filtered_index = self.index[~self.index["unit"].isin(units_to_remove)]
+            return index
+        counts = index["unit"].value_counts()
+        units_to_remove = counts[counts < n].index
+        filtered_index = index[~index["unit"].isin(units_to_remove)]
         base_logger.logger.info(f"Units with less than {n} occurrences have been removed.")
+        return filtered_index
 
     def _matplotlib_points(
         points,
@@ -542,7 +540,7 @@ class UmapRunner(base_runner.SequenceRunner):
         ax = fig.add_subplot(111)
 
         if points.shape[0] <= width * height // 10:
-            ax = UmapPlotter._matplotlib_points(points, ax, labels, markers, values, color_key, cmap, background, width, height, show_legend)
+            ax = UmapRunner._matplotlib_points(points, ax, labels, markers, values, color_key, cmap, background, width, height, show_legend)
         else:
             ax = _datashade_points(points, ax, labels, values, color_key, cmap, background, width, height, show_legend)
 
@@ -559,7 +557,7 @@ class UmapRunner(base_runner.SequenceRunner):
         Plot the UMAP embedding and save the plot as a PNG file.
         """
         points = self.subindex[["umap1", "umap2"]].to_numpy()
-        ax = UmapPlotter._plot_points(
+        ax = UmapRunner._plot_points(
             points=points,
             labels=self.subindex['unit'],
             markers=self.subindex['source'],
@@ -587,14 +585,14 @@ class UmapRunner(base_runner.SequenceRunner):
         """
         if category == 'all':
             base_logger.logger.info("Drawing PNG for all units...")
-            png_path = os.path.join(save_dir, f"{prefix}_umap.png")
+            png_path = os.path.join(save_dir, f"all_umap.png")
             self.subindex = self.filtered_index.copy()
             self._plot_umap(png_path, cmap, show_legend)
             return
 
         unique_values = np.unique(self.filtered_index[category])
         for value in unique_values:
-            base_logger.logger.info(f"Drawing PNG for {prefix} {value}...")
-            png_path = os.path.join(save_dir, f"{prefix}_{value}_umap.png")
+            base_logger.logger.info(f"Drawing PNG for {value}...")
+            png_path = os.path.join(save_dir, f"{value}_umap.png")
             self.subindex = self.filtered_index[self.filtered_index[category] == value]
             self._plot_umap(png_path, cmap, show_legend)

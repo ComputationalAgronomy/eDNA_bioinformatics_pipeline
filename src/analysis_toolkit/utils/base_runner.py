@@ -11,13 +11,13 @@ class Runner(ABC):
         self.sample_id_used = None
         self.parameters = {}
         self.results_dir = None
-        self.import_data(samplesdata)
+        self._import_data(samplesdata)
 
-    def import_data(self, samplesdata):
+    def _import_data(self, samplesdata):
         self.sample_data = samplesdata.sample_data
         self.sample_id_list = samplesdata.sample_id_list
 
-    def load_sample_id_list(self, sample_id_list: str = []):
+    def _load_sample_id_list(self, sample_id_list: str = []):
         if sample_id_list == []:
             base_logger.logger.info(f"No sample ID list specified. Using all {len(sample_id_list)} samples.")
             self.sample_id_used = self.sample_id_list
@@ -34,13 +34,13 @@ class SequenceRunner(ABC, Runner):
         super().__init__(samplesdata)
         self.units2fasta = {}
 
-    def filter_sequence(self, n_unit_threshold):
+    def _filter_sequence(self, n_unit_threshold):
         for unit, fasta in self.units2fasta.copy().items():
             seq_num = fasta.count('>')
             if seq_num < n_unit_threshold:
                 del self.units2fasta[unit]
 
-    def load_units2fasta_dict(self,
+    def _load_units2fasta_dict(self,
             target_name: str,
             target_level: str,
             unit_level: str,
@@ -60,7 +60,7 @@ class SequenceRunner(ABC, Runner):
                 self.units2fasta[unit_name] += f'>{title}\n{seq}\n'
 
         if n_unit_threshold > 1:
-            self.filter_sequence(n_unit_threshold)
+            self._filter_sequence(n_unit_threshold)
 
 
 class AbundanceRunner(ABC, Runner):
@@ -68,7 +68,7 @@ class AbundanceRunner(ABC, Runner):
         super().__init__(samplesdata)
         self.samples2abundance = {}
 
-    def load_hap_size(self, sample_id: str, hap: str) -> int:
+    def _load_hap_size(self, sample_id: str, hap: str) -> int:
         """
         Get the size of a haplotype for a given sample.
 
@@ -78,7 +78,7 @@ class AbundanceRunner(ABC, Runner):
         """
         return int(self.sample_data[sample_id].hap_size[hap])
 
-    def load_units2abundance_dict(self, sample_id: str, unit_level: str):
+    def _load_units2abundance_dict(self, sample_id: str, unit_level: str):
         """
         Get the abundance of a level for a given sample.
 
@@ -91,10 +91,10 @@ class AbundanceRunner(ABC, Runner):
             level_name = level_dict[unit_level]
             if level_name not in self.units2abundance:
                 self.units2abundance[level_name] = 0
-            size = self.load_hap_size(sample_id, hap)
+            size = self._load_hap_size(sample_id, hap)
             self.units2abundance[level_name] += size # e.g. {'SpA': 3, 'SpB': 4, 'SpC': 5}
     
-    def normalize_abundance(self):
+    def _normalize_abundance(self):
         """
         Normalize the abundance values in the dictionary to percentages.
 
@@ -104,5 +104,5 @@ class AbundanceRunner(ABC, Runner):
         total_size = sum(self.units2abundance.values())
         self.units2abundance = {key: value/total_size * 100 for key, value in self.units2abundance.items()}
     
-    def update_samples2abundance_dict(self, sample_id: str):
+    def _update_samples2abundance_dict(self, sample_id: str):
         self.samples2abundance[sample_id] = self.units2abundance.copy()

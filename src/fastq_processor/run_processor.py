@@ -135,7 +135,7 @@ class FastqProcessor:
         n_cpu: int = 1,
         memory: int = 8,
         ):
-        fp_fh = base_logger.get_file_handler(os.path.join(stages_parent_dir, "stages.log"))
+        fp_fh = base_logger._get_file_handler(os.path.join(stages_parent_dir, "stages.log"))
         base_logger.logger.addHandler(fp_fh)
         self.config = stage_config.StageConfig(verbose=verbose, logger=base_logger.logger, n_cpu=n_cpu, memory=memory) # TODO(SW): Expand this class, so you only need to pass one parameters.
         self.parent_dir = stages_parent_dir

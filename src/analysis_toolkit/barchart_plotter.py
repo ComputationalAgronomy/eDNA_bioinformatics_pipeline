@@ -120,16 +120,16 @@ class BarchartPlotter(base_runner.AbundanceRunner):
         :param sample_id_list: A list of sample IDs to plot. Default is None (plot all samples).
         :param logger_save_dir: The directory to save the log file. Default is the current directory.
         """
-        bg_fh = base_logger.get_file_handler(os.path.join(logger_save_dir, "barchart_generator.log"))
+        bg_fh = base_logger._get_file_handler(os.path.join(logger_save_dir, "barchart_generator.log"))
         base_logger.logger.addHandler(bg_fh)
 
         base_logger.logger.info(f"Plotting barchart for {level}...")
-        self.load_sample_id_list(sample_id_list)
+        self._load_sample_id_list(sample_id_list)
 
         for sample_id in self.sample_id_used:
-            self.load_units2abundance_dict(sample_id, level)
-            self.normalize_abundance()
-            self.update_samples2abundance_dict(sample_id)
+            self._load_units2abundance_dict(sample_id, level)
+            self._normalize_abundance()
+            self._update_samples2abundance_dict(sample_id)
 
         all_unit_names = [list(self.samples_abundance[sample_id].keys()) for sample_id in self.sample_id_used]
         self.uniq_unit_names = utils.list_union(all_unit_names)
@@ -140,7 +140,7 @@ class BarchartPlotter(base_runner.AbundanceRunner):
         self.fig.show()
         base_logger.logger.info("Barchart generated.") 
 
-        self.analysis_type = "barchart"
+        self.analysis_type = "barchart_plot"
         self.parameters.update(
             {
                 "level": level,

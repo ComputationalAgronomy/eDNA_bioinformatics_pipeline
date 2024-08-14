@@ -79,7 +79,7 @@ class SamplesData():
         if not self.verbose:
             base_logger.logger.setLevel("WARNING")
 
-    def check_dir(self) -> None:
+    def _check_dir(self) -> None:
         """
         Check if all necessary child directories exist within the specified parent directory.
         """
@@ -92,7 +92,7 @@ class SamplesData():
 
         base_logger.logger.info("All directories exist.")
 
-    def get_sample_id_list(self):
+    def _get_sample_id_list(self):
         """
         Retrieve a list of sample IDs from the specified parent directory.
 
@@ -109,7 +109,7 @@ class SamplesData():
         sample_id_list = [file.replace(suffix, '') for file in file_list if file.endswith(suffix)]
         self.sample_id_list.extend(sample_id_list)
 
-    def get_file_paths(self, sample_id: str) -> dict[str, str]:
+    def _get_file_paths(self, sample_id: str) -> dict[str, str]:
         """
         Retrieve the file paths for all data types for a given sample ID.
 
@@ -124,14 +124,14 @@ class SamplesData():
 
             self.file_paths[file_key] = file_path
 
-    def save_instance(self) -> None:
+    def _save_instance(self) -> None:
         """
         Save an instance of SamplesContainer to a specified path.
         """
         with open(self.save_instance_path, 'wb') as f:
             pickle.dump(self, f)
 
-    def import_sample_data(self, import_dir: str, sample_id_list: list[str] = []) -> None:
+    def import_data(self, import_dir: str, sample_id_list: list[str] = []) -> None:
         """
         Import sample data from the specified parent directory.
         The parent directory is expected to contain four data types recorded in 'DATA_FILE_INFO'.
@@ -143,12 +143,12 @@ class SamplesData():
         self.import_dir = import_dir
 
         base_logger.logger.info(f"Reading samples from: {self.import_dir}.")
-        self.check_dir()
+        self._check_dir()
 
         old_sample_num = len(self.sample_id_list)
         if sample_id_list == []:
             base_logger.logger.info("No sample id list provided.")
-            self.get_sample_id_list()
+            self._get_sample_id_list()
         else:
             base_logger.logger.info("Specified sample id list.")
             self.sample_id_list.extend(sample_id_list)
@@ -157,12 +157,12 @@ class SamplesData():
         new_sample_num = len(self.sample_id_list)
 
         for sample_id in self.sample_id_list:
-            self.get_file_paths(sample_id)
+            self._get_file_paths(sample_id)
             self.sample_data[sample_id] = OneSampleData(**self.file_paths)
 
         base_logger.logger.info(f"Total {new_sample_num - old_sample_num} new samples read.")
 
-    def save_sample_data(
+    def save_data(
             self, save_instance_dir: str,
             save_prefix: str = f"eDNA_samples_{date.today()}",
             overwrite: bool = False
@@ -185,10 +185,10 @@ class SamplesData():
         else:
             pass
 
-        self.save_instance()
+        self._save_instance()
         base_logger.logger.info(f"Sample data saved to: {self.save_instance_path}.")
 
-    def load_sample_data(self, load_instance_path) -> None:
+    def load_data(self, load_instance_path) -> None:
         """
         Load sample data from a specified path.
     
