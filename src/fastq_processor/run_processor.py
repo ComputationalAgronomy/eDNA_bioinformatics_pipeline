@@ -2,13 +2,13 @@ import os
 
 from analysis_toolkit.runner_build import base_logger
 from fastq_processor.step_build import stage_config
-from fastq_processor.step_exec import stage_decompress as decompress
-from fastq_processor.step_exec import stage_usearch_merge as merge
-from fastq_processor.step_exec import stage_cutadapt_cut_primer as cutprimer
-from fastq_processor.step_exec import stage_fq_to_fa as fqtofa
-from fastq_processor.step_exec import stage_usearch_dereplicate as dereplicate
-from fastq_processor.step_exec import stage_usearch_denoise as denoise
-from fastq_processor.step_exec import stage_blastn_assign_taxa as assigntaxa
+from fastq_processor.step_exec import (decompress,
+                                       merge,
+                                       cut_primer,
+                                       fq_to_fa,
+                                       dereplicate,
+                                       denoise,
+                                       assign_taxa,)
 
 class FastqProcessor:
 
@@ -65,7 +65,7 @@ class FastqProcessor:
                 pctid=pctid
             )
         if "cutprimer" in enabled_stages:
-            stages["cutprimer"] = cutprimer.CutPrimerStage(config, merge_dir=merge_dir, save_dir=cutprimer_dir,
+            stages["cutprimer"] = cut_primer.CutPrimerStage(config, merge_dir=merge_dir, save_dir=cutprimer_dir,
                 rm_p_5=rm_p_5,
                 rm_p_3=rm_p_3,
                 error_rate=error_rate,
@@ -73,7 +73,7 @@ class FastqProcessor:
                 max_read_len=max_read_len
             )
         if "fqtofa" in enabled_stages:
-            stages["fqtofa"] = fqtofa.FqToFaStage(config, cutprimer_dir=cutprimer_dir, save_dir=fqtofa_dir)
+            stages["fqtofa"] = fq_to_fa.FqToFaStage(config, cutprimer_dir=cutprimer_dir, save_dir=fqtofa_dir)
         if "dereplicate" in enabled_stages:
             stages["dereplicate"] = dereplicate.DereplicateStage(config, fasta_dir=fqtofa_dir, save_dir=derep_dir)
         if "denoise" in enabled_stages:
@@ -82,7 +82,7 @@ class FastqProcessor:
                 alpha=alpha
             )
         if "assigntaxa" in enabled_stages:
-            stages["assigntaxa"] = assigntaxa.AssignTaxaStage(config, denoise_dir=denoise_dir, save_dir=blast_dir,
+            stages["assigntaxa"] = assign_taxa.AssignTaxaStage(config, denoise_dir=denoise_dir, save_dir=blast_dir,
                 db_path=db_path,
                 lineage_path=lineage_path,
                 evalue=evalue,
