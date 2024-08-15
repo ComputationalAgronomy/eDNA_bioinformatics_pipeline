@@ -2,7 +2,6 @@ import os
 import gzip
 from typing import override
 
-from analysis_toolkit.runner_build import base_logger
 from fastq_processor.step_build import stage_builder
 
 
@@ -17,10 +16,11 @@ class DecompressStage(stage_builder.StageBuilder):
         self.fastq_dir = fastq_dir
         self.save_dir = save_dir
 
-    def gunzip(infile, outfile):
-        with gzip.open(infile, 'rb')as in_handler, open(outfile, 'wb') as out_handler:
-            for line in in_handler:
-                out_handler.write(line)
+    def gunzip(self):
+        for infile, outfile in zip(self.infile_list, self.outfile_list):
+            with gzip.open(infile, 'rb')as in_handler, open(outfile, 'wb') as out_handler:
+                for line in in_handler:
+                    out_handler.write(line)
 
     def setup(self, prefix):
         self.check_savedir()
@@ -32,16 +32,11 @@ class DecompressStage(stage_builder.StageBuilder):
         for out_suffix in self.outsuffix_list:
             self.outfile = os.path.join(self.save_dir, f"{prefix}_{out_suffix}")
             self.outfile_list.append(self.outfile)
-        self.prog_name = "Decompress FASTQ.GZ to FASTQ"
+        super().add_stage_function("Decompress FASTQ.GZ to FASTQ", self.gunzip)
 
-    @override
     def run(self):
-        base_logger.logger.info(f"Running: {self.heading}")
-        base_logger.logger.info(f"Program: {self.prog_name}")
-        for infile, outfile in zip(self.infile_list, self.outfile_list):
-            DecompressStage.gunzip(infile, outfile)
-        base_logger.logger.info(f"COMPLETE: {self.prog_name}")
-        return True
+        super().run()
+        return all(self.output)
 
 
 def decompress_demo(config, prefix, fastq_dir="", save_dir=""):

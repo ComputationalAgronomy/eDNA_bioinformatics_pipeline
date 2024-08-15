@@ -1,8 +1,7 @@
 from abc import ABC, abstractmethod
 import os
 
-from fastq_processor.step_build import stage_config
-from fastq_processor.step_build import subproces_runner
+from fastq_processor.step_build import (stage_config, subproces_runner, function_runner)
 
 
 class StageBuilder(ABC):
@@ -43,6 +42,17 @@ class StageBuilder(ABC):
         """
         rd_stage = subproces_runner.RedirectOutputRunner(prog_name, self.runners[stage], outfile_name, errfile_name, self.config)
         self.runners.append(rd_stage)
+
+    def add_stage_function(self, prog_name: str, func):
+        """
+        Adds a stage that executes a function.
+
+        :param prog_name: The name of the program to run.
+        :param func: The function to execute.
+        :param kwargs: Keyword arguments for the function.
+        """
+        func_stage = function_runner.FunctionRunner(prog_name, func, self.config)
+        self.runners.append(func_stage)
 
     def check_infile(self):
         if not os.path.exists(self.infile):
