@@ -4,7 +4,6 @@ import numpy as np
 import os
 import pandas as pd
 
-from analysis_toolkit.runner_build import base_logger
 from analysis_toolkit.runner_build import base_runner
 from analysis_toolkit.runner_exec import runner_umap
 
@@ -45,8 +44,7 @@ class HdbscanRunner(base_runner.Runner):
 
         os.makedirs(save_dir, exist_ok=True)
 
-        hr_fh = base_logger._get_file_handler(os.path.join(save_dir, 'hdbscan_runner.log'))
-        base_logger.logger.addHandler(hr_fh)
+        self._add_file_handler(os.path.join(save_dir, 'hdbscan_runner.log'))
 
         index = pd.read_csv(index_file, sep='\t')
         self.index = runner_umap.UmapRunner._filter_index_by_unit_occurrence(index, n_unit_threshold)
@@ -156,7 +154,7 @@ class HdbscanRunner(base_runner.Runner):
         self.labels, self.clustered, self.numb_clus, self.clus_perc = HdbscanRunner.fit_hdbscan(points, min_samples, min_cluster_size, cluster_selection_epsilon, alpha)
         self.numb_unit = len(self.subindex["unit"].unique())
         self._plot_hdbscan(points, png_path, cmap)
-        base_logger.logger.info(f'Saved hdbscan plot to: {png_path}')
+        self.logger.info(f'Saved hdbscan plot to: {png_path}')
 
     def _update_cluster_report(self, name: str):
         """
@@ -179,7 +177,7 @@ class HdbscanRunner(base_runner.Runner):
             ]
         )
         self.cluster_report.to_csv(cluster_report_path, sep='\t', index=False)
-        base_logger.logger.info(f'Saved cluster report to: {cluster_report_path}')
+        self.logger.info(f'Saved cluster report to: {cluster_report_path}')
 
     def _run_hdbscan_by_category(self,
             category: str,
@@ -207,7 +205,7 @@ class HdbscanRunner(base_runner.Runner):
         cluster_report_path = os.path.join(save_dir, f"{category}_cluster_report.tsv")
 
         if category == 'all':
-            base_logger.logger.info("Clustering for all units...")
+            self.logger.info("Clustering for all units...")
             png_path = os.path.join(save_dir, f"all_hdbscan.png")
             self.subindex = self.index.copy()
 
@@ -227,7 +225,7 @@ class HdbscanRunner(base_runner.Runner):
 
         unique_values = np.unique(self.index[category])
         for value in unique_values:
-            base_logger.logger.info(f"Clustering for {category}: {value}...")
+            self.logger.info(f"Clustering for {category}: {value}...")
             png_path = os.path.join(save_dir, f"{value}_hdbscan.png")
 
             self.subindex = self.index[self.index[category] == value]

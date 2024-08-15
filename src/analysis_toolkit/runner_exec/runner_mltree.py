@@ -2,9 +2,7 @@ import os
 import subprocess
 import tempfile
 
-from analysis_toolkit.runner_build import base_runner
-from analysis_toolkit.runner_build import base_logger
-from analysis_toolkit.runner_build import utils_sequence
+from analysis_toolkit.runner_build import (base_runner, utils_sequence)
 
 
 class MLTreeRunner(base_runner.SequenceRunner):
@@ -43,10 +41,9 @@ class MLTreeRunner(base_runner.SequenceRunner):
         """
         os.makedirs(save_dir, exist_ok=True)
 
-        mtg_fh = base_logger._get_file_handler(os.path.join(save_dir, "mltree_runner.log"))
-        base_logger.logger.addHandler(mtg_fh)
+        self._add_file_handler(os.path.join(save_dir, "mltree_runner.log"))
 
-        base_logger.logger.info(f"Plotting MLTree for {" ".join(target_list)}...")
+        self.logger.info(f"Plotting MLTree for {" ".join(target_list)}...")
 
         ml_fasta_path = os.path.join(save_dir, f'{save_prefix}.aln')
 
@@ -125,7 +122,7 @@ class MLTreeRunner(base_runner.SequenceRunner):
         """
         Write an aligned FASTA file for a list of targets.
         """
-        base_logger.logger.info(f"Writing MLTree FASTA file: {save_path}...")
+        self.logger.info(f"Writing MLTree FASTA file: {save_path}...")
  
         try:
             temp_dir = tempfile.TemporaryDirectory()
@@ -158,7 +155,7 @@ class MLTreeRunner(base_runner.SequenceRunner):
         """
         checkpoint = self._check_mltree_overwrite(save_dir, save_prefix)
         if checkpoint == 'stop':
-            base_logger.logger.info("Stopping the run.")
+            self.logger.info("Stopping the run.")
             return
 
         model = model or 'TEST'
@@ -173,9 +170,9 @@ class MLTreeRunner(base_runner.SequenceRunner):
         if checkpoint:
             cmd.append(checkpoint)
 
-        base_logger.logger.info(f"Running IQTREE2 command: {' '.join(cmd)}")
+        self.logger.info(f"Running IQTREE2 command: {' '.join(cmd)}")
         try:
             subprocess.run(cmd, check=True)
-            base_logger.logger.info(f"IQTREE2 finished. Output files saved in: {save_dir}")
+            self.logger.info(f"IQTREE2 finished. Output files saved in: {save_dir}")
         except subprocess.CalledProcessError as e:
-            base_logger.logger.error(f"Error occurred during IQTREE2 run: {e.stderr}")
+            self.logger.error(f"Error occurred during IQTREE2 run: {e.stderr}")

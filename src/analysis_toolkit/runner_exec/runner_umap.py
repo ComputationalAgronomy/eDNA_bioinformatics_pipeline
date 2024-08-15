@@ -12,9 +12,7 @@ import tempfile
 import umap
 from umap.plot import _datashade_points, _themes
 
-from analysis_toolkit.runner_build import base_logger
-from analysis_toolkit.runner_build import base_runner
-from analysis_toolkit.runner_build import utils_sequence
+from analysis_toolkit.runner_build import (base_runner, utils_sequence)
 
 class UmapRunner(base_runner.SequenceRunner):
     """
@@ -64,10 +62,10 @@ class UmapRunner(base_runner.SequenceRunner):
         index_path = os.path.join(save_dir, "umap_index.tsv")
         aln_index_fasta_path = os.path.join(save_dir, "input.aln")
 
-        ur_fh = base_logger._get_file_handler(os.path.join(save_dir, 'write_umap_index_file.log'))
-        base_logger.logger.addHandler(ur_fh)
+        ur_fh = self._get_file_handler(os.path.join(save_dir, 'write_umap_index_file.log'))
+        self.logger.addHandler(ur_fh)
 
-        base_logger.logger.info(f"Writing index TSV: {index_path} for {" ".join(target_list)}...")
+        self.logger.info(f"Writing index TSV: {index_path} for {" ".join(target_list)}...")
 
         self._load_sample_id_list(sample_id_list)
 
@@ -95,7 +93,7 @@ class UmapRunner(base_runner.SequenceRunner):
         self._update_index_columns()
         self.index.to_csv(index_path, sep='\t', index=False)
 
-        base_logger.logger.info(f'Saved index TSV to: {index_path}')
+        self.logger.info(f'Saved index TSV to: {index_path}')
 
         self.analysis_type = "umap_write"
         self.results_dir = save_dir
@@ -135,10 +133,9 @@ class UmapRunner(base_runner.SequenceRunner):
 
         os.makedirs(save_dir, exist_ok=True)
 
-        ur_fh = base_logger._get_file_handler(os.path.join(save_dir, 'plot_umap.log'))
-        base_logger.logger.addHandler(ur_fh)
+        self._add_file_handler(os.path.join(save_dir, 'plot_umap.log'))
 
-        base_logger.logger.info("Plotting UMAP...")
+        self.logger.info("Plotting UMAP...")
 
         self.index = pd.read_csv(index_path, sep='\t')
 
@@ -220,7 +217,7 @@ class UmapRunner(base_runner.SequenceRunner):
         finally:
             temp_dir.cleanup()
 
-    def _calc_distmx(
+    def _calc_distmx(self,
             fasta_path: str,
             dist_path: str,
             maxdist: float = 1.0,
@@ -237,7 +234,7 @@ class UmapRunner(base_runner.SequenceRunner):
         :param termdist: The distance threshold for terminating the calculation. Default is 1.0.
         :param threads: Number of threads to use for the calculation. Default is 12.
         """
-        base_logger.logger.info("Calculating distance matrix...")
+        self.logger.info("Calculating distance matrix...")
 
         cmd = [
             "usearch", "-calc_distmx", fasta_path, "-tabbedout", dist_path,
@@ -246,12 +243,12 @@ class UmapRunner(base_runner.SequenceRunner):
         if threads:
             cmd.extend(["-threads", str(threads)])
 
-        base_logger.logger.info("> Running USEARCH command:", cmd)
+        self.logger.info("> Running USEARCH command:", cmd)
         try:
             subprocess.run(cmd, check=True)
-            base_logger.logger.info(f"USEARCH finished. Output distance matrix file saved to: {dist_path}")
+            self.logger.info(f"USEARCH finished. Output distance matrix file saved to: {dist_path}")
         except subprocess.CalledProcessError as e:
-            base_logger.logger.error(f"Error occurred during the calculation of the distance matrix: {e.stderr}")
+            self.logger.error(f"Error occurred during the calculation of the distance matrix: {e.stderr}")
 
     def _load_sparse_dist_matrix(self, dist_path: str):
         """
@@ -261,7 +258,7 @@ class UmapRunner(base_runner.SequenceRunner):
         :return: Sparse distance matrix as a NumPy array.
         """
         self.matrix = pd.read_csv(dist_path, header=None, sep='\t')
-        base_logger.logger.info(f"Loading sparse {max(self.matrix[0])+1} x {max(self.matrix[0])+1} distance matrix from: {dist_path}")
+        self.logger.info(f"Loading sparse {max(self.matrix[0])+1} x {max(self.matrix[0])+1} distance matrix from: {dist_path}")
 
         diagonal = self.matrix[0] == self.matrix[1]
         row = np.concatenate([self.matrix[0], self.matrix[1][~diagonal]])
@@ -295,7 +292,7 @@ class UmapRunner(base_runner.SequenceRunner):
         :param seq_path: Path to the input FASTA file.
         :return: One-hot encoded matrix as a NumPy array.
         """
-        base_logger.logger.info(f"Creating one-hot encoded matrix from: {fasta_path}")
+        self.logger.info(f"Creating one-hot encoded matrix from: {fasta_path}")
 
         self.matrix = []
         with open(fasta_path, 'r') as handle:
@@ -316,7 +313,7 @@ class UmapRunner(base_runner.SequenceRunner):
         :param random_state: Random state for umap.
         :param precomputed: Whether the elements of the matrix are distances or not.
         """
-        base_logger.logger.info(f'Creating UMAP embedding with {neighbors} neighbors...')
+        self.logger.info(f'Creating UMAP embedding with {neighbors} neighbors...')
 
         self.reducer = umap.UMAP(
             n_neighbors=neighbors,
@@ -337,7 +334,7 @@ class UmapRunner(base_runner.SequenceRunner):
         ):
         if calc_dist:
             dist_path = os.path.join(save_dir, "distance.txt")
-            UmapRunner._calc_distmx(fasta_path, dist_path)
+            self._calc_distmx(fasta_path, dist_path)
             self._load_sparse_dist_matrix(dist_path)
         else:
             self._load_one_hot_matrix(fasta_path)
@@ -413,7 +410,6 @@ class UmapRunner(base_runner.SequenceRunner):
         counts = index["unit"].value_counts()
         units_to_remove = counts[counts < n].index
         filtered_index = index[~index["unit"].isin(units_to_remove)]
-        base_logger.logger.info(f"Units with less than {n} occurrences have been removed.")
         return filtered_index
 
     def _matplotlib_points(
@@ -565,7 +561,7 @@ class UmapRunner(base_runner.SequenceRunner):
             show_legend=show_legend
         )
         ax.figure.savefig(png_path, bbox_inches='tight')
-        base_logger.logger.info(f"Saved PNG to: {png_path}")
+        self.logger.info(f"Saved PNG to: {png_path}")
     
         # print('\n> Drawing interactive plot...')
         # p = umap.plot.interactive(reducer, labels=index['label'], theme=theme, width=width, height=height, hover_data=index);
@@ -584,7 +580,7 @@ class UmapRunner(base_runner.SequenceRunner):
         Plot the UMAP embedding and save the plot as a PNG file, grouped by the specified category.
         """
         if category == 'all':
-            base_logger.logger.info("Drawing PNG for all units...")
+            self.logger.info("Drawing PNG for all units...")
             png_path = os.path.join(save_dir, f"all_umap.png")
             self.subindex = self.filtered_index.copy()
             self._plot_umap(png_path, cmap, show_legend)
@@ -592,7 +588,7 @@ class UmapRunner(base_runner.SequenceRunner):
 
         unique_values = np.unique(self.filtered_index[category])
         for value in unique_values:
-            base_logger.logger.info(f"Drawing PNG for {value}...")
+            self.logger.info(f"Drawing PNG for {value}...")
             png_path = os.path.join(save_dir, f"{value}_umap.png")
             self.subindex = self.filtered_index[self.filtered_index[category] == value]
             self._plot_umap(png_path, cmap, show_legend)

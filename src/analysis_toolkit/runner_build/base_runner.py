@@ -6,7 +6,8 @@ from analysis_toolkit.runner_exec import data_container
 
 class Runner(ABC):
 
-    def __init__(self, samplesdata: data_container.SamplesData):
+    def __init__(self, samplesdata: data_container.SamplesData, logger=base_logger.logger):
+        self.logger = logger
         self.analysis_type = None
         self.sample_id_used = None
         self.parameters = {}
@@ -19,14 +20,18 @@ class Runner(ABC):
 
     def _load_sample_id_list(self, sample_id_list: str = []):
         if sample_id_list == []:
-            base_logger.logger.info(f"No sample ID list specified. Using all {len(sample_id_list)} samples.")
+            self.logger.info(f"No sample ID list specified. Using all {len(sample_id_list)} samples.")
             self.sample_id_used = self.sample_id_list
         else:
-            base_logger.logger.info(f"Specified {len(sample_id_list)} samples.")
+            self.logger.info(f"Specified {len(sample_id_list)} samples.")
             for sample_id in sample_id_list:
                 if sample_id not in self.sample_id_list:
                     raise ValueError(f"Specified invalid sample ID: {sample_id}.")
             self.sample_id_used = sample_id_list
+
+    def _add_file_handler(self, log_path):
+        fh = base_logger._get_file_handler(log_path)
+        self.logger.addHandler(fh)
 
     @abstractmethod
     def run_write(self):

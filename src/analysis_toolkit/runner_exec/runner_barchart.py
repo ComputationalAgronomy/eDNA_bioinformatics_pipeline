@@ -2,9 +2,7 @@ import os
 import pandas as pd
 import plotly.express as px
 
-from analysis_toolkit.runner_build import base_logger
-from analysis_toolkit.runner_build import base_runner
-from analysis_toolkit.runner_build import utils
+from analysis_toolkit.runner_build import (base_runner, utils)
 
 
 class BarchartRunner(base_runner.AbundanceRunner):
@@ -117,7 +115,7 @@ class BarchartRunner(base_runner.AbundanceRunner):
         """
         bar_chart_path = os.path.join(save_html_dir, f"{level}_barchart.html")
         self.fig.write_html(bar_chart_path)
-        base_logger.logger.info(f"Barchart saved to: {bar_chart_path}")
+        self.logger.info(f"Barchart saved to: {bar_chart_path}")
  
         self.results_dir = save_html_dir
 
@@ -134,10 +132,9 @@ class BarchartRunner(base_runner.AbundanceRunner):
         :param save_dir: If provided, the barchart will be saved as a .HTML file and save a log file. Default is None.
         """
         if save_dir:
-            bg_fh = base_logger._get_file_handler(os.path.join(save_dir, "barchart_generator.log"))
-            base_logger.logger.addHandler(bg_fh)
+            self._add_file_handler(os.path.join(save_dir, "barchart_generator.log"))
 
-        base_logger.logger.info(f"Plotting barchart for {level}...")
+        self.logger.info(f"Plotting barchart for {level}...")
         self._load_sample_id_list(sample_id_list)
 
         for sample_id in self.sample_id_used:
@@ -152,7 +149,7 @@ class BarchartRunner(base_runner.AbundanceRunner):
         
         self._create_barchart_fig()
         self.fig.show()
-        base_logger.logger.info("Barchart generated.") 
+        self.logger.info("Barchart generated.") 
 
         if save_dir:
             self._save(save_dir, level)

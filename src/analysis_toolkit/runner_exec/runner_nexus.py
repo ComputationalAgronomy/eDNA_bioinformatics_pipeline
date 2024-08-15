@@ -4,9 +4,7 @@ import numpy as np
 import pandas as pd
 import tempfile
 
-from analysis_toolkit.runner_build import base_logger
-from analysis_toolkit.runner_build import base_runner
-from analysis_toolkit.runner_build import utils_sequence
+from analysis_toolkit.runner_build import (base_runner, utils_sequence)
 from analysis_toolkit.runner_exec import runner_hdbscan
 
 
@@ -35,10 +33,9 @@ class NexusRunner(base_runner.SequenceRunner):
         :param save_dir: Directory where the NEXUS file will be saved. Default is the current directory.
         :param sample_id_list: List of sample IDs to include in the NEXUS file. The list should be same as that specified by the index file. Default is None (plot all samples).
         """
-        nw = base_logger._get_file_handler(os.path.join(save_dir, "hapnet_nex_generator.log"))
-        base_logger.logger.addHandler(nw)
+        self._add_file_handler(os.path.join(save_dir, "hapnet_nex_generator.log"))
 
-        base_logger.logger.info(f"Generating NEXUS file for {species_name}...")
+        self.logger.info(f"Generating NEXUS file for {species_name}...")
 
         try:
             self._load_sample_id_list(sample_id_list)
@@ -67,7 +64,7 @@ class NexusRunner(base_runner.SequenceRunner):
             self._assemble_nex_format_freq_string()
             self._add_freq_string2nex_path(nex_path)
 
-            base_logger.logger.info(f"Saved NEXUS file to: {nex_path}")
+            self.logger.info(f"Saved NEXUS file to: {nex_path}")
 
             self.analysis_type = "nexus_write"
             self.results_dir = save_dir
