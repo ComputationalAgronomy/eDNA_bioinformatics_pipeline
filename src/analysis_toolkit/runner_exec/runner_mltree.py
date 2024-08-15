@@ -1,11 +1,10 @@
 import os
 import subprocess
 import tempfile
-from typing import override
 
-from analysis_toolkit.utils import base_runner
-from analysis_toolkit.utils import base_logger
-from analysis_toolkit.utils import utils_sequence
+from analysis_toolkit.runner_build import base_runner
+from analysis_toolkit.runner_build import base_logger
+from analysis_toolkit.runner_build import utils_sequence
 
 
 class MLTreeRunner(base_runner.SequenceRunner):
@@ -13,7 +12,7 @@ class MLTreeRunner(base_runner.SequenceRunner):
     def __init__(self, samplesdata):
         super().__init__(samplesdata)
 
-    def run(self,
+    def run_write(self,
             target_list: list[str],
             target_level: str,
             unit_level:str = "species",
@@ -27,7 +26,7 @@ class MLTreeRunner(base_runner.SequenceRunner):
             sample_id_list: list[str] = []
         ) -> None:
         """
-        Reconstruct a phylogenetic tree for a list of targets using IQTREE.
+        Reconstruct a phylogenetic tree for a list of targets using IQTREE and write a .TREEFILE file.
         (IQTREE2 command reference: http://www.iqtree.org/doc/Command-Reference)
 
         :param target_list: A list of targets to be plotted (e.g., ["FamilyA", "FamilyB", etc]).

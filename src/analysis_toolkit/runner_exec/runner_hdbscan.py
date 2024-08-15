@@ -4,9 +4,9 @@ import numpy as np
 import os
 import pandas as pd
 
-from analysis_toolkit.utils import base_runner
-from analysis_toolkit.utils import base_logger
-from analysis_toolkit import umap_runner
+from analysis_toolkit.runner_build import base_logger
+from analysis_toolkit.runner_build import base_runner
+from analysis_toolkit.runner_exec import runner_umap
 
 
 class HdbscanRunner(base_runner.Runner):
@@ -15,7 +15,7 @@ class HdbscanRunner(base_runner.Runner):
         super().__init__(samplesdata)
         self.cluster_report = []
 
-    def run(self,
+    def run_plot(self,
             index_file: str,
             n_unit_threshold: int,
             category: str,
@@ -49,7 +49,7 @@ class HdbscanRunner(base_runner.Runner):
         base_logger.logger.addHandler(hr_fh)
 
         index = pd.read_csv(index_file, sep='\t')
-        self.index = umap_runner.UmapRunner._filter_index_by_unit_occurrence(index, n_unit_threshold)
+        self.index = runner_umap.UmapRunner._filter_index_by_unit_occurrence(index, n_unit_threshold)
 
         self._run_hdbscan_by_category(
             category=category,

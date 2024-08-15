@@ -4,19 +4,19 @@ import numpy as np
 import pandas as pd
 import tempfile
 
-from analysis_toolkit.utils import base_runner
-from analysis_toolkit.utils import base_logger
-from analysis_toolkit.utils import utils_sequence
-from analysis_toolkit import hdbscan_runner
+from analysis_toolkit.runner_build import base_logger
+from analysis_toolkit.runner_build import base_runner
+from analysis_toolkit.runner_build import utils_sequence
+from analysis_toolkit.runner_exec import runner_hdbscan
 
 
-class NexusWritter(base_runner.SequenceRunner):
+class NexusRunner(base_runner.SequenceRunner):
 
     def __init__(self, samplesdata):
         super().__init__(samplesdata)
         self.uniq_seqs2label_freq = {}
 
-    def write(self,
+    def run_write(self,
             index_path: str,
             species_name: str,
             label_type: str,
@@ -94,7 +94,7 @@ class NexusWritter(base_runner.SequenceRunner):
         subindex = index[index["unit"] == species_name]
         if label_type == 'hdbscan':
             points = subindex[["umap1", "umap2"]].to_numpy()
-            self.seq_labels, _, _, _ = hdbscan_runner.HdbscanRunner._fit_hdbscan(points=points, min_samples=10, min_cluster_size=5) # TODO(SW): FIX THIS
+            self.seq_labels, _, _, _ = runner_hdbscan.HdbscanRunner._fit_hdbscan(points=points, min_samples=10, min_cluster_size=5) # TODO(SW): FIX THIS
         elif label_type == 'site':
             self.seq_labels = ["taoyuan" if "taoyuan" in i else "keelung" for i in subindex["seq_id"]]
         else:

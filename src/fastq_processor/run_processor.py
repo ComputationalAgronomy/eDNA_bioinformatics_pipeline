@@ -1,6 +1,6 @@
 import os
 
-from analysis_toolkit.utils import base_logger
+from analysis_toolkit.runner_build import base_logger
 from fastq_processor.step_build import stage_config
 from fastq_processor.step_exec import stage_gzip_decompress_fastq_gz as decompress
 from fastq_processor.step_exec import stage_usearch_merge as merge

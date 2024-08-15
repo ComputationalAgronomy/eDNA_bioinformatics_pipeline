@@ -6,7 +6,8 @@ from datetime import date
 from analysis_toolkit.read import read_blast_csv
 from analysis_toolkit.read import read_denoise_report
 from analysis_toolkit.read import read_fasta
-from analysis_toolkit.utils import base_logger
+from analysis_toolkit.runner_build import base_logger
+
 
 class OneSampleData():
     """
@@ -50,6 +51,7 @@ class OneSampleData():
         br = read_blast_csv.BlastReader()
         br.read_blast_table(blast_table=blast_table)
         self.hap2level = br.hap2level
+
 
 class SamplesData():
     """

@@ -1,10 +1,10 @@
 from Bio import SeqIO
-import os
 import matplotlib.cm
 import matplotlib.colors
 from matplotlib.patches import Patch
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 import pandas as pd
 from scipy import sparse
 import subprocess
@@ -12,9 +12,9 @@ import tempfile
 import umap
 from umap.plot import _datashade_points, _themes
 
-from analysis_toolkit.utils import base_runner
-from analysis_toolkit.utils import base_logger
-from analysis_toolkit.utils import utils_sequence
+from analysis_toolkit.runner_build import base_logger
+from analysis_toolkit.runner_build import base_runner
+from analysis_toolkit.runner_build import utils_sequence
 
 class UmapRunner(base_runner.SequenceRunner):
     """
@@ -25,7 +25,7 @@ class UmapRunner(base_runner.SequenceRunner):
         self.units2targets = {}
         self.index_list = []
 
-    def write(self,
+    def run_write(self,
             target_list: list[str],
             target_level: str,
             unit_level: str = "species",
@@ -112,7 +112,7 @@ class UmapRunner(base_runner.SequenceRunner):
             }
         )
 
-    def plot(self,
+    def run_plot(self,
         index_path: str,
         n_unit_threshold: int,
         category: str,

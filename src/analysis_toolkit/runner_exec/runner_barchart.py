@@ -2,12 +2,12 @@ import os
 import pandas as pd
 import plotly.express as px
 
-from analysis_toolkit.utils import base_runner
-from analysis_toolkit.utils import base_logger
-from analysis_toolkit.utils import utils
+from analysis_toolkit.runner_build import base_logger
+from analysis_toolkit.runner_build import base_runner
+from analysis_toolkit.runner_build import utils
 
 
-class BarchartPlotter(base_runner.AbundanceRunner):
+class BarchartRunner(base_runner.AbundanceRunner):
 
     def __init__(self, samplesdata):
         super().__init__(samplesdata)
@@ -108,20 +108,34 @@ class BarchartPlotter(base_runner.AbundanceRunner):
         # fig.update_yaxes(title=dict(font=dict(size=20)), tickfont=dict(size=18))
         # fig.show()
 
-    def plot(self,
+    def _save(self, save_html_dir: str, level):
+        """
+        Save the barchart as an HTML file.
+
+        :param save_html_dir: The directory to save the HTML file.
+        :param save_html_name: The name of the HTML file. If not provided, the name will be "{level}_barchart". Default is None.
+        """
+        bar_chart_path = os.path.join(save_html_dir, f"{level}_barchart.html")
+        self.fig.write_html(bar_chart_path)
+        base_logger.logger.info(f"Barchart saved to: {bar_chart_path}")
+ 
+        self.results_dir = save_html_dir
+
+    def run_plot(self,
             level: str,
             sample_id_list: list[str] = [],
-            logger_save_dir: str = "."
-        ) -> None:
+            save_dir: str = None
+        ):
         """
         Plot a barchart to visualize the abundance of a level across samples.
 
         :param level: The name of the level to plot (e.g., species, family, etc.).
         :param sample_id_list: A list of sample IDs to plot. Default is None (plot all samples).
-        :param logger_save_dir: The directory to save the log file. Default is the current directory.
+        :param save_dir: If provided, the barchart will be saved as a .HTML file and save a log file. Default is None.
         """
-        bg_fh = base_logger._get_file_handler(os.path.join(logger_save_dir, "barchart_generator.log"))
-        base_logger.logger.addHandler(bg_fh)
+        if save_dir:
+            bg_fh = base_logger._get_file_handler(os.path.join(save_dir, "barchart_generator.log"))
+            base_logger.logger.addHandler(bg_fh)
 
         base_logger.logger.info(f"Plotting barchart for {level}...")
         self._load_sample_id_list(sample_id_list)
@@ -140,6 +154,9 @@ class BarchartPlotter(base_runner.AbundanceRunner):
         self.fig.show()
         base_logger.logger.info("Barchart generated.") 
 
+        if save_dir:
+            self._save(save_dir, level)
+
         self.analysis_type = "barchart_plot"
         self.parameters.update(
             {
@@ -147,16 +164,3 @@ class BarchartPlotter(base_runner.AbundanceRunner):
             }
         )
     
-    def save(self, save_html_dir: str, save_html_name: str = None):
-        """
-        Save the barchart as an HTML file.
-
-        :param save_html_dir: The directory to save the HTML file.
-        :param save_html_name: The name of the HTML file. If not provided, the name will be "{level}_barchart". Default is None.
-        """
-        save_html_name = save_html_name or f"{self.parameters["level"]}_barchart"
-        bar_chart_path = os.path.join(save_html_dir, f'{save_html_name}.html')
-        self.fig.write_html(bar_chart_path)
-        base_logger.logger.info(f"Barchart saved to:  {bar_chart_path}")
-        
-        self.results_dir = save_html_dir
