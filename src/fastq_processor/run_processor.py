@@ -2,10 +2,10 @@ import os
 
 from analysis_toolkit.runner_build import base_logger
 from fastq_processor.step_build import stage_config
-from fastq_processor.step_exec import stage_gzip_decompress_fastq_gz as decompress
+from fastq_processor.step_exec import stage_decompress as decompress
 from fastq_processor.step_exec import stage_usearch_merge as merge
 from fastq_processor.step_exec import stage_cutadapt_cut_primer as cutprimer
-from fastq_processor.step_exec import stage_bbmap_fq_to_fa as fqtofa
+from fastq_processor.step_exec import stage_fq_to_fa as fqtofa
 from fastq_processor.step_exec import stage_usearch_dereplicate as dereplicate
 from fastq_processor.step_exec import stage_usearch_denoise as denoise
 from fastq_processor.step_exec import stage_blastn_assign_taxa as assigntaxa
@@ -98,7 +98,6 @@ class FastqProcessor:
         print(f"Sample ID: {prefix}")
         for k, s in stages.items():
             s.setup(prefix)
-            print(s.runners[0].command)
             is_complete = s.run()
             if not is_complete:
                 print(f"Error: process errors at stage: {k}\n")

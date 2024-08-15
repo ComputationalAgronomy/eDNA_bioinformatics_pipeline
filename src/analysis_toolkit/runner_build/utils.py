@@ -26,4 +26,3 @@ def hex_to_rgb(value: str) -> tuple[int, int, int]:
     rgb = tuple(int(value[i:i + lv // 3], 16) for i in range(0, lv, lv // 3))
     print(f"> '{value}' corresponds to red:{rgb[0]} green:{rgb[1]} blue:{rgb[2]}.")
     return rgb
-hex_to_rgb("#ff0000")

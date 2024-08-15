@@ -36,7 +36,7 @@ class Runner(ABC):
     def run_plot(self):
         pass
 
-class SequenceRunner(ABC, Runner):
+class SequenceRunner(Runner):
     def __init__(self, samplesdata: data_container.SamplesData):
         super().__init__(samplesdata)
         self.units2fasta = {}
@@ -70,7 +70,7 @@ class SequenceRunner(ABC, Runner):
             self._filter_sequence(n_unit_threshold)
 
 
-class AbundanceRunner(ABC, Runner):
+class AbundanceRunner(Runner):
     def __init__(self, samplesdata: data_container.SamplesData):
         super().__init__(samplesdata)
         self.samples2abundance = {}
