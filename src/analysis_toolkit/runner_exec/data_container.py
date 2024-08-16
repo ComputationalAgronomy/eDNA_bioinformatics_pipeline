@@ -1,4 +1,5 @@
 from abc import abstractmethod
+import csv
 import os
 import pickle
 from datetime import date
@@ -53,13 +54,14 @@ class OneSampleData():
         self.hap2level = br.hap2level
 
 
-class SamplesData():
+class SampleData():
     """
     A class for managing sample data storage.
     It provides methods for importing, saving, loading.
 
     :attribute DATA_FILE_INFO: A dictionary mapping import data types to tuples containing the corresponding child directory and file suffix.
     :attribute sample_data: A dictionary to store sample data, the key is sample ID, and the value is a OneSampleData instance.
+    :attribute sample_info: A dictionary to store sample information, the key is sample ID, and the value is a dictionary containing sample metadata.
     :attribute sample_id_list: A list to store sample IDs.
     :attribute verbose: A boolean flag to control logging verbosity. Default is True.
     """
@@ -72,27 +74,30 @@ class SamplesData():
     }
 
     def __init__(self,
-        verbose = True
+        verbose = True,
+        logger = base_logger.logger
         ):
         self.sample_data = {}
         self.sample_id_list = []
+        self.sample_info = {}
         self.verbose = verbose
+        self.logger = logger
 
         if not self.verbose:
-            base_logger.logger.setLevel("WARNING")
+            self.logger.setLevel("WARNING")
 
     def _check_dir(self) -> None:
         """
         Check if all necessary child directories exist within the specified parent directory.
         """
-        base_logger.logger.info("Start checking whether directories exist...")
-        for child_dir_name, _ in SamplesData.DATA_FILE_INFO.values():
+        self.logger.info("Start checking whether directories exist...")
+        for child_dir_name, _ in SampleData.DATA_FILE_INFO.values():
             child_dir = os.path.join(self.import_dir, child_dir_name)
 
             if not os.path.isdir(child_dir):
                 raise FileNotFoundError(f"Directory does not exist: {child_dir}.")
 
-        base_logger.logger.info("All directories exist.")
+        self.logger.info("All directories exist.")
 
     def _get_sample_id_list(self):
         """
@@ -101,11 +106,11 @@ class SamplesData():
         :param parent_dir: Path to the parent directory containing sample data.
         :return: A list of sample IDs.
         """
-        child_dir, suffix = tuple(SamplesData.DATA_FILE_INFO.values())[0]
+        child_dir, suffix = tuple(SampleData.DATA_FILE_INFO.values())[0]
 
         child_dir_path = os.path.join(self.import_dir, child_dir)
 
-        base_logger.logger.info(f"Searching sample IDs: prefix with the suffix '{suffix}' in the directory: {child_dir_path}.")
+        self.logger.info(f"Searching sample IDs: prefix with the suffix '{suffix}' in the directory: {child_dir_path}.")
 
         file_list = os.listdir(child_dir_path)
         sample_id_list = [file.replace(suffix, '') for file in file_list if file.endswith(suffix)]
@@ -118,13 +123,26 @@ class SamplesData():
         :param sample_id: The sample ID to retrieve file paths for.
         """
         self.file_paths = {}
-        for file_key, (child_dir, suffix) in SamplesData.DATA_FILE_INFO.items():
+        for file_key, (child_dir, suffix) in SampleData.DATA_FILE_INFO.items():
             file_path = os.path.join(self.import_dir, child_dir, f"{sample_id}{suffix}")
 
             if not os.path.isfile(file_path):
                 raise FileNotFoundError(f"File does not exist: {file_path}.")
 
             self.file_paths[file_key] = file_path
+
+    def _read_sample_info(self, sample_info_path: str) -> None:
+        """
+        Read sample information from a specified file path.
+        """
+        with open(sample_info_path, mode='r') as file:
+            reader = csv.DictReader(file)
+            for row in reader:
+                key = row.pop(list(row.keys())[0])
+                if key in self.sample_id_list:
+                    self.sample_info[key] = dict(row)
+        # {'sample1': {'site': 'siteA', 'date': '05/20/2020', 'sample': '1'},
+        #  'sample2': {'site': 'siteA', 'date': '05/20/2020', 'sample': '2'}}
 
     def _save_instance(self) -> None:
         """
@@ -133,7 +151,7 @@ class SamplesData():
         with open(self.save_instance_path, 'wb') as f:
             pickle.dump(self, f)
 
-    def import_data(self, import_dir: str, sample_id_list: list[str] = []) -> None:
+    def import_data(self, import_dir: str, sample_id_list: list[str] = [], sample_info_path: str = None) -> None:
         """
         Import sample data from the specified parent directory.
         The parent directory is expected to contain four data types recorded in 'DATA_FILE_INFO'.
@@ -141,18 +159,19 @@ class SamplesData():
 
         :param import_dir: Path to the parent directory containing the sample data.
         :param sample_id_list: List of sample IDs to import. If not provided, all available sample IDs will be imported. The sample IDs are extracted from the file names using the provided suffix.
+        :param sample_info_path: Path to the sample information CSV file. If provided, sample information will be loaded from this file. Default is None.
         """
         self.import_dir = import_dir
 
-        base_logger.logger.info(f"Reading samples from: {self.import_dir}.")
+        self.logger.info(f"Reading samples from: {self.import_dir}.")
         self._check_dir()
 
         old_sample_num = len(self.sample_id_list)
         if sample_id_list == []:
-            base_logger.logger.info("No sample id list provided.")
+            self.logger.info("No sample id list provided.")
             self._get_sample_id_list()
         else:
-            base_logger.logger.info("Specified sample id list.")
+            self.logger.info("Specified sample id list.")
             self.sample_id_list.extend(sample_id_list)
 
         self.sample_id_list = list(set(self.sample_id_list))
@@ -162,7 +181,11 @@ class SamplesData():
             self._get_file_paths(sample_id)
             self.sample_data[sample_id] = OneSampleData(**self.file_paths)
 
-        base_logger.logger.info(f"Total {new_sample_num - old_sample_num} new samples read.")
+        self.logger.info(f"Total {new_sample_num - old_sample_num} new samples read.")
+
+        if sample_info_path:
+            self._read_sample_info(sample_info_path)
+            self.logger.info(f"Sample information loaded from: {sample_info_path}.")
 
     def save_data(
             self, save_instance_dir: str,
@@ -179,16 +202,16 @@ class SamplesData():
         os.makedirs(save_instance_dir, exist_ok=True)
 
         self.save_instance_path = os.path.join(save_instance_dir, f"{save_prefix}.pkl")
-        base_logger.logger.info(f"Saving sample data to: {self.save_instance_path}.")
+        self.logger.info(f"Saving sample data to: {self.save_instance_path}.")
 
         if os.path.exists(self.save_instance_path) and overwrite == False:
-            base_logger.logger.info(f"File already exists: {self.save_instance_path}. Data didn't saved.")
+            self.logger.info(f"File already exists: {self.save_instance_path}. Data didn't saved.")
             return
         else:
             pass
 
         self._save_instance()
-        base_logger.logger.info(f"Sample data saved to: {self.save_instance_path}.")
+        self.logger.info(f"Sample data saved to: {self.save_instance_path}.")
 
     def load_data(self, load_instance_path) -> None:
         """
@@ -199,4 +222,29 @@ class SamplesData():
         with open(load_instance_path,'rb') as file:
             self.__dict__ = pickle.load(file).__dict__
         self.load_instance_path = load_instance_path
-        base_logger.logger.info(f"Sample data loaded from: {self.load_instance_path}.")
+        self.logger.info(f"Sample data loaded from: {self.load_instance_path}.")
+
+    def merge_data(self, samplesdata: object) -> None:
+        """
+        Merge sample data from another SamplesContainer instance into the current instance.
+
+        :param samplesdata: The SamplesContainer instance to merge data from.
+        """
+        prog_name = f"Merge object {samplesdata} into the current instance."
+        self.logger.info(f"Running: {prog_name}")
+
+        if not isinstance(samplesdata, SampleData):
+            raise TypeError("FAIL: Input object must be an instance of SamplesData.")
+
+        for sample_id in samplesdata.sample_id_list:
+            if sample_id in self.sample_data.keys():
+                self.logger.warning(f"WARNING: Sample ID {sample_id} already exists in the current instance. Skipping merge.")
+            else:
+                self.sample_data[sample_id] = samplesdata.sample_data[sample_id]
+                self.sample_info[sample_id] = samplesdata.sample_info[sample_id]
+
+        self.sample_id_list.extend(samplesdata.sample_id_list)
+        self.sample_id_list = list(set(self.sample_id_list))
+
+        self.logger.info(f"COMPLETE: {prog_name}")
+

@@ -6,7 +6,7 @@ from analysis_toolkit.runner_exec import data_container
 
 class Runner(ABC):
 
-    def __init__(self, samplesdata: data_container.SamplesData, logger=base_logger.logger):
+    def __init__(self, samplesdata: data_container.SampleData, logger=base_logger.logger):
         self.logger = logger
         self.analysis_type = None
         self.sample_id_used = None
@@ -42,7 +42,7 @@ class Runner(ABC):
         pass
 
 class SequenceRunner(Runner):
-    def __init__(self, samplesdata: data_container.SamplesData):
+    def __init__(self, samplesdata: data_container.SampleData):
         super().__init__(samplesdata)
         self.units2fasta = {}
 
@@ -76,7 +76,7 @@ class SequenceRunner(Runner):
 
 
 class AbundanceRunner(Runner):
-    def __init__(self, samplesdata: data_container.SamplesData):
+    def __init__(self, samplesdata: data_container.SampleData):
         super().__init__(samplesdata)
         self.samples2abundance = {}
 
