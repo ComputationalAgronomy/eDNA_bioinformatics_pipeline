@@ -2,7 +2,7 @@ import os
 import subprocess
 import tempfile
 
-from analysis_toolkit.runner_build import base_logger
+from analysis_toolkit.runner_build import (base_logger, utils)
 
 
 def derep_fasta(seq_path: str, uniq_path: str, relabel: str, threads: int = 12, sizeout: bool = False) -> None:
@@ -23,12 +23,7 @@ def derep_fasta(seq_path: str, uniq_path: str, relabel: str, threads: int = 12, 
     if sizeout:
         cmd.append('-sizeout')
 
-    base_logger.logger.info(f"Running USEARCH command: {' '.join(cmd)}")
-    try:
-        subprocess.run(cmd, check=True)
-        base_logger.logger.info(f"Dereplicated FASTA file saved to: {uniq_path}")
-    except subprocess.CalledProcessError as e:
-        base_logger.logger.error(f"Error occurred during dereplication: {e.stderr}")
+    utils.run_subprocess("USEARCH", cmd, uniq_path)
 
 def write_fasta(units2fasta_dict: dict[str, str], save_path: str, dereplicate: bool = False, sizeout: bool = False) -> None:
     """
@@ -77,9 +72,4 @@ def align_fasta(seq_path: str, aln_path: str) -> None:
         'clustalo', '-i', seq_path, '-o', aln_path, '--force'
     ]
 
-    base_logger.logger.info(f"Running Clustal Omega command: {' '.join(cmd)}")
-    try:
-        subprocess.run(cmd, check=True)
-        base_logger.logger.info(f"Aligned FASTA file saved to: {aln_path}")
-    except subprocess.CalledProcessError as e:
-        base_logger.logger.error(f"Error occurred during alignment: {e.stderr}")
+    utils.run_subprocess("Clustal Omega", cmd, aln_path)

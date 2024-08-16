@@ -1,7 +1,9 @@
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+import subprocess
 
+from analysis_toolkit.runner_build import base_logger
 
 def list_union(lists_to_union: list[list[str]]) -> list[str]:
     """
@@ -13,6 +15,14 @@ def list_union(lists_to_union: list[list[str]]) -> list[str]:
     uniq_list = list(set().union(*lists_to_union))
     uniq_list.sort()
     return uniq_list
+
+def run_subprocess(prog_name, cmd, save_path):
+    base_logger.logger.info(f"Running {prog_name} command: {' '.join(cmd)}")
+    try:
+        subprocess.run(cmd, check=True)
+        base_logger.logger.info(f"COMPLETE: Output file(s) saved to: {save_path}")
+    except subprocess.CalledProcessError as e:
+        base_logger.logger.error(f"Error occurred during {prog_name} run: {e.stderr}") 
 
 def get_color_hex(n: int, cmap: str = "rainbow") -> list[str]:
     color_key = plt.get_cmap(cmap)(np.linspace(0, 1, n))

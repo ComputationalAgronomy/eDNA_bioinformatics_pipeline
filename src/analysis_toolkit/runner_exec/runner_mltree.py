@@ -2,7 +2,7 @@ import os
 import subprocess
 import tempfile
 
-from analysis_toolkit.runner_build import (base_runner, utils_sequence)
+from analysis_toolkit.runner_build import (base_runner, utils, utils_sequence)
 
 
 class MLTreeRunner(base_runner.SequenceRunner):
@@ -170,9 +170,4 @@ class MLTreeRunner(base_runner.SequenceRunner):
         if checkpoint:
             cmd.append(checkpoint)
 
-        self.logger.info(f"Running IQTREE2 command: {' '.join(cmd)}")
-        try:
-            subprocess.run(cmd, check=True)
-            self.logger.info(f"IQTREE2 finished. Output files saved in: {save_dir}")
-        except subprocess.CalledProcessError as e:
-            self.logger.error(f"Error occurred during IQTREE2 run: {e.stderr}")
+        utils.run_subprocess("IQTREE2", cmd, save_dir)
