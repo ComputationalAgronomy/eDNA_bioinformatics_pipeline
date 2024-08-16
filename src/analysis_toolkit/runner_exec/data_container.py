@@ -196,7 +196,7 @@ class SamplesData():
     
         :param load_instance_path: If provided, load a pre-existing SamplesContainer instance from the path. Defaults is None.
         """
-        self.load_instance_path = load_instance_path
-        with open(self.load_instance_path,'rb') as file:
+        with open(load_instance_path,'rb') as file:
             self.__dict__ = pickle.load(file).__dict__
+        self.load_instance_path = load_instance_path
         base_logger.logger.info(f"Sample data loaded from: {self.load_instance_path}.")

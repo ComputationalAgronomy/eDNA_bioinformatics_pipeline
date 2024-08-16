@@ -24,7 +24,7 @@ class BarchartRunner(base_runner.AbundanceRunner):
         """
         Create a stacked bar chart figure using Plotly.
         """
-        plotdata = pd.DataFrame(self.samples_abundance, index=self.uniq_unit_names)
+        plotdata = pd.DataFrame(self.samples2abundance, index=self.uniq_unit_names)
         data = plotdata.transpose()
 
         self.fig = px.bar(
@@ -119,6 +119,9 @@ class BarchartRunner(base_runner.AbundanceRunner):
  
         self.results_dir = save_html_dir
 
+    def run_write(self):
+        return super().run_write()
+
     def run_plot(self,
             level: str,
             sample_id_list: list[str] = [],
@@ -142,7 +145,8 @@ class BarchartRunner(base_runner.AbundanceRunner):
             self._normalize_abundance()
             self._update_samples2abundance_dict(sample_id)
 
-        all_unit_names = [list(self.samples_abundance[sample_id].keys()) for sample_id in self.sample_id_used]
+        all_unit_names = [list(self.samples2abundance[sample_id].keys()) for sample_id in self.sample_id_used]
+        print(self.samples2abundance)
         self.uniq_unit_names = utils.list_union(all_unit_names)
 
         self._fill_missing_keys()
