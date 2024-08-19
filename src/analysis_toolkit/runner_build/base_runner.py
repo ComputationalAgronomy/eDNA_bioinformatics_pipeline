@@ -1,18 +1,31 @@
 from abc import ABC, abstractmethod
+import os
 
 from analysis_toolkit.runner_build import base_logger
 from analysis_toolkit.runner_exec import data_container
 
 
-class Runner(ABC):
+def log_execution(prog_name: str, log_file: str):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            if kwargs["save_dir"]:
+                base_logger._add_file_handler(os.path.join(kwargs["save_dir"], log_file))
+            base_logger.logger.info(f"Program: {prog_name}")
+            result = func(*args, **kwargs)
+            base_logger.logger.info(f"COMPLETE: {prog_name}")
+            return result
+        return wrapper
+    return decorator
 
-    def __init__(self, samplesdata: data_container.SampleData, logger=base_logger.logger):
+
+class Runner(ABC):
+    def __init__(self, sampledata: data_container.SampleData, logger=base_logger.logger):
         self.logger = logger
         self.analysis_type = None
         self.sample_id_used = None
         self.parameters = {}
         self.results_dir = None
-        self._import_data(samplesdata)
+        self._import_data(sampledata)
 
     def _import_data(self, samplesdata):
         self.sample_data = samplesdata.sample_data
@@ -41,9 +54,10 @@ class Runner(ABC):
     def run_plot(self):
         pass
 
+
 class SequenceRunner(Runner):
-    def __init__(self, samplesdata: data_container.SampleData):
-        super().__init__(samplesdata)
+    def __init__(self, sampledata: data_container.SampleData):
+        super().__init__(sampledata)
         self.units2fasta = {}
 
     def _filter_sequence(self, n_unit_threshold):
@@ -76,8 +90,8 @@ class SequenceRunner(Runner):
 
 
 class AbundanceRunner(Runner):
-    def __init__(self, samplesdata: data_container.SampleData):
-        super().__init__(samplesdata)
+    def __init__(self, sampledata: data_container.SampleData):
+        super().__init__(sampledata)
         self.samples2abundance = {}
 
     def _load_hap_size(self, sample_id: str, hap: str) -> int:

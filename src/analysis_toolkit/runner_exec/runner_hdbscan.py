@@ -14,6 +14,10 @@ class HdbscanRunner(base_runner.Runner):
         super().__init__(samplesdata)
         self.cluster_report = []
 
+    def run_write(self):
+        return super().run_write()
+
+    @base_runner.log_execution("Run HDBSCAN clustering", "plot_hdbscan.log")
     def run_plot(self,
             index_file: str,
             n_unit_threshold: int,
@@ -43,8 +47,6 @@ class HdbscanRunner(base_runner.Runner):
             raise ValueError("Invalid category. Must be 'unit', 'target', or 'all'.")
 
         os.makedirs(save_dir, exist_ok=True)
-
-        self._add_file_handler(os.path.join(save_dir, 'hdbscan_runner.log'))
 
         index = pd.read_csv(index_file, sep='\t')
         self.index = runner_umap.UmapRunner._filter_index_by_unit_occurrence(index, n_unit_threshold)

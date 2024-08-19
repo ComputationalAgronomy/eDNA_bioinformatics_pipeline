@@ -14,6 +14,7 @@ class NexusRunner(base_runner.SequenceRunner):
         super().__init__(samplesdata)
         self.uniq_seqs2label_freq = {}
 
+    @base_runner.log_execution("Write NEXUS file", "write_nexus.log")
     def run_write(self,
             index_path: str,
             species_name: str,
@@ -33,10 +34,6 @@ class NexusRunner(base_runner.SequenceRunner):
         :param save_dir: Directory where the NEXUS file will be saved. Default is the current directory.
         :param sample_id_list: List of sample IDs to include in the NEXUS file. The list should be same as that specified by the index file. Default is None (plot all samples).
         """
-        self._add_file_handler(os.path.join(save_dir, "hapnet_nex_generator.log"))
-
-        self.logger.info(f"Generating NEXUS file for {species_name}...")
-
         try:
             self._load_sample_id_list(sample_id_list)
 
@@ -78,6 +75,9 @@ class NexusRunner(base_runner.SequenceRunner):
 
         finally:
             temp_dir.cleanup()
+
+    def run_plot(self):
+        return super().run_plot()
 
     def _load_points_labels(self,
             index_path: str,

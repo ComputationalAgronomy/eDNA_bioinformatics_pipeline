@@ -122,6 +122,7 @@ class BarchartRunner(base_runner.AbundanceRunner):
     def run_write(self):
         return super().run_write()
 
+    @base_runner.log_execution("Plot relative abundance barchart", "plot_barchart.log")
     def run_plot(self,
             level: str,
             sample_id_list: list[str] = [],
@@ -134,26 +135,20 @@ class BarchartRunner(base_runner.AbundanceRunner):
         :param sample_id_list: A list of sample IDs to plot. Default is None (plot all samples).
         :param save_dir: If provided, the barchart will be saved as a .HTML file and save a log file. Default is None.
         """
-        if save_dir:
-            self._add_file_handler(os.path.join(save_dir, "barchart_generator.log"))
-
-        self.logger.info(f"Plotting barchart for {level}...")
         self._load_sample_id_list(sample_id_list)
 
         for sample_id in self.sample_id_used:
             self._load_units2abundance_dict(sample_id, level)
             self._normalize_abundance()
             self._update_samples2abundance_dict(sample_id)
-
+        
         all_unit_names = [list(self.samples2abundance[sample_id].keys()) for sample_id in self.sample_id_used]
-        print(self.samples2abundance)
         self.uniq_unit_names = utils.list_union(all_unit_names)
 
         self._fill_missing_keys()
         
         self._create_barchart_fig()
         self.fig.show()
-        self.logger.info("Barchart generated.") 
 
         if save_dir:
             self._save(save_dir, level)

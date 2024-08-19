@@ -10,6 +10,7 @@ class MLTreeRunner(base_runner.SequenceRunner):
     def __init__(self, samplesdata):
         super().__init__(samplesdata)
 
+    @base_runner.log_execution("Reconstruct ML tree", "write_mltree.log")
     def run_write(self,
             target_list: list[str],
             target_level: str,
@@ -40,10 +41,6 @@ class MLTreeRunner(base_runner.SequenceRunner):
         :param sample_id_list: A list of sample IDs to plot. Default is None (plot all samples).
         """
         os.makedirs(save_dir, exist_ok=True)
-
-        self._add_file_handler(os.path.join(save_dir, "mltree_runner.log"))
-
-        self.logger.info(f"Plotting MLTree for {" ".join(target_list)}...")
 
         ml_fasta_path = os.path.join(save_dir, f'{save_prefix}.aln')
 
@@ -82,6 +79,9 @@ class MLTreeRunner(base_runner.SequenceRunner):
                 "n_unit_threshold": n_unit_threshold,
             }
         )
+
+    def run_plot(self):
+        return super().run_plot()
 
     def _check_mltree_overwrite(self, save_dir: str, save_prefix: str) -> str:
         # TODO(SW): Eventually, replace with argparse.

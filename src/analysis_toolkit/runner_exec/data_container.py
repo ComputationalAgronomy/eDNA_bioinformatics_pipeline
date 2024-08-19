@@ -135,12 +135,15 @@ class SampleData():
         """
         Read sample information from a specified file path.
         """
+        prog_name = f"Read sample information from: {sample_info_path}."
+        self.logger.info(f"Program: {prog_name}")
         with open(sample_info_path, mode='r') as file:
             reader = csv.DictReader(file)
             for row in reader:
                 key = row.pop(list(row.keys())[0])
                 if key in self.sample_id_list:
                     self.sample_info[key] = dict(row)
+        self.logger.info(f"COMPLETE: {prog_name}")
         # {'sample1': {'site': 'siteA', 'date': '05/20/2020', 'sample': '1'},
         #  'sample2': {'site': 'siteA', 'date': '05/20/2020', 'sample': '2'}}
 
@@ -163,29 +166,29 @@ class SampleData():
         """
         self.import_dir = import_dir
 
-        self.logger.info(f"Reading samples from: {self.import_dir}.")
+        prog_name = f"Read samples from: {self.import_dir}."
+        self.logger.info(f"Program: {prog_name}")
         self._check_dir()
 
-        old_sample_num = len(self.sample_id_list)
         if sample_id_list == []:
             self.logger.info("No sample id list provided.")
             self._get_sample_id_list()
         else:
             self.logger.info("Specified sample id list.")
-            self.sample_id_list.extend(sample_id_list)
-
-        self.sample_id_list = list(set(self.sample_id_list))
-        new_sample_num = len(self.sample_id_list)
+            for sample_id in sample_id_list:
+                if sample_id not in self.sample_id_list:
+                    self.sample_id_list.append(sample_id)
+                else:
+                    self.logger.warning(f"WARNING: Duplicate sample ID: {sample_id}.")
 
         for sample_id in self.sample_id_list:
             self._get_file_paths(sample_id)
             self.sample_data[sample_id] = OneSampleData(**self.file_paths)
 
-        self.logger.info(f"Total {new_sample_num - old_sample_num} new samples read.")
+        self.logger.info(f"COMPLETE: {prog_name}")
 
         if sample_info_path:
             self._read_sample_info(sample_info_path)
-            self.logger.info(f"Sample information loaded from: {sample_info_path}.")
 
     def save_data(
             self, save_instance_dir: str,
@@ -202,16 +205,17 @@ class SampleData():
         os.makedirs(save_instance_dir, exist_ok=True)
 
         self.save_instance_path = os.path.join(save_instance_dir, f"{save_prefix}.pkl")
-        self.logger.info(f"Saving sample data to: {self.save_instance_path}.")
+        prog_name = f"Save sample data to: {self.save_instance_path}."
+        self.logger.info(f"Program: {prog_name}")
 
-        if os.path.exists(self.save_instance_path) and overwrite == False:
-            self.logger.info(f"File already exists: {self.save_instance_path}. Data didn't saved.")
+        if os.path.exists(self.save_instance_path) and not overwrite:
+            self.logger.warning(f"WARNING: File already exists: {self.save_instance_path}. Data didn't saved.")
             return
         else:
             pass
 
         self._save_instance()
-        self.logger.info(f"Sample data saved to: {self.save_instance_path}.")
+        self.logger.info(f"COMPLETE: {prog_name}")
 
     def load_data(self, load_instance_path) -> None:
         """
@@ -219,32 +223,36 @@ class SampleData():
     
         :param load_instance_path: If provided, load a pre-existing SamplesContainer instance from the path. Defaults is None.
         """
+        prog_name = f"Load sample data from: {load_instance_path}."
+        self.logger.info(f"Program: {prog_name}")
+        
         with open(load_instance_path,'rb') as file:
             self.__dict__ = pickle.load(file).__dict__
         self.load_instance_path = load_instance_path
-        self.logger.info(f"Sample data loaded from: {self.load_instance_path}.")
+        self.logger.info(f"COMPLETE: {prog_name}")
 
-    def merge_data(self, samplesdata: object) -> None:
+    def merge_data(self, *object_names: object) -> None:
         """
         Merge sample data from another SamplesContainer instance into the current instance.
 
         :param samplesdata: The SamplesContainer instance to merge data from.
         """
-        prog_name = f"Merge object {samplesdata} into the current instance."
-        self.logger.info(f"Running: {prog_name}")
+        for object in object_names:
+            prog_name = f"Merge object {object} into the current instance."
+            self.logger.info(f"Program: {prog_name}")
 
-        if not isinstance(samplesdata, SampleData):
-            raise TypeError("FAIL: Input object must be an instance of SamplesData.")
+            if not isinstance(object, SampleData):
+                raise TypeError("FAIL: Input object must be an instance of SamplesData.")
 
-        for sample_id in samplesdata.sample_id_list:
-            if sample_id in self.sample_data.keys():
-                self.logger.warning(f"WARNING: Sample ID {sample_id} already exists in the current instance. Skipping merge.")
-            else:
-                self.sample_data[sample_id] = samplesdata.sample_data[sample_id]
-                self.sample_info[sample_id] = samplesdata.sample_info[sample_id]
+            for sample_id in object.sample_id_list:
+                if sample_id in self.sample_data.keys():
+                    self.logger.warning(f"WARNING: Sample ID {sample_id} already exists in the current instance. Skipping merge.")
+                else:
+                    self.sample_data[sample_id] = object.sample_data[sample_id]
+                    self.sample_info[sample_id] = object.sample_info[sample_id]
 
-        self.sample_id_list.extend(samplesdata.sample_id_list)
-        self.sample_id_list = list(set(self.sample_id_list))
+            self.sample_id_list.extend(object.sample_id_list)
+            self.sample_id_list = list(set(self.sample_id_list))
 
-        self.logger.info(f"COMPLETE: {prog_name}")
+            self.logger.info(f"COMPLETE: {prog_name}")
 

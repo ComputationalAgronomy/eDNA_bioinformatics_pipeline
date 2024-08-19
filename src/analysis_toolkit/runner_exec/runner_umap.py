@@ -23,6 +23,7 @@ class UmapRunner(base_runner.SequenceRunner):
         self.units2targets = {}
         self.index_list = []
 
+    @base_runner.log_execution("Write UMAP index file", "write_umap.log")
     def run_write(self,
             target_list: list[str],
             target_level: str,
@@ -61,11 +62,6 @@ class UmapRunner(base_runner.SequenceRunner):
         os.makedirs(save_dir, exist_ok=True)
         index_path = os.path.join(save_dir, "umap_index.tsv")
         aln_index_fasta_path = os.path.join(save_dir, "input.aln")
-
-        ur_fh = self._get_file_handler(os.path.join(save_dir, 'write_umap_index_file.log'))
-        self.logger.addHandler(ur_fh)
-
-        self.logger.info(f"Writing index TSV: {index_path} for {" ".join(target_list)}...")
 
         self._load_sample_id_list(sample_id_list)
 
@@ -110,6 +106,7 @@ class UmapRunner(base_runner.SequenceRunner):
             }
         )
 
+    @base_runner.log_execution("Plot UMAP results", "plot_umap.log")
     def run_plot(self,
         index_path: str,
         n_unit_threshold: int,
@@ -132,10 +129,6 @@ class UmapRunner(base_runner.SequenceRunner):
             raise ValueError("Invalid category. Must be 'unit', 'target', or 'all'.")
 
         os.makedirs(save_dir, exist_ok=True)
-
-        self._add_file_handler(os.path.join(save_dir, 'plot_umap.log'))
-
-        self.logger.info("Plotting UMAP...")
 
         self.index = pd.read_csv(index_path, sep='\t')
 
